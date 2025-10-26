@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebElementEntity>
+   <description></description>
+   <name>button_japonesa_px-3 py-2 rounded-lg text-s_0db39c</name>
+   <tag></tag>
+   <elementGuidId>952e4eca-2d49-4b23-8609-e085c2cb04ef</elementGuidId>
+   <selectorCollection>
+      <entry>
+         <key>CSS</key>
+         <value></value>
+      </entry>
+      <entry>
+         <key>XPATH</key>
+         <value>(//button[@type='button'])[26]</value>
+      </entry>
+   </selectorCollection>
+   <selectorMethod>XPATH</selectorMethod>
+   <smartLocatorCollection>
+      <entry>
+         <key>SMART_LOCATOR</key>
+         <value>internal:role=button[name=&quot;#mexicana&quot;i]</value>
+      </entry>
+   </smartLocatorCollection>
+   <smartLocatorEnabled>false</smartLocatorEnabled>
+   <useRalativeImagePath>true</useRalativeImagePath>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>tag</name>
+      <type>Main</type>
+      <value>button</value>
+      <webElementGuid>a8e76168-c8c4-43a4-a25f-f80643d7060a</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>type</name>
+      <type>Main</type>
+      <value>button</value>
+      <webElementGuid>42d77456-a32e-4cad-9302-cc0d3ffcd043</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>class</name>
+      <type>Main</type>
+      <value>
+          px-3 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105
+          bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80
+        </value>
+      <webElementGuid>d40fc085-00d5-4573-99f2-f3372c7d9563</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>text</name>
+      <type>Main</type>
+      <value>#mexicana</value>
+      <webElementGuid>ceb7015e-e811-43a4-87ce-d73d29f99577</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath</name>
+      <type>Main</type>
+      <value>id(&quot;root&quot;)/div[@class=&quot;min-h-screen bg-background text-foreground flex&quot;]/div[@class=&quot;flex flex-col w-0 flex-1 overflow-hidden&quot;]/main[@class=&quot;flex-1 relative overflow-y-auto focus:outline-none pt-16 z-0&quot;]/div[@class=&quot;container mx-auto px-4 sm:px-6 lg:px-8&quot;]/div[@class=&quot;max-w-3xl mx-auto py-6 px-4&quot;]/div[@class=&quot;space-y-8&quot;]/form[@class=&quot;glass-effect rounded-2xl p-8 border border-white/10 space-y-6&quot;]/div[@class=&quot;space-y-6&quot;]/div[@class=&quot;space-y-3&quot;]/div[@class=&quot;flex flex-wrap gap-2&quot;]/button[@class=&quot;px-3 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105
+          bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80&quot;]</value>
+      <webElementGuid>eebb3251-48a0-4559-8c83-dc13414bd02d</webElementGuid>
+   </webElementProperties>
+   <webElementXpaths>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:attributes</name>
+      <type>Main</type>
+      <value>(//button[@type='button'])[26]</value>
+      <webElementGuid>b72c9cb1-f944-4ed6-930e-56fe0fa0ed2a</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:idRelative</name>
+      <type>Main</type>
+      <value>//div[@id='root']/div/div/main/div/div/div/form/div[4]/div[4]/div[2]/button[19]</value>
+      <webElementGuid>3bcbd228-ffce-4f1d-9cd2-92221af033ae</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#japonesa'])[1]/following::button[1]</value>
+      <webElementGuid>dcf25228-34ec-46b7-a4c7-6d3d1cb1c5d7</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#italiana'])[1]/following::button[2]</value>
+      <webElementGuid>a5c20250-2f42-40bb-b192-6163d8f28f46</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#acai'])[1]/preceding::button[1]</value>
+      <webElementGuid>f22edf4d-f9c1-4aac-8478-0df0973b3342</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#rodadadechopp'])[1]/preceding::button[2]</value>
+      <webElementGuid>f044db34-c0b0-4d34-ba81-1483743b3499</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:position</name>
+      <type>Main</type>
+      <value>//button[19]</value>
+      <webElementGuid>a1264640-4ab8-46fd-ac4b-89d881e3abb1</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:customAttributes</name>
+      <type>Main</type>
+      <value>//button[@type = 'button' and (text() = '#mexicana' or . = '#mexicana')]</value>
+      <webElementGuid>5df6e42b-1994-4cf9-8843-9df4d4d8515c</webElementGuid>
+   </webElementXpaths>
+</WebElementEntity>

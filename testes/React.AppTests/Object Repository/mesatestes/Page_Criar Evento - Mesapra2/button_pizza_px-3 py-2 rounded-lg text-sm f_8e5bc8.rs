@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebElementEntity>
+   <description></description>
+   <name>button_pizza_px-3 py-2 rounded-lg text-sm f_8e5bc8</name>
+   <tag></tag>
+   <elementGuidId>6fdff110-4f2f-4d91-94f2-effee7f8ae4d</elementGuidId>
+   <selectorCollection>
+      <entry>
+         <key>CSS</key>
+         <value></value>
+      </entry>
+      <entry>
+         <key>XPATH</key>
+         <value>(//button[@type='button'])[21]</value>
+      </entry>
+   </selectorCollection>
+   <selectorMethod>XPATH</selectorMethod>
+   <smartLocatorCollection>
+      <entry>
+         <key>SMART_LOCATOR</key>
+         <value>internal:role=button[name=&quot;#hamburguer&quot;i]</value>
+      </entry>
+   </smartLocatorCollection>
+   <smartLocatorEnabled>false</smartLocatorEnabled>
+   <useRalativeImagePath>true</useRalativeImagePath>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>tag</name>
+      <type>Main</type>
+      <value>button</value>
+      <webElementGuid>b5332558-d012-4888-92e9-7e334913b01c</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>type</name>
+      <type>Main</type>
+      <value>button</value>
+      <webElementGuid>66a833d7-74c1-4f1e-b800-267ae7060259</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>class</name>
+      <type>Main</type>
+      <value>
+          px-3 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105
+          bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80
+        </value>
+      <webElementGuid>94529de7-a08e-441f-aa0b-9649865dbff3</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>text</name>
+      <type>Main</type>
+      <value>#hamburguer</value>
+      <webElementGuid>88db0250-a90b-40fc-b15e-7487ba30636c</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath</name>
+      <type>Main</type>
+      <value>id(&quot;root&quot;)/div[@class=&quot;min-h-screen bg-background text-foreground flex&quot;]/div[@class=&quot;flex flex-col w-0 flex-1 overflow-hidden&quot;]/main[@class=&quot;flex-1 relative overflow-y-auto focus:outline-none pt-16 z-0&quot;]/div[@class=&quot;container mx-auto px-4 sm:px-6 lg:px-8&quot;]/div[@class=&quot;max-w-3xl mx-auto py-6 px-4&quot;]/div[@class=&quot;space-y-8&quot;]/form[@class=&quot;glass-effect rounded-2xl p-8 border border-white/10 space-y-6&quot;]/div[@class=&quot;space-y-6&quot;]/div[@class=&quot;space-y-3&quot;]/div[@class=&quot;flex flex-wrap gap-2&quot;]/button[@class=&quot;px-3 py-2 rounded-lg text-sm font-medium transition-all transform hover:scale-105
+          bg-white/5 text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80&quot;]</value>
+      <webElementGuid>5acf47bf-ef7f-4bf4-acfb-297398efd3a7</webElementGuid>
+   </webElementProperties>
+   <webElementXpaths>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:attributes</name>
+      <type>Main</type>
+      <value>(//button[@type='button'])[21]</value>
+      <webElementGuid>32ba498c-27cf-46ec-868d-c6e510a78070</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:idRelative</name>
+      <type>Main</type>
+      <value>//div[@id='root']/div/div/main/div/div/div/form/div[4]/div[4]/div[2]/button[14]</value>
+      <webElementGuid>fb1c7dbe-f95c-4e88-bc08-d03aea58cb36</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#pizza'])[1]/following::button[1]</value>
+      <webElementGuid>bb7b7971-a96b-437f-a176-3ee69bbc634e</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#saudavel'])[1]/following::button[2]</value>
+      <webElementGuid>a7a76474-86dc-4b97-82c4-54f15bae6d83</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#sushi'])[1]/preceding::button[1]</value>
+      <webElementGuid>fabc9998-51eb-43da-a80b-d4c96829d612</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#churrasco'])[1]/preceding::button[2]</value>
+      <webElementGuid>6242bc97-d077-4f30-886b-d6f46cef16f1</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:position</name>
+      <type>Main</type>
+      <value>//button[14]</value>
+      <webElementGuid>9769f289-d33a-4119-b59f-045f2992d41e</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:customAttributes</name>
+      <type>Main</type>
+      <value>//button[@type = 'button' and (text() = '#hamburguer' or . = '#hamburguer')]</value>
+      <webElementGuid>8c609b95-a7a1-4c32-bc80-1cda1e7807e2</webElementGuid>
+   </webElementXpaths>
+</WebElementEntity>

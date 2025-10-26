@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebElementEntity>
+   <description></description>
+   <name>button_Polticas de Cancelamento_inline-flex_2ac128</name>
+   <tag></tag>
+   <elementGuidId>7fe10a18-b4b4-4eca-9e75-116ea2f2e051</elementGuidId>
+   <selectorCollection>
+      <entry>
+         <key>CSS</key>
+         <value></value>
+      </entry>
+      <entry>
+         <key>XPATH</key>
+         <value>//button[@type='submit']</value>
+      </entry>
+   </selectorCollection>
+   <selectorMethod>XPATH</selectorMethod>
+   <smartLocatorCollection>
+      <entry>
+         <key>SMART_LOCATOR</key>
+         <value>internal:role=button[name=&quot;Criar Evento&quot;i]</value>
+      </entry>
+   </smartLocatorCollection>
+   <smartLocatorEnabled>false</smartLocatorEnabled>
+   <useRalativeImagePath>true</useRalativeImagePath>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>tag</name>
+      <type>Main</type>
+      <value>button</value>
+      <webElementGuid>eff091fd-b7dc-4a5b-839a-b5013affb57d</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>class</name>
+      <type>Main</type>
+      <value>inline-flex items-center justify-center whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none bg-purple-500 text-white hover:bg-purple-500/90 px-4 py-2 w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed</value>
+      <webElementGuid>f5431424-eeec-4961-ade0-4d1a1b507fef</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>type</name>
+      <type>Main</type>
+      <value>submit</value>
+      <webElementGuid>2b51eedd-46f4-4f1e-9575-ce97b0bac1a8</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>text</name>
+      <type>Main</type>
+      <value>Criar Evento</value>
+      <webElementGuid>3a757aa2-ad2c-46a3-a978-024452616d72</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath</name>
+      <type>Main</type>
+      <value>id(&quot;root&quot;)/div[@class=&quot;min-h-screen bg-background text-foreground flex&quot;]/div[@class=&quot;flex flex-col w-0 flex-1 overflow-hidden&quot;]/main[@class=&quot;flex-1 relative overflow-y-auto focus:outline-none pt-16 z-0&quot;]/div[@class=&quot;container mx-auto px-4 sm:px-6 lg:px-8&quot;]/div[@class=&quot;max-w-3xl mx-auto py-6 px-4&quot;]/div[@class=&quot;space-y-8&quot;]/form[@class=&quot;glass-effect rounded-2xl p-8 border border-white/10 space-y-6&quot;]/button[@class=&quot;inline-flex items-center justify-center whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none bg-purple-500 text-white hover:bg-purple-500/90 px-4 py-2 w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed&quot;]</value>
+      <webElementGuid>d0b7fcea-e3b6-412c-8f8e-c28b6992b89e</webElementGuid>
+   </webElementProperties>
+   <webElementXpaths>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:attributes</name>
+      <type>Main</type>
+      <value>//button[@type='submit']</value>
+      <webElementGuid>b4fbe607-7c30-4d5f-a15c-4d5290f65f4b</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:idRelative</name>
+      <type>Main</type>
+      <value>//div[@id='root']/div/div/main/div/div/div/form/button</value>
+      <webElementGuid>40674cf9-3b96-42e8-b61f-a80f40fce712</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='Políticas de Cancelamento'])[1]/following::button[1]</value>
+      <webElementGuid>6a32602b-47c9-44fd-b69d-5da5971b3772</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='Termos de Uso'])[1]/following::button[1]</value>
+      <webElementGuid>43cf4645-3d69-4a8e-ac05-b52104be3331</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>//*/text()[normalize-space(.)='Criar Evento']/parent::*</value>
+      <webElementGuid>effedd78-d1d9-4fc5-a924-c14ab983c2da</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:position</name>
+      <type>Main</type>
+      <value>//form/button</value>
+      <webElementGuid>d55e176e-1ba3-48bb-80d3-a95f53e34d2c</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:customAttributes</name>
+      <type>Main</type>
+      <value>//button[@type = 'submit' and (text() = 'Criar Evento' or . = 'Criar Evento')]</value>
+      <webElementGuid>72481b7b-6663-4210-837b-69b32b330a10</webElementGuid>
+   </webElementXpaths>
+</WebElementEntity>

@@ -1,0 +1,13 @@
+{
+  "files.exclude": {
+    "**/dist": true,
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/dist": true,
+    "**/node_modules": true
+  },
+  "css.lint.vendorPrefix": "ignore",
+  "css.lint.propertyIgnoredDueToDisplay": "ignore",
+  "css.lint.compatibleVendorPrefixes": "ignore"
+}

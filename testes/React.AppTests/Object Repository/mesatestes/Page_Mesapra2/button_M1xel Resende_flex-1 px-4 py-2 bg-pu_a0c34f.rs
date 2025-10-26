@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebElementEntity>
+   <description></description>
+   <name>button_M1xel Resende_flex-1 px-4 py-2 bg-pu_a0c34f</name>
+   <tag></tag>
+   <elementGuidId>cb73c5ca-382a-4e6f-9eee-6f0de6e9db2d</elementGuidId>
+   <selectorCollection>
+      <entry>
+         <key>CSS</key>
+         <value></value>
+      </entry>
+      <entry>
+         <key>XPATH</key>
+         <value>//div[@id='root']/div/div/main/div/div/div[3]/div/div[2]/button</value>
+      </entry>
+   </selectorCollection>
+   <selectorMethod>XPATH</selectorMethod>
+   <smartLocatorCollection>
+      <entry>
+         <key>SMART_LOCATOR</key>
+         <value>internal:role=button[name=&quot;👋 Cutucar&quot;i] >> nth=0</value>
+      </entry>
+   </smartLocatorCollection>
+   <smartLocatorEnabled>false</smartLocatorEnabled>
+   <useRalativeImagePath>true</useRalativeImagePath>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>tag</name>
+      <type>Main</type>
+      <value>button</value>
+      <webElementGuid>23ee62c6-ca0c-49aa-ab3b-be1deb5c69df</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>class</name>
+      <type>Main</type>
+      <value>flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2</value>
+      <webElementGuid>638a9661-e7fe-40b6-8aeb-b01a46005444</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>title</name>
+      <type>Main</type>
+      <value>Cutucar</value>
+      <webElementGuid>8625a146-2e70-4a27-8ecd-e9324e3cbae1</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>text</name>
+      <type>Main</type>
+      <value>👋Cutucar</value>
+      <webElementGuid>b0b69cf9-fc5c-4789-a4cb-7cab3ab1384b</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath</name>
+      <type>Main</type>
+      <value>id(&quot;root&quot;)/div[@class=&quot;min-h-screen bg-background text-foreground flex&quot;]/div[@class=&quot;flex flex-col w-0 flex-1 overflow-hidden&quot;]/main[@class=&quot;flex-1 relative overflow-y-auto focus:outline-none pt-16 z-0&quot;]/div[@class=&quot;container mx-auto px-4 sm:px-6 lg:px-8&quot;]/div[@class=&quot;py-6&quot;]/div[@class=&quot;grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6&quot;]/div[@class=&quot;bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300&quot;]/div[@class=&quot;flex gap-2 mt-4&quot;]/button[@class=&quot;flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2&quot;]</value>
+      <webElementGuid>eeb335db-d15a-429f-b2b1-5ccbe3f6d681</webElementGuid>
+   </webElementProperties>
+   <webElementXpaths>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:idRelative</name>
+      <type>Main</type>
+      <value>//div[@id='root']/div/div/main/div/div/div[3]/div/div[2]/button</value>
+      <webElementGuid>714fe8cd-a086-4953-b006-7cde5ea092e8</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='M1xel Resende'])[1]/following::button[1]</value>
+      <webElementGuid>374a4a8a-dd8d-4e83-a92b-1777e769e445</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='M'])[1]/following::button[1]</value>
+      <webElementGuid>6114e3a1-e382-4cb6-8909-aa3c8492a837</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='M'])[2]/preceding::button[2]</value>
+      <webElementGuid>6f3bcdec-6b8c-463f-8929-f1dccb947fa8</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>//*/text()[normalize-space(.)='Cutucar']/parent::*</value>
+      <webElementGuid>27a397dc-831f-4695-86a0-b6affc0b5bd2</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:position</name>
+      <type>Main</type>
+      <value>//button</value>
+      <webElementGuid>f21a3c20-8f40-468f-b0d6-4878249ab56f</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:customAttributes</name>
+      <type>Main</type>
+      <value>//button[@title = 'Cutucar' and (text() = '👋Cutucar' or . = '👋Cutucar')]</value>
+      <webElementGuid>4088784f-5daa-4959-9c2a-deb56313b43f</webElementGuid>
+   </webElementXpaths>
+</WebElementEntity>

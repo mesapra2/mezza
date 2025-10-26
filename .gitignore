@@ -1,0 +1,7 @@
+# Ignora a pasta de dependências do Node
+/node_modules
+
+# Você também pode querer ignorar outras coisas, como:
+.env
+dist
+build

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WebElementEntity>
+   <description></description>
+   <name>div_Hashtags Comuns_flex flex-wrap gap-2</name>
+   <tag></tag>
+   <elementGuidId>ccd4f2d3-92d6-43fb-818d-33b9cc057a1b</elementGuidId>
+   <selectorCollection>
+      <entry>
+         <key>CSS</key>
+         <value></value>
+      </entry>
+      <entry>
+         <key>XPATH</key>
+         <value>//div[@id='root']/div/div/main/div/div/div/form/div[4]/div[4]/div[2]</value>
+      </entry>
+   </selectorCollection>
+   <selectorMethod>XPATH</selectorMethod>
+   <smartLocatorCollection>
+      <entry>
+         <key>SMART_LOCATOR</key>
+         <value>internal:text=&quot;#happyhour#cafe#almoco#jantar#drinks#cerveja#petiscos#comidacaseira#vegetariano#&quot;i</value>
+      </entry>
+   </smartLocatorCollection>
+   <smartLocatorEnabled>false</smartLocatorEnabled>
+   <useRalativeImagePath>true</useRalativeImagePath>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>tag</name>
+      <type>Main</type>
+      <value>div</value>
+      <webElementGuid>5550609c-0519-4405-b77e-861fba7f2822</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>class</name>
+      <type>Main</type>
+      <value>flex flex-wrap gap-2</value>
+      <webElementGuid>3c88bb8f-d51f-41cf-a3d2-51bc23b19e14</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>text</name>
+      <type>Main</type>
+      <value>#happyhour#cafe#almoco#jantar#drinks#cerveja#petiscos#comidacaseira#vegetariano#vegano#fitness#saudavel#pizza#hamburguer#sushi#churrasco#italiana#japonesa#mexicana#acai#rodadadechopp#boteco</value>
+      <webElementGuid>89a52e9f-739d-4970-97bb-f26e3a34bd66</webElementGuid>
+   </webElementProperties>
+   <webElementProperties>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath</name>
+      <type>Main</type>
+      <value>id(&quot;root&quot;)/div[@class=&quot;min-h-screen bg-background text-foreground flex&quot;]/div[@class=&quot;flex flex-col w-0 flex-1 overflow-hidden&quot;]/main[@class=&quot;flex-1 relative overflow-y-auto focus:outline-none pt-16 z-0&quot;]/div[@class=&quot;container mx-auto px-4 sm:px-6 lg:px-8&quot;]/div[@class=&quot;max-w-3xl mx-auto py-6 px-4&quot;]/div[@class=&quot;space-y-8&quot;]/form[@class=&quot;glass-effect rounded-2xl p-8 border border-white/10 space-y-6&quot;]/div[@class=&quot;space-y-6&quot;]/div[@class=&quot;space-y-3&quot;]/div[@class=&quot;flex flex-wrap gap-2&quot;]</value>
+      <webElementGuid>12c1a462-acea-4dc0-8096-20641aeb9d30</webElementGuid>
+   </webElementProperties>
+   <webElementXpaths>
+      <isSelected>true</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:idRelative</name>
+      <type>Main</type>
+      <value>//div[@id='root']/div/div/main/div/div/div/form/div[4]/div[4]/div[2]</value>
+      <webElementGuid>afaa5921-45d2-4f04-9f5e-7ed93d79f71a</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='Hashtags Comuns'])[1]/following::div[1]</value>
+      <webElementGuid>0621d2d7-6d79-45c2-9262-df6f478a4b48</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:neighbor</name>
+      <type>Main</type>
+      <value>(.//*[normalize-space(text()) and normalize-space(.)='#wine'])[1]/following::div[3]</value>
+      <webElementGuid>6777b078-49b9-4d42-b203-81eb94df31f3</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:position</name>
+      <type>Main</type>
+      <value>//div[4]/div[4]/div[2]</value>
+      <webElementGuid>d9e6dc78-69b9-4a43-acb5-ef81ce761f63</webElementGuid>
+   </webElementXpaths>
+   <webElementXpaths>
+      <isSelected>false</isSelected>
+      <matchCondition>equals</matchCondition>
+      <name>xpath:customAttributes</name>
+      <type>Main</type>
+      <value>//div[(text() = '#happyhour#cafe#almoco#jantar#drinks#cerveja#petiscos#comidacaseira#vegetariano#vegano#fitness#saudavel#pizza#hamburguer#sushi#churrasco#italiana#japonesa#mexicana#acai#rodadadechopp#boteco' or . = '#happyhour#cafe#almoco#jantar#drinks#cerveja#petiscos#comidacaseira#vegetariano#vegano#fitness#saudavel#pizza#hamburguer#sushi#churrasco#italiana#japonesa#mexicana#acai#rodadadechopp#boteco')]</value>
+      <webElementGuid>8ad289b7-955f-4852-be2d-103481097d1d</webElementGuid>
+   </webElementXpaths>
+</WebElementEntity>
