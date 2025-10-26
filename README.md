@@ -1,3 +1,6 @@
+## Contribuição
+Leia nosso [ICLA](docs/legal/ICLA.md) antes de contribuir.
+
 # Mesapra2: Conectando Pessoas para Experiências Gastronômicas Compartilhadas ✨
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
