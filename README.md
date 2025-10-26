@@ -120,7 +120,7 @@ Este projeto está licenciado sob a Licença MIT. Veja o arquivo `LICENSE` para 
 
 ## 📫 Contato
 
-*Nome do Desenvolvedor/Equipe* - *seuemail@exemplo.com*
+*Nome do Desenvolvedor/Equipe* - oi@mesapra2.com
 
 Link do Projeto: [https://github.com/mesapra2/mezza](https://github.com/mesapra2/mezza)
 
