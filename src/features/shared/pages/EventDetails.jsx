@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
@@ -8,19 +9,84 @@ import EventApply from '@/features/shared/components/events/EventApply';
 import Avatar from '@/features/shared/components/profile/Avatar';
 import ParticipantsManagement from '@/features/shared/components/events/ParticipantsManager';
 import EventEvaluationSection from '@/features/shared/components/events/EventEvaluationSection';
+import EventEntryForm from '@/features/shared/components/ui/EventEntryForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, differenceInMinutes, differenceInHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/features/shared/components/ui/button';
 import ParticipationService from '@/services/ParticipationService';
+import EventSecurityService from '@/services/EventSecurityService';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 
+// ============================================
+// 🆕 COMPONENTE: EventEntryStats
+// ============================================
+const EventEntryStats = ({ eventId }) => {
+  const [stats, setStats] = useState(null);
 
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const result = await ParticipationService.getEventEntryStats(eventId);
+        if (result.success) {
+          setStats(result.data);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar stats:', error);
+      }
+    };
+// Logo após o fechamento do componente EventEntryStats, ANTES do componente EventDetails
+EventEntryStats.propTypes = {
+  eventId: PropTypes.number.isRequired
+};
+    // Carregar imediatamente e depois a cada 5 segundos
+    loadStats();
+    const interval = setInterval(loadStats, 5000);
+    return () => clearInterval(interval);
+  }, [eventId]);
+
+  if (!stats) return <div className="text-xs text-slate-400">Carregando...</div>;
+
+  return (
+    <div className="space-y-2 text-xs text-slate-400">
+      <div className="flex justify-between">
+        <span>Total de participantes:</span>
+        <span className="text-white font-semibold">{stats.totalParticipants}</span>
+      </div>
+      <div className="flex justify-between">
+        <span>Com acesso:</span>
+        <span className="text-green-400 font-semibold">{stats.participantsWithAccess}</span>
+      </div>
+      <div className="flex justify-between">
+        <span>Sem acesso:</span>
+        <span className="text-orange-400 font-semibold">{stats.participantsWithoutAccess}</span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-3 w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-green-600 to-green-500 transition-all"
+          style={{
+            width: `${stats.accessPercentage}%`
+          }}
+        ></div>
+      </div>
+      <div className="text-center text-xs text-slate-500">
+        {stats.accessPercentage}% de acesso
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// 📱 COMPONENTE PRINCIPAL: EventDetails
+// ============================================
 const EventDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Estados originais
   const [event, setEvent] = useState(null);
   const [creator, setCreator] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -29,6 +95,12 @@ const EventDetails = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
+  // 🆕 Novos estados para sistema de entrada
+  const [showEntryForm, setShowEntryForm] = useState(false);
+  const [entryIsBlocked, setEntryIsBlocked] = useState(false);
+  const [entryStatus, setEntryStatus] = useState('');
+  const [userHasAccess, setUserHasAccess] = useState(false);
 
   const fetchEventData = useCallback(async () => {
     try {
@@ -96,6 +168,87 @@ const EventDetails = () => {
   useEffect(() => {
     fetchEventData();
   }, [fetchEventData]);
+
+  // 🆕 EFFECT: Monitorar timing de entrada (executar a cada segundo)
+  useEffect(() => {
+    if (!event || !user || !userParticipation) return;
+
+    const checkEntryTiming = async () => {
+      try {
+        const now = new Date();
+        const startTime = new Date(event.start_time);
+        const endTime = new Date(event.end_time);
+
+        const oneMinBeforeStart = new Date(startTime.getTime() - 60 * 1000);
+        const twoMinBeforeEnd = new Date(endTime.getTime() - 2 * 60 * 1000);
+
+        // 🔍 Verificar se usuário já tem acesso
+        const hasAccess = await EventSecurityService.hasUserAccess(event.id, user.id);
+        setUserHasAccess(hasAccess);
+
+        if (hasAccess) {
+          setShowEntryForm(false);
+          setEntryStatus('✅ Você tem acesso ao evento');
+          return;
+        }
+
+        // 🔒 Verificar se entrada está bloqueada (falta 2 min para fim)
+        if (now >= twoMinBeforeEnd) {
+          setShowEntryForm(false);
+          setEntryIsBlocked(true);
+          setEntryStatus('🔒 Entrada encerrada (evento terminando)');
+          return;
+        }
+
+        // 🔓 Verificar se está na faixa de entrada (falta 1 min antes até 2 min antes do fim)
+        if (now >= oneMinBeforeStart && now < twoMinBeforeEnd) {
+          setShowEntryForm(true);
+          setEntryIsBlocked(false);
+          setEntryStatus('🔑 Digite a senha para entrar!');
+        } else {
+          setShowEntryForm(false);
+          setEntryIsBlocked(false);
+
+          // ⏳ Calcular tempo até estar disponível
+          const timeUntilAvailable = oneMinBeforeStart - now;
+          if (timeUntilAvailable > 0) {
+            const minutesLeft = Math.floor(timeUntilAvailable / 60000);
+            const secondsLeft = Math.floor((timeUntilAvailable % 60000) / 1000);
+            setEntryStatus(
+              `⏳ Entrada disponível em ${minutesLeft}m ${secondsLeft}s`
+            );
+          } else if (now < startTime) {
+            setEntryStatus('⏳ Evento ainda não começou');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Erro ao verificar timing de entrada:', error);
+      }
+    };
+
+    // Verificar imediatamente
+    checkEntryTiming();
+
+    // Depois a cada 1 segundo
+    const interval = setInterval(checkEntryTiming, 1000);
+
+    return () => clearInterval(interval);
+  }, [event, user, userParticipation]);
+
+  // 🆕 CALLBACK: Quando entrada é bem-sucedida
+  const handleEntrySuccess = () => {
+    setShowEntryForm(false);
+    setUserHasAccess(true);
+    setEntryStatus('✅ Você entrou no evento!');
+
+    toast({
+      title: '✅ Acesso liberado!',
+      description: 'Bem-vindo ao evento. Aproveite!',
+    });
+
+    // Recarregar dados
+    fetchEventData();
+  };
 
   const canCancelParticipation = () => {
     if (!userParticipation || !event) return { canCancel: false, reason: '' };
@@ -276,7 +429,72 @@ const EventDetails = () => {
           <EventApply event={event} onSuccess={fetchEventData} />
         )}
 
-        {!isCreator && isParticipant && !isEventOver && (
+        {/* ==========================================
+            🆕 SEÇÃO DE ENTRADA COM SENHA
+            ========================================== */}
+        {!isCreator && isParticipant && !userHasAccess && (event.status === 'Confirmado' || event.status === 'Em Andamento') && (
+          <div className="glass-effect rounded-2xl p-6 border border-blue-500/30 bg-blue-500/5">
+            {/* 📊 Status da Entrada */}
+            <div className="text-center mb-6">
+              <p className="text-sm text-slate-300">{entryStatus}</p>
+            </div>
+
+            {/* 🔑 Formulário de Entrada (condicional) */}
+            {showEntryForm && !entryIsBlocked ? (
+              <EventEntryForm
+                eventId={event.id}
+                onSuccess={handleEntrySuccess}
+                isDisabled={entryIsBlocked}
+              />
+            ) : null}
+
+            {/* 🔒 Entrada Bloqueada */}
+            {entryIsBlocked && (
+              <div className="text-center p-6 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-lg font-semibold text-red-400 mb-2">
+                  🔒 Entrada Encerrada
+                </p>
+                <p className="text-sm text-red-300">
+                  A entrada foi bloqueada. O evento está chegando ao fim.
+                </p>
+              </div>
+            )}
+
+            {/* ⏳ Aguardando (mostra quando não está na janela de entrada) */}
+            {!showEntryForm && !entryIsBlocked && !userHasAccess && (
+              <div className="text-center p-6 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="mb-4">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+                </div>
+                <p className="text-sm text-blue-300">
+                  {entryStatus}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ==========================================
+            ✅ USUÁRIO TEM ACESSO AO EVENTO
+            ========================================== */}
+        {!isCreator && isParticipant && userHasAccess && event.status === 'Em Andamento' && (
+          <div className="glass-effect rounded-2xl p-6 border border-green-500/30 bg-green-500/5">
+            {/* Badge de acesso */}
+            <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg mb-4">
+              <p className="text-sm text-green-400 text-center">
+                ✅ Você tem acesso ao evento. Aproveite!
+              </p>
+            </div>
+
+            {/* 💬 Chat do Evento - Adicionar aqui quando disponível */}
+            {/* <EventChat eventId={event.id} /> */}
+          </div>
+        )}
+
+        {/* ==========================================
+            PARTICIPANTE CONFIRMADO (ANTES DO EVENTO)
+            ========================================== */}
+        {!isCreator && isParticipant && !isEventOver && !userHasAccess && event.status !== 'Em Andamento' && (
           <div className="glass-effect rounded-2xl p-6 border border-green-500/30 bg-green-500/5">
             <div className="flex items-start gap-4 mb-4">
               <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
@@ -374,6 +592,19 @@ const EventDetails = () => {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ==========================================
+            📊 ESTATÍSTICAS DE ENTRADA (ANFITRIÃO)
+            ========================================== */}
+        {isCreator && (event.status === 'Confirmado' || event.status === 'Em Andamento') && (
+          <div className="glass-effect rounded-2xl p-6 border border-white/10">
+            <h3 className="text-sm font-semibold text-white mb-3">
+              📊 Estatísticas de Entrada
+            </h3>
+            
+            <EventEntryStats eventId={event.id} />
           </div>
         )}
 

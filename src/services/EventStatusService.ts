@@ -1,165 +1,238 @@
 // src/services/EventStatusService.ts
-import { supabase } from '../lib/supabaseClient';
+// ✅ VERSÃO CONSOLIDADA FINAL
 
-type EventStatus = 'Aberto' | 'Confirmado' | 'Em Andamento' | 'Finalizado' | 'Concluído' | 'Cancelado';
+import { supabase } from '../lib/supabaseClient';
+import EventSecurityService from './EventSecurityService';
+import PushNotificationService from './PushNotificationService';
+import TrustScoreService from './TrustScoreService';
 
 interface Event {
-  id: string;
-  status: EventStatus;
+  id: number;
+  status: string;
   start_time: string;
   end_time: string;
-  vagas: number;
-  cancelamento_motivo?: string;
-  updated_at?: string;
-  creator_id?: string;
+  creator_id: string;
   [key: string]: any;
 }
 
 interface Participation {
   id: string;
-  event_id: string;
+  user_id: string;
+  event_id: number;
   status: string;
   presenca_confirmada: boolean;
   avaliacao_feita: boolean;
   [key: string]: any;
 }
 
-interface UpdateResult {
-  success: boolean;
-  updated?: number;
-  error?: any;
-}
-
-interface EventStats {
-  success: boolean;
-  data?: {
-    event: Event;
-    totalCandidaturas: number;
-    aprovados: number;
-    presentes: number;
-    avaliacoes: number;
-  };
-  error?: any;
-}
-
 class EventStatusService {
-  
-  static async updateAllEventStatuses(): Promise<UpdateResult> {
-    let retries = 3;
-    
-    while (retries > 0) {
-      try {
-        const now = new Date();
-        
-        const { data: events, error } = await supabase
-          .from('events')
-          .select('*')
-          .not('status', 'in', '(Concluído,Cancelado)');
+  // ============================================
+  // 🔄 PROPRIEDADE PRIVADA PARA AUTO-UPDATE
+  // ============================================
+  private static updateInterval: ReturnType<typeof setInterval> | null = null;
 
-        if (error) throw error;
+  /**
+   * 🎯 Atualiza status de TODOS os eventos
+   * Executa a cada X segundos (Real-time via Supabase)
+   */
+  static async updateAllEventStatuses(): Promise<void> {
+    try {
+      const { data: events, error } = await supabase
+        .from('events')
+        .select('*')
+        .neq('status', 'Cancelado')
+        .neq('status', 'Concluído');
 
-        const updates: Array<{ id: string; status: EventStatus; updated_at: string }> = [];
+      if (error) {
+        console.error('❌ Erro ao buscar eventos:', error);
+        return;
+      }
 
-        for (const event of (events as unknown as Event[])) {
-          const newStatus = await this.calculateEventStatus(event, now);
-          
-          if (newStatus !== event.status) {
-            updates.push({
-              id: event.id,
-              status: newStatus,
-              updated_at: now.toISOString()
-            });
-          }
-        }
+      if (!events || events.length === 0) {
+        console.log('✅ Nenhum evento para atualizar');
+        return;
+      }
 
-        if (updates.length > 0) {
-          for (const update of updates) {
-            await supabase
-              .from('events')
-              .update({ status: update.status, updated_at: update.updated_at })
-              .eq('id', update.id);
-          }
-          
-          console.log(`✅ ${updates.length} eventos atualizados`);
-        }
+      console.log(`🔄 Atualizando ${events.length} eventos...`);
 
-        return { success: true, updated: updates.length };
-      } catch (error) {
-        retries--;
-        if (retries === 0) {
-          console.error('❌ Erro ao atualizar status de eventos após 3 tentativas:', error);
-          return { success: false, error };
-        } else {
-          console.warn(`⚠️ Erro ao atualizar status. Tentando novamente... (${retries} tentativas restantes)`);
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Aguarda 2s antes de tentar novamente
+      for (const event of events) {
+        try {
+          await this.calculateEventStatus(event as Event);
+        } catch (eventError) {
+          console.error(`❌ Erro ao processar evento ${event.id}:`, eventError);
         }
       }
+    } catch (error) {
+      console.error('❌ Erro ao atualizar todos os eventos:', error);
     }
-    
-    return { success: false, error: 'Falha ao atualizar status de eventos' };
-  }
-
-  static async calculateEventStatus(event: Event, now: Date = new Date()): Promise<EventStatus> {
-    const startTime = new Date(event.start_time);
-    const endTime = new Date(event.end_time);
-
-    if (event.status === 'Cancelado') {
-      return 'Cancelado';
-    }
-
-    if (event.status === 'Concluído') {
-      return 'Concluído';
-    }
-
-    if (now >= endTime) {
-      // 👇 CORRIGIDO: Verifica se deve auto-concluir
-      const shouldAutoComplete = await this.shouldAutoCompleteEvent(event);
-      if (shouldAutoComplete) {
-        return 'Concluído';
-      }
-      return 'Finalizado';
-    }
-
-    if (now >= startTime && now < endTime) {
-      return 'Em Andamento';
-    }
-
-    if (now < startTime) {
-      if (event.status === 'Confirmado') {
-        return 'Confirmado';
-      }
-
-      if (event.vagas <= 0) {
-        return 'Confirmado';
-      }
-      
-      const fiveMinutesBefore = new Date(startTime.getTime() - 5 * 60 * 1000);
-      if (now < fiveMinutesBefore) {
-        return 'Aberto';
-      }
-      
-      return 'Confirmado';
-    }
-
-    return event.status;
   }
 
   /**
-   * 🔒 Verifica se o evento deve ser auto-concluído
-   * Conclui se:
-   * 1. Passou 7 dias desde o fim
-   * 2. OU TODOS que compareceram avaliaram TUDO (anfitrião, participantes, restaurante)
+   * 📊 Calcula o status de um evento específico
+   */
+  static async calculateEventStatus(event: Event): Promise<void> {
+    const now = new Date();
+    const startTime = new Date(event.start_time);
+    const endTime = new Date(event.end_time);
+    const currentStatus = event.status;
+
+    // ============================================
+    // 🎯 FASE 1: Detectar "falta 1 minuto" → Gerar senha + Enviar push
+    // ============================================
+    await this.detectAndHandlePasswordGeneration(event, now, startTime);
+
+    // ============================================
+    // 🎯 FASE 2: Detectar "falta 2 minutos para fim" → Bloquear entrada
+    // ============================================
+    await this.detectAndHandleEntryLocking(event, now, endTime);
+
+    // ============================================
+    // 🎯 FASE 3: Evento está acontecendo
+    // ============================================
+    if (now >= startTime && now < endTime && currentStatus !== 'Em Andamento') {
+      await this.updateEventStatus(event.id, 'Em Andamento');
+    }
+
+    // ============================================
+    // 🎯 FASE 4: Evento terminou
+    // ============================================
+    if (now >= endTime && currentStatus !== 'Finalizado') {
+      console.log(`⏹️ Evento ${event.id} terminou`);
+      await this.updateEventStatus(event.id, 'Finalizado');
+
+      // 📊 Penalizar não-presenças
+      await TrustScoreService.penalizeNoShowsForEvent(event.id);
+
+      // 🔍 Verificar auto-conclusão
+      const shouldComplete = await this.shouldAutoCompleteEvent(event);
+      if (shouldComplete) {
+        await this.updateEventStatus(event.id, 'Concluído');
+      }
+    }
+  }
+
+  /**
+   * 🎲 Detecta "falta 1 minuto" → Gera senha + Envia push
+   */
+  private static async detectAndHandlePasswordGeneration(
+    event: Event,
+    now: Date,
+    startTime: Date
+  ): Promise<void> {
+    try {
+      // Calcular: falta 1 minuto?
+      const oneMinBeforeStart = new Date(startTime.getTime() - 60 * 1000);
+      const twoMinBeforeStart = new Date(startTime.getTime() - 120 * 1000);
+
+      // ✅ Se está na faixa de 1-2 minutos antes
+      if (now >= twoMinBeforeStart && now < oneMinBeforeStart) {
+        // Verificar se JÁ foi gerada senha
+        if (event.event_entry_password) {
+          console.log(`✅ Evento ${event.id} já tem senha. Pulando geração.`);
+          return;
+        }
+
+        console.log(`🎲 Gerando senha para evento ${event.id}...`);
+
+        // 1️⃣ Gerar e salvar senha
+        const passwordResult = await EventSecurityService.generateAndSavePassword(event.id);
+        if (!passwordResult.success) {
+          console.error('❌ Erro ao gerar senha:', passwordResult.error);
+          return;
+        }
+
+        const password = passwordResult.password!;
+
+        // 2️⃣ Buscar anfitrião e participantes
+        const { data: hostProfile, error: hostError } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', event.creator_id)
+          .single();
+
+        if (hostError) {
+          console.error('❌ Erro ao buscar anfitrião:', hostError);
+          return;
+        }
+
+        const { data: participations, error: partError } = await supabase
+          .from('participations')
+          .select('user_id')
+          .eq('event_id', event.id)
+          .eq('status', 'aprovado');
+
+        if (partError) {
+          console.error('❌ Erro ao buscar participantes:', partError);
+          return;
+        }
+
+        // 3️⃣ Enviar push para ANFITRIÃO (com senha)
+        console.log(`📨 Enviando SENHA para anfitrião...`);
+        await PushNotificationService.sendPasswordToHost(
+          event.creator_id,
+          event.id,
+          password,
+          event.title
+        );
+
+        // 4️⃣ Enviar push para PARTICIPANTES (genérica)
+        if (participations && participations.length > 0) {
+          const participantIds = participations.map(p => p.user_id);
+          console.log(`📨 Enviando notificação de INÍCIO para ${participantIds.length} participantes...`);
+          await PushNotificationService.sendEventStartNotificationToParticipants(
+            participantIds,
+            event.id,
+            event.title
+          );
+        }
+
+        console.log(`✅ Notificações de entrada enviadas para evento ${event.id}`);
+      }
+    } catch (error) {
+      console.error('❌ Erro ao processar geração de senha:', error);
+    }
+  }
+
+  /**
+   * 🔒 Detecta "falta 2 minutos para fim" → Bloqueia entrada
+   */
+  private static async detectAndHandleEntryLocking(
+    event: Event,
+    now: Date,
+    endTime: Date
+  ): Promise<void> {
+    try {
+      const twoMinBeforeEnd = new Date(endTime.getTime() - 2 * 60 * 1000);
+
+      // ✅ Se chegou à faixa de bloqueio (falta 2 min ou menos)
+      if (now >= twoMinBeforeEnd && !event.entry_locked) {
+        console.log(`🔒 Bloqueando entrada do evento ${event.id}...`);
+
+        const lockResult = await EventSecurityService.lockEventEntry(event.id);
+        if (lockResult.success) {
+          console.log(`✅ Entrada bloqueada para evento ${event.id}`);
+        } else {
+          console.error('❌ Erro ao bloquear entrada:', lockResult.error);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao processar bloqueio de entrada:', error);
+    }
+  }
+
+  /**
+   * 👇 Verifica auto-conclusão (7 dias OU todos avaliaram)
    */
   static async shouldAutoCompleteEvent(event: Event): Promise<boolean> {
     let retries = 2;
-    
+
     while (retries > 0) {
       try {
         const endTime = new Date(event.end_time);
         const now = new Date();
         const daysSinceEnd = (now.getTime() - endTime.getTime()) / (1000 * 60 * 60 * 24);
 
-        // 💡 Condição 1: Passou 7 dias? → Conclui automaticamente
+        // 💡 Condição 1: Passou 7 dias? → Concluído
         if (daysSinceEnd >= 7) {
           console.log(`✅ Evento ${event.id} auto-concluído após 7 dias`);
           return true;
@@ -178,41 +251,29 @@ class EventStatusService {
         }
 
         if (!participations || participations.length === 0) {
-          // ❌ Se não tem participações, NÃO conclui (aguarda 7 dias)
           console.log(`⏳ Evento ${event.id} sem participações aprovadas ainda`);
           return false;
         }
 
-        // Pega apenas os que confirmaram presença
         const presentParticipants = (participations as unknown as Participation[]).filter(
           p => p.presenca_confirmada === true
         );
 
-        // ✅ Verifica se TODOS os presentes completaram TODAS as avaliações
+        if (presentParticipants.length === 0) {
+          console.log(`⏳ Evento ${event.id} ninguém compareceu`);
+          return false;
+        }
+
         const allEvaluated = presentParticipants.every(p => p.avaliacao_feita === true);
 
-        // 🔒 CORREÇÃO: Aplicando a regra exata do white paper
-        // Só conclui se allEvaluated for true E houver mais de 0 participantes
-        if (allEvaluated && presentParticipants.length > 0) {
-          console.log(`✅ Evento ${event.id} auto-concluído - TODOS avaliaram TUDO (anfitrião + participantes + restaurante)`);
+        if (allEvaluated) {
+          console.log(`✅ Evento ${event.id} auto-concluído - TODOS avaliaram TUDO`);
           return true;
         }
-        
-        // Se o 'if' acima falhar, o evento continua "Finalizado".
-        // A lógica abaixo é apenas para logar o motivo.
 
-        if (presentParticipants.length === 0) {
-          // Ninguém compareceu
-          console.log(`⏳ Evento ${event.id} ninguém compareceu - aguardando 7 dias`);
-        } else {
-          // Alguém compareceu, mas falta avaliar
-          // 🐞 CORREÇÃO: Declarando 'pendingCount' dentro deste 'else' para evitar redeclaração
-          const pendingCount = presentParticipants.filter(p => !p.avaliacao_feita).length;
-          console.log(`⏳ Evento ${event.id} aguardando ${pendingCount} avaliação(ões) completa(s)`);
-        }
-        
-        return false; // Continua como "Finalizado"
-        
+        const pendingCount = presentParticipants.filter(p => !p.avaliacao_feita).length;
+        console.log(`⏳ Evento ${event.id} aguardando ${pendingCount} avaliação(ões)`);
+        return false;
       } catch (error) {
         retries--;
         if (retries === 0) {
@@ -224,124 +285,117 @@ class EventStatusService {
         }
       }
     }
-    
+
     return false;
   }
 
-  static async confirmEvent(eventId: string): Promise<UpdateResult> {
-    let retries = 2;
-    
-    while (retries > 0) {
-      try {
-        const { error } = await supabase
-          .from('events')
-          .update({ 
-            status: 'Confirmado',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', eventId);
+  /**
+   * 🔄 Atualiza o status de um evento
+   */
+  static async updateEventStatus(eventId: number, newStatus: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', eventId);
 
-        if (error) throw error;
+      if (error) throw error;
 
-        console.log(`✅ Evento ${eventId} confirmado manualmente`);
-        return { success: true };
-      } catch (error) {
-        retries--;
-        if (retries === 0) {
-          console.error('❌ Erro ao confirmar evento após 2 tentativas:', error);
-          return { success: false, error };
-        } else {
-          console.warn(`⚠️ Erro ao confirmar evento. Tentando novamente...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
+      console.log(`✅ Evento ${eventId} status atualizado para: ${newStatus}`);
+    } catch (error) {
+      console.error(`❌ Erro ao atualizar status do evento ${eventId}:`, error);
     }
-    
-    return { success: false, error: 'Falha ao confirmar evento' };
   }
 
-  static async cancelEvent(eventId: string, reason: string = ''): Promise<UpdateResult> {
-    let retries = 2;
-    
-    while (retries > 0) {
-      try {
-        const { error } = await supabase
-          .from('events')
-          .update({ 
-            status: 'Cancelado',
-            ...(reason && { cancelamento_motivo: reason }),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', eventId);
-
-        if (error) throw error;
-
-        return { success: true };
-      } catch (error) {
-        retries--;
-        if (retries === 0) {
-          console.error('❌ Erro ao cancelar evento após 2 tentativas:', error);
-          return { success: false, error };
-        } else {
-          console.warn(`⚠️ Erro ao cancelar evento. Tentando novamente...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-    }
-    
-    return { success: false, error: 'Falha ao cancelar evento' };
-  }
-
-  static async getEventStats(eventId: string): Promise<EventStats> {
+  /**
+   * 📊 Obtém estatísticas do evento
+   */
+  static async getEventStats(eventId: number): Promise<{
+    success: boolean;
+    data?: any;
+    error?: any;
+  }> {
     try {
       const { data: event, error: eventError } = await supabase
         .from('events')
-        .select('*, creator:profiles!creator_id(*)')
+        .select('*')
         .eq('id', eventId)
         .single();
 
       if (eventError) throw eventError;
 
-      const { data: participations, error: participationsError } = await supabase
+      const { data: participations, error: partError } = await supabase
         .from('participations')
-        .select('*')
-        .eq('event_id', eventId)
-        .eq('status', 'aprovado');
+        .select('status, presenca_confirmada, com_acesso, avaliacao_feita')
+        .eq('event_id', eventId);
 
-      if (participationsError) throw participationsError;
+      if (partError) throw partError;
 
-      const participationsList = (participations || []) as unknown as Participation[];
-
-      return {
-        success: true,
-        data: {
-          event: event as unknown as Event,
-          totalCandidaturas: participationsList.length,
-          aprovados: participationsList.filter(p => p.status === 'aprovado').length,
-          presentes: participationsList.filter(p => p.presenca_confirmada === true).length,
-          avaliacoes: participationsList.filter(p => p.avaliacao_feita === true).length,
+      const stats = {
+        event,
+        participants: {
+          total: participations?.length || 0,
+          approved: participations?.filter(p => p.status === 'aprovado').length || 0,
+          present: participations?.filter(p => p.presenca_confirmada).length || 0,
+          withAccess: participations?.filter(p => p.com_acesso).length || 0,
+          evaluated: participations?.filter(p => p.avaliacao_feita).length || 0
         }
       };
+
+      return { success: true, data: stats };
     } catch (error) {
-      console.error('❌ Erro ao buscar estatísticas:', error);
+      console.error('❌ Erro ao obter stats do evento:', error);
       return { success: false, error };
     }
   }
 
-  static startAutoUpdate(): number {
+  // ============================================
+  // 🔄 MÉTODOS DE AUTO-UPDATE
+  // ============================================
+
+  /**
+   * 🚀 Inicia atualização automática de eventos
+   * @param intervalSeconds - Intervalo em segundos (padrão: 30)
+   * @returns ID do intervalo para poder parar depois
+   */
+  static startAutoUpdate(intervalSeconds: number = 30): ReturnType<typeof setInterval> {
+    // Se já existe um intervalo rodando, para ele primeiro
+    if (this.updateInterval) {
+      this.stopAutoUpdate();
+    }
+
+    console.log(`🔄 Iniciando auto-update de eventos a cada ${intervalSeconds}s`);
+
+    // Executar imediatamente
     this.updateAllEventStatuses();
 
-    const intervalId = setInterval(() => {
+    // Depois executar a cada X segundos
+    this.updateInterval = setInterval(() => {
       this.updateAllEventStatuses();
-    }, 60000); // 60 segundos
+    }, intervalSeconds * 1000);
 
-    return intervalId as unknown as number;
+    return this.updateInterval;
   }
 
-  static stopAutoUpdate(intervalId: number): void {
-    if (intervalId) {
-      clearInterval(intervalId);
+  /**
+   * 🛑 Para a atualização automática
+   */
+  static stopAutoUpdate(): void {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+      console.log('🛑 Auto-update de eventos parado');
     }
+  }
+
+  /**
+   * 🔍 Verifica se auto-update está rodando
+   */
+  static isAutoUpdateRunning(): boolean {
+    return this.updateInterval !== null;
   }
 }
 
