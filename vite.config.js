@@ -49,5 +49,17 @@ export default defineConfig(({ mode }) => {
         'date-fns',
       ],
     },
+    
+    // ✅ CORREÇÃO: Resolver erro 404 ao atualizar página (F5)
+    // Faz fallback para index.html em todas as rotas (SPA routing)
+    server: {
+      port: 3000,
+      historyApiFallback: true, // ⭐ CRÍTICO para React Router
+    },
+    
+    preview: {
+      port: 3000,
+      historyApiFallback: true, // ⭐ Para 'npm run preview'
+    },
   };
 });
