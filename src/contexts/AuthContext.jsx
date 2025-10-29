@@ -236,6 +236,46 @@ export const AuthProvider = ({ children }) => {
     }
   }, [toast]);
 
+  const signInWithApple = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { 
+          redirectTo: window.location.origin,
+          scopes: 'name email'
+        }
+      });
+      if (error) throw error;
+      console.log('✅ Redirecionando para Apple...');
+    } catch (error) {
+      console.error('❌ Erro no login com Apple:', error);
+      toast({ variant: "destructive", title: "Erro com Login Apple", description: error.message });
+      setLoading(false);
+      throw error;
+    }
+  }, [toast]);
+
+  const signInWithFacebook = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: { 
+          redirectTo: window.location.origin,
+          scopes: 'email public_profile'
+        }
+      });
+      if (error) throw error;
+      console.log('✅ Redirecionando para Facebook...');
+    } catch (error) {
+      console.error('❌ Erro no login com Facebook:', error);
+      toast({ variant: "destructive", title: "Erro com Login Facebook", description: error.message });
+      setLoading(false);
+      throw error;
+    }
+  }, [toast]);
+
   const register = useCallback(async (userData) => {
     setLoading(true);
     try {
@@ -306,42 +346,40 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user, toast, profile]);
 
-  // ✅ SUBSTITUA APENAS a função uploadAvatar no AuthContext.jsx:
+  const uploadAvatar = useCallback(async (file, isAdditionalPhoto = false) => {
+    if (!user || !file) {
+      toast({ variant: "destructive", title: "Erro", description: "Usuário não logado ou arquivo inválido." });
+      return null;
+    }
+    console.log(`[uploadAvatar] Iniciando upload (${isAdditionalPhoto ? 'photo' : 'avatar'}) para ${user.id}`);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      
+      // ✅ CORREÇÃO: Salvar na RAIZ do bucket (sem pasta)
+      const fileName = `${user.id}-${isAdditionalPhoto ? 'photo' : 'avatar'}-${timestamp}.${fileExt}`;
+      
+      const bucket = isAdditionalPhoto ? 'photos' : 'avatars';
+      const options = { 
+        cacheControl: '3600', 
+        upsert: true, // ✅ Permite sobrescrever
+        contentType: file.type || 'application/octet-stream' 
+      };
 
-const uploadAvatar = useCallback(async (file, isAdditionalPhoto = false) => {
-  if (!user || !file) {
-    toast({ variant: "destructive", title: "Erro", description: "Usuário não logado ou arquivo inválido." });
-    return null;
-  }
-  console.log(`[uploadAvatar] Iniciando upload (${isAdditionalPhoto ? 'photo' : 'avatar'}) para ${user.id}`);
-  try {
-    const fileExt = file.name.split('.').pop();
-    const timestamp = Date.now();
-    
-    // ✅ CORREÇÃO: Salvar na RAIZ do bucket (sem pasta)
-    const fileName = `${user.id}-${isAdditionalPhoto ? 'photo' : 'avatar'}-${timestamp}.${fileExt}`;
-    
-    const bucket = isAdditionalPhoto ? 'photos' : 'avatars';
-    const options = { 
-      cacheControl: '3600', 
-      upsert: true, // ✅ Permite sobrescrever
-      contentType: file.type || 'application/octet-stream' 
-    };
+      console.log(`[uploadAvatar] Enviando para bucket '${bucket}', arquivo '${fileName}'`);
+      const { data, error } = await supabase.storage.from(bucket).upload(fileName, file, options);
 
-    console.log(`[uploadAvatar] Enviando para bucket '${bucket}', arquivo '${fileName}'`);
-    const { data, error } = await supabase.storage.from(bucket).upload(fileName, file, options);
+      if (error) throw error;
 
-    if (error) throw error;
+      console.log(`✅ Upload bem-sucedido. Path:`, data?.path);
+      return data?.path ?? null;
 
-    console.log(`✅ Upload bem-sucedido. Path:`, data?.path);
-    return data?.path ?? null;
-
-  } catch (error) {
-    console.error('❌ Erro detalhado no upload:', error);
-    toast({ variant: "destructive", title: "Erro no Upload", description: `Não foi possível enviar sua foto. Detalhes: ${error.message}` });
-    return null;
-  }
-}, [user, toast]);
+    } catch (error) {
+      console.error('❌ Erro detalhado no upload:', error);
+      toast({ variant: "destructive", title: "Erro no Upload", description: `Não foi possível enviar sua foto. Detalhes: ${error.message}` });
+      return null;
+    }
+  }, [user, toast]);
 
   const value = useMemo(() => ({
     user,
@@ -351,9 +389,11 @@ const uploadAvatar = useCallback(async (file, isAdditionalPhoto = false) => {
     register,
     logout,
     signInWithGoogle,
+    signInWithApple,
+    signInWithFacebook,
     updateProfile,
     uploadAvatar,
-  }), [user, loading, profile, login, register, logout, signInWithGoogle, updateProfile, uploadAvatar]);
+  }), [user, loading, profile, login, register, logout, signInWithGoogle, signInWithApple, signInWithFacebook, updateProfile, uploadAvatar]);
 
   return (
     <AuthContext.Provider value={value}>

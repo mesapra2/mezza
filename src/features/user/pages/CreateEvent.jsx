@@ -37,7 +37,7 @@ const CreateEvent = () => {
     if (formData.event_type === 'particular') {
       navigate('/criar-evento/particular');
     } else if (formData.event_type === 'crusher') {
-      navigate('/src/features/user/pages/CreateEventCrusher'
+      navigate('/src/features/user/pages/CreateEventCrusher');
     }
   }, [formData.event_type, navigate]);
 

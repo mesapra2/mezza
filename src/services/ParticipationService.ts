@@ -1,7 +1,9 @@
 // src/services/ParticipationService.ts
+// ✅ VERSÃO CONSOLIDADA FINAL
 import { supabase } from '@/lib/supabaseClient';
 import NotificationService from '@/services/NotificationService';
 import WaitingListService from '@/services/WaitingListService';
+import EventSecurityService from './EventSecurityService';
 
 type EventStatus = 'Aberto' | 'Confirmado' | 'Em Andamento' | 'Finalizado' | 'Concluído' | 'Cancelado';
 type ParticipationStatus = 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';
@@ -248,42 +250,47 @@ class ParticipationService {
         throw updateError;
       }
 
-      console.log('✅ Status atualizado para aprovado');
-
       await this.decrementEventVacancy(eventId);
-      console.log('✅ Vaga decrementada');
 
-      console.log('🔔 Enviando notificação ao participante...');
-      const notifResult = await NotificationService.notifyParticipationApproved(
-        (participation as any).user_id,
-        parseInt(eventId),
-        eventData.title
-      );
+      console.log('📨 [approveParticipation] Enviando notificação...');
+      await NotificationService.createForUser({
+        target_user_id: (participation as any).user_id,
+        target_event_id: parseInt(eventId),
+       notification_type: 'candidate_approved',  // ou 'participation_approved' se existir
+        title: '✅ Participação Aprovada',
+        message: `Sua participação em "${eventData.title}" foi aprovada!`
+      });
 
-      if (notifResult.success) {
-        console.log('✅ Notificação enviada com sucesso');
-      } else {
-        console.error('⚠️ Erro ao enviar notificação (aprovação concluída):', notifResult.error);
-      }
-
-      return { 
-        success: true, 
-        message: 'Participação aprovada com sucesso!' 
-      };
+      console.log('✅ [approveParticipation] Participação aprovada com sucesso');
+      return { success: true, message: 'Participação aprovada!' };
 
     } catch (error: any) {
-      console.error('❌ Erro ao aprovar participação:', error);
+      console.error('❌ [approveParticipation] Erro:', error);
       return { success: false, error: error.message };
     }
   }
 
-  static async rejectParticipation(participationId: string, reason?: string): Promise<ServiceResult> {
+  static async rejectParticipation(
+    participationId: string, 
+    eventId: string, 
+    reason: string = ''
+  ): Promise<ServiceResult> {
     try {
-      const { data: participation } = await supabase
+      const { data: participation, error: partError } = await supabase
         .from('participations')
-        .select('user_id, event_id, events!inner(title)')
+        .select('user_id')
         .eq('id', participationId)
         .single();
+
+      if (partError) throw partError;
+
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('title')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) throw eventError;
 
       const { error: updateError } = await supabase
         .from('participations')
@@ -296,7 +303,18 @@ class ParticipationService {
 
       if (updateError) throw updateError;
 
-      return { success: true, message: 'Participação rejeitada' };
+      await NotificationService.createForUser({
+        target_user_id: (participation as any).user_id,
+        target_event_id: parseInt(eventId),
+        notification_type: 'participation_rejected',
+        title: '❌ Participação Rejeitada',
+        message: `Sua candidatura para "${event.title}" foi rejeitada.${reason ? ` Motivo: ${reason}` : ''}`
+      });
+
+      return { 
+        success: true, 
+        message: 'Participação rejeitada' 
+      };
 
     } catch (error: any) {
       console.error('❌ Erro ao rejeitar participação:', error);
@@ -304,23 +322,34 @@ class ParticipationService {
     }
   }
 
-  static async cancelParticipation(participationId: string, userId: string): Promise<ServiceResult> {
+  static async cancelParticipation(participationId: string, eventId: string, userId: string): Promise<ServiceResult> {
     try {
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('start_time, title, creator_id, event_type')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) throw eventError;
+
       const { data: participation, error: partError } = await supabase
         .from('participations')
-        .select('*, events!inner(*)')
+        .select('status')
         .eq('id', participationId)
         .eq('user_id', userId)
         .single();
 
       if (partError) throw partError;
 
-      const part = participation as any;
+      if ((participation as any).status !== 'aprovado') {
+        return { success: false, error: 'Apenas participações aprovadas podem ser canceladas' };
+      }
 
+      const startTime = new Date((event as any).start_time);
       const now = new Date();
-      const eventStart = new Date(part.events.start_time);
-      const hoursDifference = (eventStart.getTime() - now.getTime()) / (1000 * 60 * 60);
-      const isLateCancellation = hoursDifference < 4;
+      const hoursUntilEvent = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      const isLateCancellation = hoursUntilEvent < 2;
 
       const { error: updateError } = await supabase
         .from('participations')
@@ -330,21 +359,18 @@ class ParticipationService {
         })
         .eq('id', participationId);
 
-      if (updateError) throw updateError;
-
-      if (part.status === 'aprovado') {
-        await this.incrementEventVacancy(part.event_id);
-        
-        console.log('🔔 Vaga liberada, processando fila de espera...');
-        await WaitingListService.processWaitingList(part.event_id);
-      }
+            await NotificationService.createForUser({
+        target_user_id: (event as any).creator_id,
+        target_event_id: parseInt(eventId),
+        notification_type: 'participation_cancelled',
+        title: '❌ Participante Desistiu',
+        message: `Um participante cancelou sua presença em "${(event as any).title}"`
+      });
 
       return { 
         success: true, 
-        isLateCancellation,
-        message: isLateCancellation 
-          ? 'Participação cancelada. Cancelamento tardio registrado.'
-          : 'Participação cancelada com sucesso'
+        message: 'Participação cancelada',
+        isLateCancellation 
       };
 
     } catch (error: any) {
@@ -354,7 +380,7 @@ class ParticipationService {
   }
 
   /**
-   * Aceita um convite Crusher
+   * 🎯 MÉTODO ESPECÍFICO PARA EVENTOS CRUSHER
    */
   static async acceptCrusherInvite(participationId: string, eventId: string, userId: string): Promise<ServiceResult> {
     try {
@@ -385,19 +411,17 @@ class ParticipationService {
 
       if (updateError) throw updateError;
 
-      await this.decrementEventVacancy(eventId);
-
       await NotificationService.createForUser({
         target_user_id: event.creator_id,
         target_event_id: parseInt(eventId),
-        notification_type: 'participation_approved',
-        title: '💘 Convite Crusher Aceito!',
+        notification_type: 'crusher_accepted',
+        title: '💜 Convite Crusher Aceito!',
         message: `Seu convite para "${event.title}" foi aceito!`
       });
 
       return { 
         success: true, 
-        message: 'Convite aceito com sucesso!' 
+        message: 'Convite aceito!' 
       };
 
     } catch (error: any) {
@@ -407,9 +431,14 @@ class ParticipationService {
   }
 
   /**
-   * Rejeita um convite Crusher
+   * 🎯 MÉTODO ESPECÍFICO PARA REJEITAR EVENTOS CRUSHER
    */
-  static async rejectCrusherInvite(participationId: string, eventId: string, userId: string, reason?: string): Promise<ServiceResult> {
+  static async rejectCrusherInvite(
+    participationId: string, 
+    eventId: string, 
+    userId: string, 
+    reason: string = ''
+  ): Promise<ServiceResult> {
     try {
       const { data: event, error: eventError } = await supabase
         .from('events')
@@ -602,7 +631,7 @@ class ParticipationService {
       // 1️⃣ Buscar eventos criados pelo usuário que NÃO estão concluídos
       const { data: unfinishedEvents, error: eventError } = await supabase
         .from('events')
-.select('id, status, created_at, title')
+        .select('id, status, created_at, title')
         .eq('creator_id', userId)
         .neq('status', 'Concluído');
 
@@ -648,6 +677,235 @@ class ParticipationService {
     } catch (error) {
       console.error('❌ Erro ao verificar permissão de criar evento:', error);
       return { can: false, reason: 'Erro ao verificar permissão' };
+    }
+  }
+
+  // ============================================
+  // 🆕 NOVOS MÉTODOS DE VALIDAÇÃO DE ENTRADA
+  // ============================================
+
+  /**
+   * 🎯 Valida entrada do participante com senha
+   * @param eventId - ID do evento
+   * @param participantId - ID do participante
+   * @param password - Senha de 4 dígitos digitada
+   */
+  static async validateEventEntry(
+    eventId: number,
+    participantId: string,
+    password: string
+  ): Promise<{
+    success: boolean;
+    message?: string;
+    canEnter?: boolean;
+    error?: any;
+  }> {
+    try {
+      console.log(`🔍 Validando entrada: participante ${participantId} no evento ${eventId}`);
+
+      // 1️⃣ Verificar se participante está aprovado
+      const { data: participation, error: partError } = await supabase
+        .from('participations')
+        .select('id, status, com_acesso, presenca_confirmada')
+        .eq('event_id', eventId)
+        .eq('user_id', participantId)
+        .single();
+
+      if (partError || !participation) {
+        return {
+          success: false,
+          canEnter: false,
+          message: 'Você não está inscrito neste evento'
+        };
+      }
+
+      // ✅ Se já tem acesso, não precisa digitar de novo
+      if (participation.com_acesso) {
+        console.log(`✅ Participante ${participantId} já tem acesso`);
+        return {
+          success: true,
+          canEnter: true,
+          message: 'Você já possui acesso ao evento'
+        };
+      }
+
+      // ❌ Se não foi aprovado
+      if (participation.status !== 'aprovado') {
+        return {
+          success: false,
+          canEnter: false,
+          message: `Sua inscrição está com status: ${participation.status}`
+        };
+      }
+
+      // 2️⃣ Validar a senha usando EventSecurityService
+      const securityResult = await EventSecurityService.validateEntryPassword({
+        eventId,
+        participantId,
+        password
+      });
+
+      if (!securityResult.success) {
+        return {
+          success: false,
+          canEnter: false,
+          message: securityResult.message
+        };
+      }
+
+      // 3️⃣ Senha correta! Marcar presença
+      console.log(`✅ Marcando presença para ${participantId} no evento ${eventId}`);
+
+      const { error: presencaError } = await supabase
+        .from('participations')
+        .update({
+          presenca_confirmada: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('event_id', eventId)
+        .eq('user_id', participantId);
+
+      if (presencaError) throw presencaError;
+
+      console.log(`✅ Participante ${participantId} agora tem acesso ao evento ${eventId}`);
+
+      return {
+        success: true,
+        canEnter: true,
+        message: securityResult.message || '✅ Acesso liberado! Bem-vindo ao evento.'
+      };
+    } catch (error) {
+      console.error('❌ Erro ao validar entrada:', error);
+      return {
+        success: false,
+        canEnter: false,
+        message: 'Erro ao processar sua entrada',
+        error
+      };
+    }
+  }
+
+  /**
+   * 🔍 Verifica se participante pode entrar
+   * @param eventId - ID do evento
+   * @param participantId - ID do participante
+   */
+  static async canParticipantEnter(eventId: number, participantId: string): Promise<{
+    can: boolean;
+    reason?: string;
+  }> {
+    try {
+      // 1️⃣ Verificar timing
+      const timingCheck = await EventSecurityService.isEntryTimeValid(eventId);
+      if (!timingCheck.allowed) {
+        return {
+          can: false,
+          reason: timingCheck.reason
+        };
+      }
+
+      // 2️⃣ Verificar se participante tem acesso
+      const hasAccess = await EventSecurityService.hasUserAccess(eventId, participantId);
+      if (hasAccess) {
+        return {
+          can: true,
+          reason: 'Você já tem acesso ao evento'
+        };
+      }
+
+      // 3️⃣ Se não tem acesso ainda, precisa digitar senha
+      return {
+        can: false,
+        reason: 'Digite a senha para entrar no evento'
+      };
+    } catch (error) {
+      console.error('❌ Erro ao verificar entrada:', error);
+      return {
+        can: false,
+        reason: 'Erro ao verificar acesso'
+      };
+    }
+  }
+
+  /**
+   * 📊 Obtém lista de participantes com acesso
+   * @param eventId - ID do evento
+   */
+  static async getParticipantsWithAccess(eventId: number): Promise<{
+    success: boolean;
+    data?: Array<{
+      userId: string;
+      username?: string;
+      entryTime?: string;
+    }>;
+    error?: any;
+  }> {
+    try {
+      const { data: participations, error } = await supabase
+        .from('participations')
+        .select('user_id, entry_time, profile:profiles!user_id(username)')
+        .eq('event_id', eventId)
+        .eq('com_acesso', true)
+        .order('entry_time', { ascending: true });
+
+      if (error) throw error;
+
+      const formatted = (participations || []).map(p => ({
+        userId: p.user_id,
+        username: (p.profile as any)?.username || 'Usuário',
+        entryTime: p.entry_time
+      }));
+
+      return {
+        success: true,
+        data: formatted
+      };
+    } catch (error) {
+      console.error('❌ Erro ao obter participantes com acesso:', error);
+      return { success: false, error };
+    }
+  }
+
+  /**
+   * 📈 Obtém estatísticas de entrada do evento
+   * @param eventId - ID do evento
+   */
+  static async getEventEntryStats(eventId: number): Promise<{
+    success: boolean;
+    data?: {
+      totalParticipants: number;
+      participantsWithAccess: number;
+      participantsWithoutAccess: number;
+      accessPercentage: number;
+    };
+    error?: any;
+  }> {
+    try {
+      const { data: participations, error } = await supabase
+        .from('participations')
+        .select('com_acesso')
+        .eq('event_id', eventId)
+        .eq('status', 'aprovado');
+
+      if (error) throw error;
+
+      const total = participations?.length || 0;
+      const withAccess = participations?.filter(p => p.com_acesso).length || 0;
+      const withoutAccess = total - withAccess;
+      const percentage = total > 0 ? Math.round((withAccess / total) * 100) : 0;
+
+      return {
+        success: true,
+        data: {
+          totalParticipants: total,
+          participantsWithAccess: withAccess,
+          participantsWithoutAccess: withoutAccess,
+          accessPercentage: percentage
+        }
+      };
+    } catch (error) {
+      console.error('❌ Erro ao obter stats de entrada:', error);
+      return { success: false, error };
     }
   }
 }

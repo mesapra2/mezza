@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, Calendar, Users, ArrowLeft, ExternalLink, Gift } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/features/shared/components/ui/button';
+//import { GoogleBusinessBadge } from '@/features/shared/components/ui/GoogleBusinessBadge.jsx';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -239,6 +240,20 @@ const PartnerProfilePage = () => {
               <h2 className="text-xl font-semibold text-white mb-4">Informações</h2>
               
               <div className="space-y-4">
+                {/* Google Business Badge - Destaque */}
+                {partner.google_business_url && (
+                  <div className="pb-4 mb-4 border-b border-white/10">
+                    <GoogleBusinessBadge 
+                      url={partner.google_business_url}
+                      variant="default"
+                      className="w-full justify-center"
+                    />
+                    <p className="text-xs text-white/40 text-center mt-2">
+                      Veja as avaliações dos nossos clientes
+                    </p>
+                  </div>
+                )}
+
                 {partner.address && (
                   <div className="flex items-start gap-3">
                     <MapPin className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />

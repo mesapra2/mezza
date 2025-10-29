@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Send, ArrowLeft, Loader2, AlertTriangle, Trash2, MoreVertical } from 'lucide-react';
+import { Send, ArrowLeft, Loader2, Trash2, MoreVertical, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/features/shared/components/ui/button';
@@ -10,6 +10,7 @@ import { Input } from '@/features/shared/components/ui/input';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SimpleDropdown, SimpleDropdownItem } from '@/features/shared/components/ui/SimpleDropdown';
+import { isChatAvailable } from '@/utils/chatAvailability.js';
 
 const EventChatPage = () => {
   const { id } = useParams(); 
@@ -26,7 +27,11 @@ const EventChatPage = () => {
   const [activeParticipantCount, setActiveParticipantCount] = useState(0);
   const [eventName, setEventName] = useState('');
   const [isCreator, setIsCreator] = useState(false);
-  const [eventStatus, setEventStatus] = useState('Aberto');  // 🔒 NOVO: Rastrear status
+  const [eventStatus, setEventStatus] = useState('Aberto');
+  
+  // 🆕 NOVOS ESTADOS para controle de disponibilidade
+  const [event, setEvent] = useState(null);
+  const [isApprovedParticipant, setIsApprovedParticipant] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -43,22 +48,37 @@ const EventChatPage = () => {
       setLoading(true);
       
       try {
+        // 🆕 BUSCAR DADOS COMPLETOS DO EVENTO (incluindo tipo e contagem de aprovados)
         const { data: eventData, error: eventError } = await supabase
           .from('events')
-          .select('title, creator_id, status')
+          .select('id, title, creator_id, status, event_type, vagas')
           .eq('id', eventId)
           .single();
 
         if (eventError) throw eventError;
-        if (eventData) {
-          setEventName(eventData.title);
-          setEventStatus(eventData.status);  // 🔒 NOVO: Salvar status
-        }
+        
+        // 🆕 BUSCAR CONTAGEM DE PARTICIPANTES APROVADOS
+        const { count: approvedCount, error: countError } = await supabase
+          .from('participations')
+          .select('*', { count: 'exact', head: true })
+          .eq('event_id', eventId)
+          .eq('status', 'aprovado');
+
+        if (countError) throw countError;
+
+        const eventWithCount = {
+          ...eventData,
+          approvedCount: approvedCount || 0
+        };
+
+        setEvent(eventWithCount);
+        setEventName(eventData.title);
+        setEventStatus(eventData.status);
 
         const userIsCreator = eventData.creator_id === user.id;
         setIsCreator(userIsCreator);
 
-        let isApprovedParticipant = false;
+        let userIsApproved = false;
         if (!userIsCreator) {
           const { data: participation } = await supabase
             .from('participations')
@@ -68,16 +88,23 @@ const EventChatPage = () => {
             .single();
             
           if (participation && participation.status === 'aprovado') {
-            isApprovedParticipant = true;
+            userIsApproved = true;
           }
         }
+        
+        setIsApprovedParticipant(userIsApproved);
 
-        if (!userIsCreator && !isApprovedParticipant) {
-          setError('Você não tem permissão para acessar este chat.');
+        // 🆕 VERIFICAR DISPONIBILIDADE DO CHAT
+        const availability = isChatAvailable(eventWithCount, userIsCreator, userIsApproved);
+
+        // 🔒 BLOQUEAR ACESSO SE CHAT NÃO DISPONÍVEL
+        if (!availability.available) {
+          setError(availability.reason);
           setLoading(false);
           return;
         }
 
+        // Chat disponível - carregar mensagens
         const { data: messagesData, error: messagesError } = await supabase
           .from('event_messages')
           .select('*')
@@ -177,21 +204,8 @@ const EventChatPage = () => {
              };
              fetchNewProfile();
           }
-          setMessages((currentMessages) => [...currentMessages, payload.new]);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'event_messages',
-          filter: `event_id=eq.${eventId}`,
-        },
-        (payload) => {
-          setMessages((currentMessages) => 
-            currentMessages.filter(msg => msg.id !== payload.old.id)
-          );
+
+          setMessages(prevMessages => [...prevMessages, payload.new]);
         }
       )
       .subscribe();
@@ -199,76 +213,65 @@ const EventChatPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-    //
-}, [eventId, user, navigate, profileMap]);
+  }, [eventId, user, profileMap]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  const getSenderProfile = (userId) => {
+    return profileMap.get(userId) || {};
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // 🔒 NOVO: Bloquear envio se evento está concluído
-    if (eventStatus === 'Concluído') {
-      alert('Este evento foi concluído. O chat está em modo leitura.');
-      return;
-    }
-    
-    if (newMessage.trim() === '' || !user) return;
+    if (!newMessage.trim() || eventStatus === 'Concluído') return;
 
-    const content = newMessage.trim();
-    setNewMessage('');
+    try {
+      const { error } = await supabase
+        .from('event_messages')
+        .insert({
+          event_id: eventId,
+          user_id: user.id,
+          content: newMessage,
+        });
 
-    const { error } = await supabase
-      .from('event_messages')
-      .insert({
-        content: content,
-        event_id: eventId,
-        user_id: user.id,
-      });
-
-    if (error) {
-      console.error('Erro ao enviar mensagem (verifique RLS):', error);
-      alert('Não foi possível enviar a mensagem.');
-      setNewMessage(content);
+      if (error) throw error;
+      setNewMessage('');
+    } catch (err) {
+      console.error('Erro ao enviar mensagem:', err);
+      setError('Erro ao enviar mensagem.');
     }
   };
 
   const handleDeleteMessage = async (messageId) => {
-    if (!confirm('Tem certeza que deseja apagar esta mensagem?')) return;
+    try {
+      const { error } = await supabase
+        .from('event_messages')
+        .delete()
+        .eq('id', messageId);
 
-    const { error } = await supabase
-      .from('event_messages')
-      .delete()
-      .eq('id', messageId);
+      if (error) throw error;
 
-    if (error) {
-      console.error('Erro ao deletar mensagem:', error);
-      alert('Não foi possível deletar a mensagem.');
+      setMessages(prevMessages => 
+        prevMessages.filter(msg => msg.id !== messageId)
+      );
+    } catch (err) {
+      console.error('Erro ao deletar mensagem:', err);
+      setError('Erro ao deletar mensagem.');
     }
   };
 
-  const getSenderProfile = (userId) => {
-    const profile = profileMap.get(userId);
-    if (profile) {
-      return profile;
-    }
-    return { 
-      id: userId,
-      username: 'Usuário', 
-      avatar_url: null,
-      full_name: null
-    }; 
-  };
-  
   const getAvatarUrl = (profile) => {
     if (profile?.avatar_url) {
-      // Se já for uma URL completa (http/https), retorna direto
-      if (profile.avatar_url.startsWith('http')) {
-        return profile.avatar_url;
+      try {
+        if (profile.avatar_url.startsWith('http')) {
+          return profile.avatar_url;
+        }
+      } catch {
+        return `https://ui-avatars.com/api/?name=U&background=8b5cf6&color=fff&size=40`;
       }
       
-      // Se for apenas o caminho, monta a URL do Supabase Storage
       const { data } = supabase.storage
         .from('avatars')
         .getPublicUrl(profile.avatar_url);
@@ -289,15 +292,43 @@ const EventChatPage = () => {
   }
 
   if (error) {
+    // 🆕 TELA DE ERRO MELHORADA com informação sobre tipo de evento
+    const isInstitutional = event?.event_type === 'institucional';
+    
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-        <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-semibold text-white mb-2">{error}</h2>
-        <p className="text-white/60 mb-6">{error === 'Você não tem permissão para acessar este chat.' ? 'Você pode não ser o anfitrião ou um participante aprovado.' : 'Ocorreu um erro.'}</p>
-        <Button onClick={() => navigate('/dashboard')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar ao Dashboard
-        </Button>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center px-4">
+        <div className="glass-effect rounded-2xl p-8 border border-white/10 max-w-md">
+          <Lock className="w-16 h-16 text-purple-500 mb-4 mx-auto" />
+          <h2 className="text-2xl font-semibold text-white mb-3">Chat não disponível</h2>
+          <p className="text-white/70 mb-6">{error}</p>
+          
+          {isInstitutional && !isCreator && isApprovedParticipant && (
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+              <p className="text-blue-300 text-sm">
+                💡 <strong>Evento Institucional:</strong> O chat será liberado automaticamente assim que o primeiro participante for aprovado.
+              </p>
+            </div>
+          )}
+          
+          {!isInstitutional && !isCreator && isApprovedParticipant && event && (
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
+              <p className="text-purple-300 text-sm mb-2">
+                📊 <strong>Progresso do evento:</strong>
+              </p>
+              <p className="text-white text-lg font-semibold">
+                {event.approvedCount} / {event.vagas} vagas preenchidas
+              </p>
+              <p className="text-white/60 text-xs mt-2">
+                O chat será liberado quando todas as vagas forem preenchidas ou o evento for confirmado.
+              </p>
+            </div>
+          )}
+          
+          <Button onClick={() => navigate(`/event/${eventId}`)}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar ao Evento
+          </Button>
+        </div>
       </div>
     );
   }
@@ -317,11 +348,26 @@ const EventChatPage = () => {
           </Link>
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-white truncate">{eventName}</h1>
-            <p className="text-xs text-white/50">{activeParticipantCount} participantes ativos</p>
+            <p className="text-xs text-white/50">
+              {activeParticipantCount} participantes
+              {event?.event_type === 'institucional' && <span className="ml-2 text-purple-400">• Institucional</span>}
+            </p>
           </div>
         </header>
 
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
+          {/* 🆕 Mensagem informativa para eventos institucionais */}
+          {event?.event_type === 'institucional' && messages.length === 0 && (
+            <div className="text-center py-8">
+              <div className="inline-block p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
+                <p className="text-purple-300 text-sm">
+                  🎉 Chat liberado! Este é um evento institucional.<br />
+                  Aproveite para interagir e tirar dúvidas com os outros participantes.
+                </p>
+              </div>
+            </div>
+          )}
+          
           {messages.map((msg) => {
             const senderProfile = getSenderProfile(msg.user_id);
             const isMe = msg.user_id === user.id;
@@ -408,15 +454,16 @@ const EventChatPage = () => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={eventStatus === 'Concluído' ? 'Chat encerrado...' : 'Digite sua mensagem...'}
+              aria-label="Campo de mensagem do chat"
               className="flex-1 bg-gray-800 border-gray-700"
               autoComplete="off"
-              disabled={eventStatus === 'Concluído'}  // 🔒 NOVO: Desabilitar input
+              disabled={eventStatus === 'Concluído'}
             />
             <Button 
               type="submit" 
               size="icon" 
               className="flex-shrink-0" 
-              disabled={!newMessage.trim() || eventStatus === 'Concluído'}  // 🔒 NOVO: Desabilitar botão
+              disabled={!newMessage.trim() || eventStatus === 'Concluído'}
             >
               <Send className="w-5 h-5" />
             </Button>

@@ -402,7 +402,7 @@ const NotificationDropdown = ({ userId }) => {
               </div>
             </div>
 
-            <div className="overflow-y-auto max-h-[500px]">
+            <div className="overflow-y-auto max-h-[300px]">
               {loading ? (
                 <div className="flex items-center justify-center p-8">
                   <Bell className="w-8 h-8 text-white/40 animate-pulse" />
@@ -501,7 +501,7 @@ const NotificationDropdown = ({ userId }) => {
             </div>
 
             {allItems.length > 0 && (
-              <div className="p-3 text-center">
+              <div className="p-1 text-center">
                 <button
                   onClick={() => {
                     navigate('/notifications');
