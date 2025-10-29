@@ -156,7 +156,7 @@ class EventStatusService {
         }
 
         const { data: participations, error: partError } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select('user_id')
           .eq('event_id', event.id)
           .eq('status', 'aprovado');
@@ -240,7 +240,7 @@ class EventStatusService {
 
         // 💡 Condição 2: Todos que compareceram avaliaram TUDO?
         const { data: participations, error: participationsError } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select('id, avaliacao_feita, presenca_confirmada')
           .eq('event_id', event.id)
           .eq('status', 'aprovado');
@@ -328,7 +328,7 @@ class EventStatusService {
       if (eventError) throw eventError;
 
       const { data: participations, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('status, presenca_confirmada, com_acesso, avaliacao_feita')
         .eq('event_id', eventId);
 

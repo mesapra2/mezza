@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Smartphone, ArrowLeft, LogOut } from 'lucide-react';
+import { Smartphone, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/features/shared/components/ui/button';
 import { Input } from '@/features/shared/components/ui/input';
@@ -25,35 +25,25 @@ const PhoneVerificationPage = () => {
   useEffect(() => {
     if (!user) {
       navigate('/login', { replace: true });
+      return;
     }
-  }, [user, navigate]);
 
-  // Se já verificou, redireciona
-  useEffect(() => {
-    const checkVerification = async () => {
-      if (!user || !profile) return;
-      
-      // Se profile já tem a info
-      if (profile.phoneVerified === true) {
-        const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
-        return;
-      }
+    // ✅ Se o perfil NÃO TEM telefone, redireciona pro dashboard
+    // (usuários antigos não precisam verificar telefone)
+    if (profile && !profile.phone) {
+      console.log('⚠️ Usuário sem telefone cadastrado, redirecionando...');
+      const targetRoute = profile.isPartner ? '/partner/dashboard' : '/dashboard';
+      navigate(targetRoute, { replace: true });
+      return;
+    }
 
-      // Verifica na API
-      try {
-        const result = await authService.checkPhoneVerification(user.uid);
-        if (result.phoneVerified) {
-          const from = location.state?.from?.pathname || '/dashboard';
-          navigate(from, { replace: true });
-        }
-      } catch (error) {
-        console.error('Erro ao verificar status:', error);
-      }
-    };
-
-    checkVerification();
-  }, [user, profile, navigate, location]);
+    // Se já verificou o telefone, redireciona
+    if (profile && profile.phone_verified) {
+      console.log('✅ Telefone já verificado, redirecionando...');
+      const targetRoute = profile.isPartner ? '/partner/dashboard' : '/dashboard';
+      navigate(targetRoute, { replace: true });
+    }
+  }, [user, profile, navigate]);
 
   // Countdown para reenvio
   useEffect(() => {
@@ -132,8 +122,9 @@ const PhoneVerificationPage = () => {
         description: "Seu cadastro foi concluído com sucesso.",
       });
       
-      // Redireciona para onde o usuário estava tentando ir
-      const from = location.state?.from?.pathname || '/dashboard';
+      // Redireciona para o dashboard apropriado
+      const targetRoute = profile?.isPartner ? '/partner/dashboard' : '/dashboard';
+      const from = location.state?.from?.pathname || targetRoute;
       navigate(from, { replace: true });
     } catch (error) {
       toast({

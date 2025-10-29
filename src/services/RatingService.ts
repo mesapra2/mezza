@@ -198,7 +198,7 @@ class RatingService {
   static async getEventRatingsStatus(eventId: number): Promise<EventRatingsStatus> {
     try {
       const { data: participants, error: participantsError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('id, user_id, presenca_confirmada, profile:profiles!user_id(id, username)')
         .eq('event_id', eventId)
         .eq('presenca_confirmada', true);
@@ -324,7 +324,7 @@ class RatingService {
   static async updateParticipationEvaluationFlag(eventId: number, participantId: string): Promise<void> {
     try {
       const { data: participation, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('id, event_id')
         .eq('event_id', eventId)
         .eq('user_id', participantId)
@@ -344,7 +344,7 @@ class RatingService {
 
       // 2. 🔍 Verificar se há outros participantes (além do próprio avaliador e do host)
       const { count: otherParticipantsCount, error: countError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('user_id', { count: 'exact', head: true })
         .eq('event_id', eventId)
         .eq('presenca_confirmada', true)                 // Que compareceram
@@ -386,7 +386,7 @@ class RatingService {
       // ✅ Só marca como concluído se TODAS as avaliações REQUERIDAS foram feitas
       if (hasHostRating && hasParticipantRatings && hasRestaurantRating) {
         await supabase
-          .from('participations')
+          .from('event_participants')
           .update({ avaliacao_feita: true, updated_at: new Date().toISOString() })
           .eq('id', participation.id);
 

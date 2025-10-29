@@ -42,16 +42,43 @@ const PeoplePage = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
+      // Busca os perfis públicos
+      const { data: profilesData, error: fetchError } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, bio, public_profile, allow_pokes')
+        .select('id, username, full_name, avatar_url, bio, public_profile, allow_pokes, reputation_stars')
         .neq('id', user.id)
         .eq('public_profile', true)
         .order('username', { ascending: true});
 
       if (fetchError) throw fetchError;
 
-      setPeople(data || []);
+      // Para cada perfil, busca o número de eventos participados
+      const peopleWithStats = await Promise.all(
+        (profilesData || []).map(async (person) => {
+          console.log(`🔎 Contando eventos de ${person.username} (${person.id})...`);
+          
+          // Conta eventos onde o usuário participou (status aprovado)
+          const { count: eventsCount, error: countError } = await supabase
+            .from('event_participants')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', person.id)
+            .eq('status', 'aprovado');
+
+          if (countError) {
+            console.error(`❌ Erro ao contar eventos de ${person.username}:`, countError);
+            return { ...person, events_participated: 0 };
+          }
+
+          console.log(`✅ ${person.username}: ${eventsCount || 0} eventos aprovados`);
+
+          return {
+            ...person,
+            events_participated: eventsCount || 0
+          };
+        })
+      );
+
+      setPeople(peopleWithStats);
     } catch (err) {
       console.error('❌ Erro ao carregar pessoas:', err);
       setError(`Não foi possível carregar as pessoas: ${err.message}`);
@@ -127,7 +154,17 @@ const PeoplePage = () => {
       if (error) throw error;
       if (!profileData) throw new Error("Perfil não encontrado");
 
-      setSelectedProfile(profileData);
+      // Busca o número de eventos participados (status aprovado)
+      const { count: eventsCount } = await supabase
+        .from('event_participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'aprovado');
+
+      setSelectedProfile({
+        ...profileData,
+        events_participated: eventsCount || 0
+      });
     } catch (err) {
       console.error('❌ Erro ao carregar perfil:', err);
       toast({
@@ -237,6 +274,24 @@ const PeoplePage = () => {
                       {person.username && (
                         <p className="text-white/60 text-sm">@{person.username}</p>
                       )}
+                      {/* Estatísticas: Ranking e Eventos */}
+                      <div className="flex gap-2 mt-2">
+                        {/* Ranking de Qualificação */}
+                        {person.reputation_stars !== null && person.reputation_stars !== undefined && (
+                          <div className="flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">
+                            <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                            <span className="text-xs font-medium text-yellow-400">
+                              {person.reputation_stars.toFixed(1)}
+                            </span>
+                          </div>
+                        )}
+                        {/* Eventos Participados */}
+                        <div className="flex items-center gap-1 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+                          <span className="text-xs font-medium text-purple-400">
+                            {person.events_participated || 0} {person.events_participated === 1 ? 'evento' : 'eventos'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -252,7 +307,8 @@ const PeoplePage = () => {
                     
                     {!isPartner && (
                       <>
-                        {allowsPokes ? (
+                        {/* Botão Tok - só aparece se a pessoa aceita Toks */}
+                        {allowsPokes && (
                           <button
                             onClick={() => sendPoke(person.id, person.username || person.full_name)}
                             className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
@@ -265,16 +321,17 @@ const PeoplePage = () => {
                               'Tok 👇'
                             )}
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => createCrusher(person.id)}
-                            className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                            title="Criar Evento Crusher"
-                          >
-                            <Heart className="w-4 h-4" />
-                            Crusher
-                          </button>
                         )}
+                        
+                        {/* Botão Crusher - SEMPRE aparece para todos */}
+                        <button
+                          onClick={() => createCrusher(person.id)}
+                          className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                          title="Criar Evento Crusher"
+                        >
+                          <Heart className="w-4 h-4" />
+                          Mesapra2
+                        </button>
                       </>
                     )}
 
@@ -343,12 +400,26 @@ const PeoplePage = () => {
                   {selectedProfile.username && (
                     <p className="text-white/60 truncate">@{selectedProfile.username}</p>
                   )}
-                   {selectedProfile.reputation_stars !== null && selectedProfile.reputation_stars !== undefined && (
-                      <div className="flex items-center justify-center sm:justify-start gap-1 mt-2 text-yellow-400">
-                          <Star className="w-4 h-4"/>
-                          <span className="text-sm font-medium">{selectedProfile.reputation_stars.toFixed(1)}</span>
+                  {/* Estatísticas: Ranking e Eventos */}
+                  <div className="flex gap-3 mt-3 justify-center sm:justify-start flex-wrap">
+                    {/* Ranking de Qualificação */}
+                    {selectedProfile.reputation_stars !== null && selectedProfile.reputation_stars !== undefined && (
+                      <div className="flex items-center gap-1.5 bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20">
+                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400"/>
+                        <span className="text-sm font-medium text-yellow-400">{selectedProfile.reputation_stars.toFixed(1)}</span>
+                        <span className="text-xs text-yellow-400/70">ranking</span>
                       </div>
-                   )}
+                    )}
+                    {/* Eventos Participados */}
+                    <div className="flex items-center gap-1.5 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20">
+                      <span className="text-sm font-medium text-purple-400">
+                        {selectedProfile.events_participated || 0}
+                      </span>
+                      <span className="text-xs text-purple-400/70">
+                        {selectedProfile.events_participated === 1 ? 'evento' : 'eventos'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -424,7 +495,7 @@ const PeoplePage = () => {
                     className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
                   >
                     <Heart className="w-4 h-4" />
-                    Criar Crusher
+                    Criar Mesapra2
                   </button>
                 </div>
               )}

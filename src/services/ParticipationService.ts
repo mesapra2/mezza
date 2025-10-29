@@ -71,7 +71,7 @@ class ParticipationService {
       const initialStatus: ParticipationStatus = isDirectEnrollment ? 'aprovado' : 'pendente';
 
       const { data: participation, error: participationError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .insert({
           event_id: eventId,
           user_id: userId,
@@ -127,7 +127,7 @@ class ParticipationService {
     }
 
     const participationCheck = await supabase
-      .from('participations')
+      .from('event_participants')
       .select('id, status')
       .eq('event_id', event.id)
       .eq('user_id', userId)
@@ -153,7 +153,7 @@ class ParticipationService {
 
   static async checkTimeConflict(event: Event, userId: string): Promise<boolean> {
     const { data: userEvents } = await supabase
-      .from('participations')
+      .from('event_participants')
       .select('event_id, events!inner(start_time, end_time, status)')
       .eq('user_id', userId)
       .eq('status', 'aprovado');
@@ -222,7 +222,7 @@ class ParticipationService {
       }
 
       const { data: participation, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('user_id')
         .eq('id', participationId)
         .single();
@@ -238,7 +238,7 @@ class ParticipationService {
       });
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'aprovado',
           updated_at: new Date().toISOString()
@@ -277,7 +277,7 @@ class ParticipationService {
   ): Promise<ServiceResult> {
     try {
       const { data: participation, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('user_id')
         .eq('id', participationId)
         .single();
@@ -293,7 +293,7 @@ class ParticipationService {
       if (eventError) throw eventError;
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'rejeitado',
           motivo_rejeicao: reason,
@@ -333,7 +333,7 @@ class ParticipationService {
       if (eventError) throw eventError;
 
       const { data: participation, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('status')
         .eq('id', participationId)
         .eq('user_id', userId)
@@ -352,7 +352,7 @@ class ParticipationService {
       const isLateCancellation = hoursUntilEvent < 2;
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'cancelado',
           updated_at: new Date().toISOString()
@@ -401,7 +401,7 @@ class ParticipationService {
       }
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'aprovado',
           updated_at: new Date().toISOString()
@@ -457,7 +457,7 @@ class ParticipationService {
       }
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'rejeitado',
           motivo_rejeicao: reason,
@@ -493,7 +493,7 @@ class ParticipationService {
   static async isCrusherInvite(participationId: string, userId: string): Promise<boolean> {
     try {
       const { data: participation, error } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('event_id, status')
         .eq('id', participationId)
         .eq('user_id', userId)
@@ -522,8 +522,8 @@ class ParticipationService {
   static async getEventParticipations(eventId: string): Promise<ServiceResult> {
     try {
       const { data: participations, error } = await supabase
-        .from('participations')
-        .select('*, user:profiles!participations_user_id_fkey(*)')
+        .from('event_participants')
+        .select('*, user:profiles!event_participants_user_id_fkey(*)')
         .eq('event_id', eventId)
         .order('created_at', { ascending: false });
 
@@ -540,7 +540,7 @@ class ParticipationService {
   static async getUserParticipations(userId: string): Promise<ServiceResult> {
     try {
       const { data, error } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('*, event:events(*)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
@@ -705,7 +705,7 @@ class ParticipationService {
 
       // 1️⃣ Verificar se participante está aprovado
       const { data: participation, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('id, status, com_acesso, presenca_confirmada')
         .eq('event_id', eventId)
         .eq('user_id', participantId)
@@ -757,7 +757,7 @@ class ParticipationService {
       console.log(`✅ Marcando presença para ${participantId} no evento ${eventId}`);
 
       const { error: presencaError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({
           presenca_confirmada: true,
           updated_at: new Date().toISOString()
@@ -842,7 +842,7 @@ class ParticipationService {
   }> {
     try {
       const { data: participations, error } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('user_id, entry_time, profile:profiles!user_id(username)')
         .eq('event_id', eventId)
         .eq('com_acesso', true)
@@ -882,7 +882,7 @@ class ParticipationService {
   }> {
     try {
       const { data: participations, error } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('com_acesso')
         .eq('event_id', eventId)
         .eq('status', 'aprovado');

@@ -1,10 +1,10 @@
 // src/features/shared/components/auth/PhoneVerification.jsx
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Smartphone, ArrowLeft } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { Input } from '@/features/shared/components/ui/input';
-import { Label } from '@/features/shared/components/ui/label';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import authService from '@/services/authService';
 
@@ -113,6 +113,7 @@ const PhoneVerification = ({ userId, phone, onVerified, onBack }) => {
       setCanResend(false);
       setCountdown(60);
       setCode(['', '', '', '', '', '']);
+      document.getElementById('code-0')?.focus();
     } catch (error) {
       toast({
         variant: "destructive",
@@ -125,8 +126,12 @@ const PhoneVerification = ({ userId, phone, onVerified, onBack }) => {
   };
 
   const formatPhone = (phoneNumber) => {
-    // Formata o telefone para exibição (55) 99999-9999
+    if (!phoneNumber) return '';
+    
+    // Remove tudo que não é número
     const cleaned = phoneNumber.replace(/\D/g, '');
+    
+    // Formata (55) 99999-9999
     if (cleaned.length === 13) {
       return `(${cleaned.slice(2, 4)}) ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
     }
@@ -143,7 +148,7 @@ const PhoneVerification = ({ userId, phone, onVerified, onBack }) => {
         {/* Header */}
         <div className="flex items-center mb-6">
           <button
-            onClick={onBack}
+            onClick={onBack || (() => window.history.back())}
             className="text-white/60 hover:text-white transition-colors"
             disabled={isLoading}
           >
@@ -224,6 +229,17 @@ const PhoneVerification = ({ userId, phone, onVerified, onBack }) => {
       </div>
     </motion.div>
   );
+};
+
+PhoneVerification.propTypes = {
+  userId: PropTypes.string.isRequired,
+  phone: PropTypes.string.isRequired,
+  onVerified: PropTypes.func.isRequired,
+  onBack: PropTypes.func, // ✅ Agora é opcional
+};
+
+PhoneVerification.defaultProps = {
+  onBack: () => window.history.back(), // ✅ Valor padrão
 };
 
 export default PhoneVerification;

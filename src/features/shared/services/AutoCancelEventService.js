@@ -84,7 +84,7 @@ class AutoCancelEventService {
     try {
       // Busca participações aprovadas do evento
       const { data: participations, error: participationsError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('id, status')
         .eq('event_id', event.id)
         .eq('status', 'aprovado');

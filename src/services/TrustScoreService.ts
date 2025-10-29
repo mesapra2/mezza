@@ -222,7 +222,7 @@ class TrustScoreService {
 
       // 1️⃣ Buscar participações de aprovados SEM acesso (não compareceu)
       const { data: noShows, error: queryError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('id, user_id')
         .eq('event_id', eventId)
         .eq('status', 'aprovado')

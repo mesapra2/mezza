@@ -159,7 +159,7 @@ const CreateEventCrusher = () => {
 
       // Cria participação automática com status "pendente" (aguardando aceite)
       const { error: participationError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .insert({
           event_id: event.id,
           user_id: invitedUserId,

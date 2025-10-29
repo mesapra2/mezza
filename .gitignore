@@ -1,5 +1,6 @@
 # Ignora a pasta de dependências do Node
 /node_modules
+/backend/node_modules
 
 # Você também pode querer ignorar outras coisas, como:
 .env

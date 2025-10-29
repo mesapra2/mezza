@@ -81,7 +81,7 @@ const FeedPartnerEvent = () => {
       if (validEvents.length > 0) {
         const eventIds = validEvents.map(e => e.id);
         const { data: participationsData, error: participantsError } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select('event_id, profile:profiles(id, username, avatar_url, full_name, public_profile)')
           .in('event_id', eventIds)
           .eq('status', 'aprovado');

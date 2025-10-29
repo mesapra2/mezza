@@ -41,11 +41,11 @@ const NotificationDropdown = ({ userId }) => {
             if (notif.participation_id) {
               try {
                 const { data: participationData } = await supabase
-                  .from('participations')
+                  .from('event_participants')
                   .select(`
                     id,
                     user_id,
-                    profiles!participations_user_id_fkey(
+                    profiles!event_participants_user_id_fkey(
                       id,
                       username,
                       avatar_url

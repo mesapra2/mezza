@@ -66,7 +66,7 @@ class UserEventService {
       const initialStatus: ParticipationStatus = isDirectEnrollment ? 'aprovado' : 'pendente';
 
       const { data: participation, error: participationError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .insert({
           event_id: eventId,
           user_id: userId,
@@ -116,7 +116,7 @@ class UserEventService {
     }
 
     const participationCheck = await supabase
-      .from('participations')
+      .from('event_participants')
       .select('id, status')
       .eq('event_id', event.id)
       .eq('user_id', userId)
@@ -142,7 +142,7 @@ class UserEventService {
 
   static async checkTimeConflict(event: Event, userId: string): Promise<boolean> {
     const { data: userEvents } = await supabase
-      .from('participations')
+      .from('event_participants')
       .select('event_id, events!inner(start_time, end_time, status)')
       .eq('user_id', userId)
       .eq('status', 'aprovado');
@@ -170,7 +170,7 @@ class UserEventService {
   static async cancelParticipation(participationId: string, userId: string): Promise<ServiceResult> {
     try {
       const { data: participation, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('*, events!inner(*)')
         .eq('id', participationId)
         .eq('user_id', userId)
@@ -186,7 +186,7 @@ class UserEventService {
       const isLateCancellation = hoursDifference < 4;
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'cancelado',
           updated_at: new Date().toISOString()
@@ -215,7 +215,7 @@ class UserEventService {
   static async getUserParticipations(userId: string): Promise<ServiceResult> {
     try {
       const { data, error } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('*, event:events(*)')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });

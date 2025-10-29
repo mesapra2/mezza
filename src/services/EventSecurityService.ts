@@ -179,7 +179,7 @@ class EventSecurityService {
       console.log(`✅ Participante ${participantId} digitou a senha correta do evento ${eventId}`);
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({
           com_acesso: true,
           entry_time: new Date().toISOString(),
@@ -215,7 +215,7 @@ class EventSecurityService {
   static async hasUserAccess(eventId: number, participantId: string): Promise<boolean> {
     try {
       const { data: participation, error } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('com_acesso')
         .eq('event_id', eventId)
         .eq('user_id', participantId)
@@ -280,7 +280,7 @@ class EventSecurityService {
       if (eventError) throw eventError;
 
       const { data: participations, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('com_acesso')
         .eq('event_id', eventId)
         .eq('status', 'aprovado');

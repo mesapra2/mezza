@@ -69,11 +69,11 @@ const Dashboard = () => {
 
       for (const event of events) {
         const { data: participants, error } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select(`
             id,
             status,
-            user:profiles!participations_user_id_fkey(id, username, avatar_url)
+            user:profiles!event_participants_user_id_fkey(id, username, avatar_url)
           `)
           .eq('event_id', event.id)
           .eq('status', 'aprovado');
@@ -97,7 +97,7 @@ const Dashboard = () => {
       for (const event of events) {
         if (event.creator_id === user.id) {
           const { data: pendingParticipants, error } = await supabase
-            .from('participations')
+            .from('event_participants')
             .select('id')
             .eq('event_id', event.id)
             .eq('status', 'pendente');
@@ -120,7 +120,7 @@ const Dashboard = () => {
       const eventIds = events.map(e => e.id);
       
       const { data: participations, error } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('event_id, status')
         .eq('user_id', user.id)
         .in('event_id', eventIds);
@@ -145,7 +145,7 @@ const Dashboard = () => {
       for (const event of events) {
         if (event.event_type === 'crusher' && event.crusher_invited_user_id === user.id) {
           const { data: participation } = await supabase
-            .from('participations')
+            .from('event_participants')
             .select('id, status')
             .eq('event_id', event.id)
             .eq('user_id', user.id)
@@ -175,7 +175,7 @@ const Dashboard = () => {
         .single();
 
       const { data: participations, error: participationsError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('*')
         .eq('user_id', user.id);
 
@@ -524,7 +524,7 @@ const Dashboard = () => {
 
     try {
       const { data: participants, error: participantsError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('id, status')
         .eq('event_id', event.id)
         .eq('status', 'aprovado');

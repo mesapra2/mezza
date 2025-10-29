@@ -143,7 +143,7 @@ const { data: eventData } = await supabase
   .single();
 
 const { count: approvedCount } = await supabase
-  .from('participations')
+  .from('event_participants')
   .select('*', { count: 'exact', head: true })
   .eq('event_id', eventId)
   .eq('status', 'aprovado');

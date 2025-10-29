@@ -21,18 +21,14 @@ const RegisterPage = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState('');
-  const { signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
+  const { register, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const formatPhoneInput = (value) => {
-    // Remove tudo que não é número
     const numbers = value.replace(/\D/g, '');
-    
-    // Limita a 13 dígitos (55 + 11 dígitos)
     const limited = numbers.slice(0, 13);
     
-    // Formata: +55 (99) 99999-9999
     if (limited.length <= 2) {
       return limited ? `+${limited}` : '';
     } else if (limited.length <= 4) {
@@ -57,7 +53,6 @@ const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validações
     if (password.length < 6) {
       toast({
         variant: "destructive",
@@ -78,17 +73,29 @@ const RegisterPage = () => {
 
     setIsLoading(true);
     try {
-      // Remove formatação do telefone para enviar ao backend
-      const cleanPhone = phone.replace(/\D/g, '');
-      
-      const response = await authService.register({
+      // 1. Registra no Supabase
+      const user = await register({
         name,
         email,
         password,
+        profile_type: 'user'
+      });
+
+      if (!user) {
+        throw new Error('Erro ao criar usuário no Supabase');
+      }
+
+      console.log('✅ Usuário criado no Supabase:', user.id);
+
+      // 2. Envia SMS via backend
+      const cleanPhone = '+' + phone.replace(/\D/g, '');
+      
+      await authService.sendVerificationCode({
+        userId: user.id,
         phone: cleanPhone,
       });
 
-      setUserId(response.userId);
+      setUserId(user.id);
       setStep('verify');
       
       toast({
@@ -96,7 +103,7 @@ const RegisterPage = () => {
         description: "Verifique seu telefone para o código de verificação.",
       });
     } catch (error) {
-      console.error(error);
+      console.error('Erro no cadastro:', error);
       toast({
         variant: "destructive",
         title: "Erro no Cadastro",
@@ -161,14 +168,12 @@ const RegisterPage = () => {
                 exit={{ opacity: 0, x: -20 }}
               >
                 <div className="glass-effect rounded-2xl p-8 border border-white/10">
-                  {/* Logo */}
                   <div className="flex justify-center mb-8">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                       <Calendar className="w-8 h-8 text-white" />
                     </div>
                   </div>
 
-                  {/* Título */}
                   <h1 className="text-3xl font-bold text-center mb-2 gradient-text">
                     Junte-se ao Mesapra2
                   </h1>
@@ -176,7 +181,6 @@ const RegisterPage = () => {
                     Crie sua conta e comece a explorar
                   </p>
 
-                  {/* Botões Sociais */}
                   <SocialLoginButtons
                     onGoogleClick={handleGoogleLogin}
                     onAppleClick={handleAppleLogin}
@@ -184,7 +188,6 @@ const RegisterPage = () => {
                     loading={isLoading}
                   />
 
-                  {/* Divisor */}
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-white/10"></div>
@@ -196,7 +199,6 @@ const RegisterPage = () => {
                     </div>
                   </div>
 
-                  {/* Formulário */}
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Nome completo</Label>
@@ -278,7 +280,6 @@ const RegisterPage = () => {
                     </Button>
                   </form>
 
-                  {/* Links */}
                   <div className="mt-6 space-y-4">
                     <p className="text-center text-white/60 text-sm">
                       Já tem uma conta?{' '}

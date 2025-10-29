@@ -1,11 +1,10 @@
 // src/App.jsx
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import PropTypes from 'prop-types';
 import { useAuth } from '@/contexts/AuthContext';
 import EventStatusService from '@/services/EventStatusService';
-import authService from '@/services/authService';
 
 // Layout
 import Layout from '@/components/Layout';
@@ -14,7 +13,7 @@ import Layout from '@/components/Layout';
 import LoginPage from '@/features/shared/pages/LoginPage';
 import RegisterPage from '@/features/shared/pages/RegisterPage';
 import PartnerRegisterPage from '@/features/partner/pages/PartnerRegisterPage';
-import PhoneVerificationPage from '@/features/shared/pages/PhoneVerificationPage'; // 📱 NOVO
+import PhoneVerificationPage from '@/features/shared/pages/PhoneVerificationPage';
 
 // === PÁGINAS DO USUÁRIO (features/user/pages) ===
 import Dashboard from '@/features/user/pages/Dashboard';
@@ -47,39 +46,10 @@ import MyEventsPage from '@/features/shared/pages/MyEventsPage';
 // 🛡️ Componente para verificar telefone verificado
 const RequirePhoneVerification = ({ children }) => {
   const { user, profile } = useAuth();
-  const [isChecking, setIsChecking] = useState(true);
-  const [phoneVerified, setPhoneVerified] = useState(false);
+  const location = useLocation();
 
-  useEffect(() => {
-    const checkVerification = async () => {
-      if (!user) {
-        setIsChecking(false);
-        return;
-      }
-
-      // Se o perfil já tem a informação, usa ela
-      if (profile?.phoneVerified !== undefined) {
-        setPhoneVerified(profile.phoneVerified);
-        setIsChecking(false);
-        return;
-      }
-
-      // Senão, verifica na API
-      try {
-        const result = await authService.checkPhoneVerification(user.uid);
-        setPhoneVerified(result.phoneVerified);
-      } catch (error) {
-        console.error('Erro ao verificar telefone:', error);
-        setPhoneVerified(false);
-      } finally {
-        setIsChecking(false);
-      }
-    };
-
-    checkVerification();
-  }, [user, profile]);
-
-  if (isChecking) {
+  // Aguarda o profile carregar
+  if (user && !profile) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -87,9 +57,23 @@ const RequirePhoneVerification = ({ children }) => {
     );
   }
 
-  // Se telefone não verificado, redireciona para verificação
-  if (!phoneVerified) {
-    return <Navigate to="/verify-phone" replace />;
+  // ✅ Se o usuário NÃO TEM telefone cadastrado, permite acesso
+  // (usuários antigos que não precisam verificar)
+  if (profile && !profile.phone) {
+    console.log('✅ Usuário sem telefone - acesso liberado');
+    return children;
+  }
+
+  // ✅ Se o telefone JÁ ESTÁ VERIFICADO, permite acesso
+  if (profile && profile.phone_verified) {
+    console.log('✅ Telefone verificado - acesso liberado');
+    return children;
+  }
+
+  // ❌ Se tem telefone MAS NÃO verificou, redireciona para verificação
+  if (profile && profile.phone && !profile.phone_verified) {
+    console.log('⚠️ Telefone não verificado - redirecionando para /verify-phone');
+    return <Navigate to="/verify-phone" state={{ from: location }} replace />;
   }
 
   return children;
@@ -150,7 +134,7 @@ function App() {
         ) : (
           /* ROTAS AUTENTICADAS */
           <>
-            {/* 📱 ROTA DE VERIFICAÇÃO DE TELEFONE (acessível mesmo sem verificação) */}
+            {/* 📱 ROTA DE VERIFICAÇÃO DE TELEFONE - PhoneVerificationPage é uma página completa */}
             <Route path="/verify-phone" element={<PhoneVerificationPage />} />
 
             {/* PARCEIROS */}

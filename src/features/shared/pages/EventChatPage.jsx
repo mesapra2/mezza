@@ -74,7 +74,7 @@ const EventChatPage = () => {
         if (eventError) throw eventError;
 
         const { count: approvedCount, error: countError } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select('*', { count: 'exact', head: true })
           .eq('event_id', eventId)
           .eq('status', 'aprovado');
@@ -92,7 +92,7 @@ const EventChatPage = () => {
         let userIsApproved = false;
         if (!userIsCreator) {
           const { data: participation } = await supabase
-            .from('participations')
+            .from('event_participants')
             .select('status')
             .eq('event_id', eventId)
             .eq('user_id', user.id)
@@ -120,7 +120,7 @@ const EventChatPage = () => {
 
         const senderIds = [...new Set(messagesData.map(msg => msg.user_id))];
         const { data: approvedParticipants, error: participantsError } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select('profile:profiles(id, username, avatar_url, full_name)')
           .eq('event_id', eventId)
           .eq('status', 'aprovado');

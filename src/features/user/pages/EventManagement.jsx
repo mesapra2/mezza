@@ -40,7 +40,7 @@ const EventManagement = () => {
       const participantsByEvent = {};
       for (const event of data) {
         const { data: participationsData } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select('user_id')
           .eq('event_id', event.id)
           .eq('status', 'aprovado');
@@ -133,7 +133,7 @@ const EventManagement = () => {
       loadMyEvents();
 
       const { data: participants } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('user_id')
         .eq('event_id', eventId)
         .eq('status', 'aprovado');

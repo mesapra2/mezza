@@ -217,7 +217,7 @@ class PartnerEventService {
     try {
       // Verifica se todas avaliações foram feitas
       const { data: participations, error: participationsError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('id, avaliacao_feita')
         .eq('event_id', eventId)
         .eq('presenca_confirmada', true);
@@ -264,7 +264,7 @@ class PartnerEventService {
       if (eventError) throw eventError;
 
       const { data: participations, error: participationsError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('*')
         .eq('event_id', eventId);
 
@@ -336,7 +336,7 @@ class PartnerEventService {
 
       // 2. Buscar dados do participante
       const { data: participation, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('user_id')
         .eq('id', participationId)
         .single();
@@ -353,7 +353,7 @@ class PartnerEventService {
 
       // 3. Atualizar status da participação
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'aprovado',
           updated_at: new Date().toISOString()
@@ -417,13 +417,13 @@ parseInt(eventId, 10),        (event as any).title
   static async rejectParticipation(participationId: string, reason?: string): Promise<ServiceResult> {
     try {
       const { data: participation } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select('user_id, event_id, events!inner(title)')
         .eq('id', participationId)
         .single();
 
       const { error: updateError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .update({ 
           status: 'rejeitado',
           motivo_rejeicao: reason,
@@ -457,8 +457,8 @@ parseInt(eventId, 10),        (event as any).title
   static async getEventParticipations(eventId: string): Promise<ServiceResult> {
     try {
       const { data: participations, error } = await supabase
-        .from('participations')
-        .select('*, user:profiles!participations_user_id_fkey(*)')
+        .from('event_participants')
+        .select('*, user:profiles!event_participants_user_id_fkey(*)')
         .eq('event_id', eventId)
         .order('created_at', { ascending: false });
 

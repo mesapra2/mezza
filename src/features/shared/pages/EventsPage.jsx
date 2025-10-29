@@ -99,23 +99,24 @@ const EventsPage = () => {
 
       setEvents(validEvents);
 
-      // Busca participantes em lote
+      // ✅ CORREÇÃO: Busca participantes em lote com foreign key correta
       if (validEvents.length > 0) {
         const eventIds = validEvents.map(e => e.id);
         const { data: participationsData, error: participantsError } = await supabase
-          .from('participations')
-          .select('event_id, profile:profiles(id, username, avatar_url, full_name, public_profile)')
+          .from('event_participants')
+          .select('event_id, user_id, profiles!event_participants_user_id_fkey(id, username, avatar_url, full_name, public_profile)')
           .in('event_id', eventIds)
           .eq('status', 'aprovado');
 
         if (participantsError) {
           console.error("Erro ao buscar participantes:", participantsError);
         } else if (participationsData) {
+          // ✅ CORREÇÃO: profiles ao invés de profile
           const participantsMap = participationsData.reduce((acc, participation) => {
-            if (!participation.profile) return acc;
+            if (!participation.profiles) return acc;
             const eventId = participation.event_id;
             if (!acc[eventId]) acc[eventId] = [];
-            acc[eventId].push(participation.profile);
+            acc[eventId].push(participation.profiles);
             return acc;
           }, {});
           setEventParticipantsMap(participantsMap);

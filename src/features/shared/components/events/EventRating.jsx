@@ -35,7 +35,7 @@ const EventRating = ({ eventId, hostId, onAllRatingsComplete }) => {
       setHostData(host);
 
       const { data: eventParticipants, error: partError } = await supabase
-        .from('participations')
+        .from('event_participants')
         .select(`
           id,
           participant_id,

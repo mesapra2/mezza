@@ -23,7 +23,7 @@ const ChatHistoryPage = () => {
       try {
         // 1. Buscar eventos onde o usuário é participante APROVADO
         const { data: participatedEventsData, error: participatedError } = await supabase
-          .from('participations')
+          .from('event_participants')
           .select(`
             event_id,
             event:events (

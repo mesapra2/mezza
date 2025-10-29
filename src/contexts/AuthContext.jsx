@@ -16,6 +16,20 @@ export const useAuth = () => {
   return context;
 };
 
+// 🎯 Função helper para mensagens de erro amigáveis
+const getErrorMessage = (error) => {
+  if (error.message === 'Email not confirmed') {
+    return 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada e spam.';
+  }
+  if (error.message === 'Invalid login credentials') {
+    return 'Email ou senha incorretos.';
+  }
+  if (error.message.includes('User already registered')) {
+    return 'Este email já está cadastrado. Faça login ou recupere sua senha.';
+  }
+  return error.message;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,14 +40,15 @@ export const AuthProvider = ({ children }) => {
   // Função para buscar o perfil
   const getProfile = useCallback(async (currentUser) => {
     if (!currentUser) return null;
-    console.log(`🔄 [getProfile] Buscando perfil para ${currentUser.id}`);
+    console.log(`📄 [getProfile] Buscando perfil para ${currentUser.id}`);
     try {
       const { data: profileData, error } = await supabase
         .from('profiles')
         .select(`
           id, username, bio, avatar_url, photos, hashtags_interesse,
           is_premium, profile_type, partner_id,
-          theme, profile_visibility, notification_prefs
+          theme, profile_visibility, notification_prefs,
+          phone, phone_verified
         `)
         .eq('id', currentUser.id)
         .maybeSingle();
@@ -58,7 +73,6 @@ export const AuthProvider = ({ children }) => {
         if (!partnerError && partnerData) {
           console.log('✅ Dados do partner:', partnerData);
           profileData.partner_data = partnerData;
-          // ✅ CORREÇÃO: Usa is_premium (boolean) em vez de plan_type
           profileData.isPremiumPartner = partnerData.is_premium === true;
           
           console.log('🔍 Status Premium:', {
@@ -80,7 +94,7 @@ export const AuthProvider = ({ children }) => {
         userType: getUserType(profileData)
       };
 
-      console.log('✅ Perfil carregado:', enrichedProfile.username, '| isPremiumPartner:', enrichedProfile.isPremiumPartner);
+      console.log('✅ Perfil carregado:', enrichedProfile.username, '| Phone:', enrichedProfile.phone || 'sem telefone');
       return enrichedProfile;
     } catch (error) {
       console.error('❌ Erro em getProfile:', error);
@@ -145,6 +159,8 @@ export const AuthProvider = ({ children }) => {
                 if (mounted) {
                     setProfile(initialProfile);
                     const currentPath = window.location.pathname;
+                    
+                    // ✅ NÃO redireciona se estiver em /verify-phone ou se for usuário antigo sem telefone
                     if (initialProfile && ['/', '/login', '/register'].includes(currentPath)) {
                         const targetRoute = initialProfile.isPartner ? '/partner/dashboard' : '/dashboard';
                         console.log(`[Auth Effect Init] Navegando para rota inicial: ${targetRoute}`);
@@ -213,7 +229,13 @@ export const AuthProvider = ({ children }) => {
       return data.user;
     } catch (error) {
       console.error('❌ Erro no login:', error);
-      toast({ variant: "destructive", title: "Erro de Login", description: error.message });
+      const friendlyMessage = getErrorMessage(error);
+      toast({ 
+        variant: "destructive", 
+        title: error.message === 'Email not confirmed' ? "Email não confirmado" : "Erro de Login", 
+        description: friendlyMessage,
+        duration: 8000
+      });
       setLoading(false);
       throw error;
     }
@@ -282,14 +304,43 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
-        options: { data: { full_name: userData.name, profile_type: userData.profile_type || PROFILE_TYPES.USER } }
+        options: { 
+          data: { 
+            full_name: userData.name, 
+            profile_type: userData.profile_type || PROFILE_TYPES.USER 
+          },
+          emailRedirectTo: `${window.location.origin}/login`
+        }
       });
+      
       if (error) throw error;
-      toast({ title: "Cadastro realizado com sucesso!", description: `Bem-vindo(a), ${userData.name}!` });
+      
+      // Verifica se precisa confirmar email
+      const needsEmailConfirmation = data.user && !data.session;
+      
+      if (needsEmailConfirmation) {
+        toast({ 
+          title: "Cadastro realizado! 📧", 
+          description: "Enviamos um email de confirmação. Por favor, verifique sua caixa de entrada (e spam) antes de fazer login.",
+          duration: 10000
+        });
+        setLoading(false);
+      } else {
+        toast({ 
+          title: "Cadastro realizado com sucesso!", 
+          description: `Bem-vindo(a), ${userData.name}!` 
+        });
+      }
+      
       return data.user;
     } catch (error) {
       console.error('❌ Erro no registro:', error);
-      toast({ variant: "destructive", title: "Erro de Cadastro", description: error.message });
+      const friendlyMessage = getErrorMessage(error);
+      toast({ 
+        variant: "destructive", 
+        title: "Erro de Cadastro", 
+        description: friendlyMessage 
+      });
       setLoading(false);
       throw error;
     }
@@ -355,14 +406,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const fileExt = file.name.split('.').pop();
       const timestamp = Date.now();
-      
-      // ✅ CORREÇÃO: Salvar na RAIZ do bucket (sem pasta)
       const fileName = `${user.id}-${isAdditionalPhoto ? 'photo' : 'avatar'}-${timestamp}.${fileExt}`;
       
       const bucket = isAdditionalPhoto ? 'photos' : 'avatars';
       const options = { 
         cacheControl: '3600', 
-        upsert: true, // ✅ Permite sobrescrever
+        upsert: true,
         contentType: file.type || 'application/octet-stream' 
       };
 
