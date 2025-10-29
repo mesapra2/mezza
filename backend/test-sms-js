@@ -1,0 +1,122 @@
+// backend/test-sms.js
+// Script para testar envio de SMS via Twilio
+require('dotenv').config();
+const twilioService = require('./services/twilioService');
+
+// Configuração
+const TEST_PHONE = process.env.TEST_PHONE || '+5511999999999'; // Altere para seu número
+const TEST_CODE = '123456';
+
+console.log('🧪 Iniciando teste de SMS...\n');
+console.log('Configurações:');
+console.log('- Twilio Account SID:', process.env.TWILIO_ACCOUNT_SID ? '✅ Configurado' : '❌ Não configurado');
+console.log('- Twilio Auth Token:', process.env.TWILIO_AUTH_TOKEN ? '✅ Configurado' : '❌ Não configurado');
+console.log('- Twilio Phone:', process.env.TWILIO_PHONE_NUMBER || '❌ Não configurado');
+console.log('- Telefone de teste:', TEST_PHONE);
+console.log('');
+
+async function testVerificationSMS() {
+  console.log('📱 Testando envio de SMS de verificação...');
+  try {
+    const result = await twilioService.sendVerificationSMS(TEST_PHONE, TEST_CODE);
+    console.log('✅ SMS de verificação enviado com sucesso!');
+    console.log('   Message SID:', result.messageSid);
+    console.log('   Status:', result.status);
+    return result.messageSid;
+  } catch (error) {
+    console.error('❌ Erro ao enviar SMS de verificação:', error.message);
+    return null;
+  }
+}
+
+async function testResendSMS() {
+  console.log('\n🔄 Testando envio de SMS de reenvio...');
+  try {
+    const result = await twilioService.sendVerificationSMS(TEST_PHONE, TEST_CODE, true);
+    console.log('✅ SMS de reenvio enviado com sucesso!');
+    console.log('   Message SID:', result.messageSid);
+    return result.messageSid;
+  } catch (error) {
+    console.error('❌ Erro ao enviar SMS de reenvio:', error.message);
+    return null;
+  }
+}
+
+async function testWelcomeSMS() {
+  console.log('\n👋 Testando envio de SMS de boas-vindas...');
+  try {
+    const result = await twilioService.sendWelcomeSMS(TEST_PHONE, 'Teste User');
+    console.log('✅ SMS de boas-vindas enviado com sucesso!');
+    console.log('   Message SID:', result.messageSid);
+    return result.messageSid;
+  } catch (error) {
+    console.error('❌ Erro ao enviar SMS de boas-vindas:', error.message);
+    return null;
+  }
+}
+
+async function checkMessageStatus(messageSid) {
+  if (!messageSid) return;
+  
+  console.log('\n🔍 Verificando status da mensagem...');
+  try {
+    const status = await twilioService.checkMessageStatus(messageSid);
+    console.log('Status:', status.status);
+    if (status.errorCode) {
+      console.log('Erro:', status.errorCode, status.errorMessage);
+    }
+    console.log('Criada:', status.dateCreated);
+    console.log('Enviada:', status.dateSent);
+  } catch (error) {
+    console.error('❌ Erro ao verificar status:', error.message);
+  }
+}
+
+async function runTests() {
+  console.log('='.repeat(60));
+  
+  // Verifica configuração
+  if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+    console.error('\n❌ Erro: Credenciais do Twilio não configuradas!');
+    console.log('\nPara configurar:');
+    console.log('1. Copie .env.example para .env');
+    console.log('2. Adicione suas credenciais do Twilio');
+    console.log('3. Configure TEST_PHONE com seu número');
+    return;
+  }
+
+  // Teste 1: SMS de Verificação
+  const messageSid1 = await testVerificationSMS();
+  
+  // Aguarda 2 segundos
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Teste 2: SMS de Reenvio
+  const messageSid2 = await testResendSMS();
+  
+  // Aguarda 2 segundos
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Teste 3: SMS de Boas-vindas
+  const messageSid3 = await testWelcomeSMS();
+  
+  // Verifica status do primeiro
+  if (messageSid1) {
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await checkMessageStatus(messageSid1);
+  }
+  
+  console.log('\n' + '='.repeat(60));
+  console.log('\n✅ Testes concluídos!\n');
+  console.log('Notas:');
+  console.log('- No modo trial do Twilio, você só pode enviar SMS para números verificados');
+  console.log('- Adicione números em: https://console.twilio.com/verified-caller-ids');
+  console.log('- Verifique o celular para confirmar o recebimento dos SMS');
+  console.log('');
+}
+
+// Executa os testes
+runTests().catch(error => {
+  console.error('❌ Erro fatal:', error);
+  process.exit(1);
+});

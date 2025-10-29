@@ -1,4 +1,4 @@
-// src/pages/EventChatPage.jsx
+// src/features/shared/pages/EventChatPage.jsx
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -10,15 +10,11 @@ import { Input } from '@/features/shared/components/ui/input';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SimpleDropdown, SimpleDropdownItem } from '@/features/shared/components/ui/SimpleDropdown';
-<<<<<<< HEAD
 import { isChatAvailable } from '@/utils/chatAvailability';
-=======
-import { isChatAvailable } from '@/utils/chatAvailability.js';
->>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
 
 const EventChatPage = () => {
-  const { id } = useParams(); 
-  const eventId = parseInt(id, 10); 
+  const { id } = useParams();
+  const eventId = parseInt(id, 10);
   const { user } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
@@ -32,8 +28,6 @@ const EventChatPage = () => {
   const [eventName, setEventName] = useState('');
   const [isCreator, setIsCreator] = useState(false);
   const [eventStatus, setEventStatus] = useState('Aberto');
-  
-  // 🆕 NOVOS ESTADOS para controle de disponibilidade
   const [event, setEvent] = useState(null);
   const [isApprovedParticipant, setIsApprovedParticipant] = useState(false);
 
@@ -41,18 +35,36 @@ const EventChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const getSenderProfile = (userId) => {
+    return profileMap.get(userId) || { username: 'Usuário', full_name: '', avatar_url: null };
+  };
+
+  const getAvatarUrl = (profile) => {
+    if (!profile || !profile.avatar_url) {
+      const name = profile?.username || profile?.full_name || 'U';
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=40`;
+    }
+
+    try {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_url);
+      return data.publicUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
+    } catch {
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
+    }
+  };
+
   useEffect(() => {
     if (!eventId || !user) {
-        if (!eventId) setError("ID do evento inválido.");
-        setLoading(false);
-        return;
+      if (!eventId) setError('ID do evento inválido.');
+      setLoading(false);
+      return;
     }
 
     const loadChatData = async () => {
       setLoading(true);
-      
+      setError(null);
+
       try {
-        // 🆕 BUSCAR DADOS COMPLETOS DO EVENTO (incluindo tipo e contagem de aprovados)
         const { data: eventData, error: eventError } = await supabase
           .from('events')
           .select('id, title, creator_id, status, event_type, vagas')
@@ -60,8 +72,7 @@ const EventChatPage = () => {
           .single();
 
         if (eventError) throw eventError;
-        
-        // 🆕 BUSCAR CONTAGEM DE PARTICIPANTES APROVADOS
+
         const { count: approvedCount, error: countError } = await supabase
           .from('participations')
           .select('*', { count: 'exact', head: true })
@@ -70,11 +81,7 @@ const EventChatPage = () => {
 
         if (countError) throw countError;
 
-        const eventWithCount = {
-          ...eventData,
-          approvedCount: approvedCount || 0
-        };
-
+        const eventWithCount = { ...eventData, approvedCount: approvedCount || 0 };
         setEvent(eventWithCount);
         setEventName(eventData.title);
         setEventStatus(eventData.status);
@@ -90,47 +97,39 @@ const EventChatPage = () => {
             .eq('event_id', eventId)
             .eq('user_id', user.id)
             .single();
-            
-          if (participation && participation.status === 'aprovado') {
-            userIsApproved = true;
-          }
+
+          userIsApproved = participation?.status === 'aprovado';
         }
-        
         setIsApprovedParticipant(userIsApproved);
 
-        // 🆕 VERIFICAR DISPONIBILIDADE DO CHAT
         const availability = isChatAvailable(eventWithCount, userIsCreator, userIsApproved);
-
-        // 🔒 BLOQUEAR ACESSO SE CHAT NÃO DISPONÍVEL
         if (!availability.available) {
           setError(availability.reason);
           setLoading(false);
           return;
         }
 
-        // Chat disponível - carregar mensagens
         const { data: messagesData, error: messagesError } = await supabase
           .from('event_messages')
           .select('*')
-          .eq('event_id', eventId) 
+          .eq('event_id', eventId)
           .order('created_at', { ascending: true });
 
         if (messagesError) throw messagesError;
-        setMessages(messagesData); 
+        setMessages(messagesData);
 
         const senderIds = [...new Set(messagesData.map(msg => msg.user_id))];
-
         const { data: approvedParticipants, error: participantsError } = await supabase
           .from('participations')
           .select('profile:profiles(id, username, avatar_url, full_name)')
-          .eq('event_id', eventId) 
+          .eq('event_id', eventId)
           .eq('status', 'aprovado');
 
         if (participantsError) throw participantsError;
-        
+
         const newProfileMap = new Map();
         const approvedIds = [];
-        
+
         approvedParticipants.forEach(p => {
           if (p.profile) {
             newProfileMap.set(p.profile.id, p.profile);
@@ -139,37 +138,28 @@ const EventChatPage = () => {
         });
 
         if (userIsCreator && !newProfileMap.has(user.id)) {
-            const { data: creatorProfile } = await supabase
-                .from('profiles')
-                .select('id, username, avatar_url, full_name')
-                .eq('id', user.id)
-                .single();
-            if (creatorProfile) {
-                newProfileMap.set(creatorProfile.id, creatorProfile);
-            }
-        }
-        
-        const missingIds = senderIds.filter(id => !newProfileMap.has(id));
-        
-        if (missingIds.length > 0) {
-            const { data: missingProfiles } = await supabase
-                .from('profiles')
-                .select('id, username, avatar_url, full_name')
-                .in('id', missingIds);
-                
-            if (missingProfiles) {
-                missingProfiles.forEach(p => {
-                    newProfileMap.set(p.id, p);
-                });
-            }
+          const { data: creatorProfile } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url, full_name')
+            .eq('id', user.id)
+            .single();
+          if (creatorProfile) newProfileMap.set(creatorProfile.id, creatorProfile);
         }
 
-        setProfileMap(newProfileMap); 
-        
-        let activeCount = approvedIds.length;
-        if (userIsCreator && !approvedIds.includes(user.id)) {
-            activeCount++;
+        const missingIds = senderIds.filter(id => !newProfileMap.has(id));
+        if (missingIds.length > 0) {
+          const { data: _ } = await supabase
+            .from('profiles')
+            .select('id, username, avatar_url, full_name')
+            .in('id', missingIds);
+
+          _?.forEach(p => newProfileMap.set(p.id, p));
         }
+
+        setProfileMap(newProfileMap);
+
+        let activeCount = approvedIds.length;
+        if (userIsCreator && !approvedIds.includes(user.id)) activeCount++;
         setActiveParticipantCount(activeCount);
 
       } catch (err) {
@@ -192,24 +182,24 @@ const EventChatPage = () => {
           table: 'event_messages',
           filter: `event_id=eq.${eventId}`,
         },
-        (payload) => {
-          const newSenderId = payload.new.user_id;
+        async (payload) => {
+          const newMsg = payload.new;
+          setMessages(prev => [...prev, newMsg]);
+
+          const newSenderId = newMsg.user_id;
           if (!profileMap.has(newSenderId)) {
-             const fetchNewProfile = async () => {
-               const { data: newProfile } = await supabase
-                 .from('profiles')
-                 .select('id, username, avatar_url, full_name')
-                 .eq('id', newSenderId)
-                 .single();
-               
-               if (newProfile) {
-                 setProfileMap(prevMap => new Map(prevMap).set(newProfile.id, newProfile));
-               }
-             };
-             fetchNewProfile();
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .select('id, username, avatar_url, full_name')
+              .eq('id', newSenderId)
+              .single();
+
+            if (newProfile) {
+              setProfileMap(prev => new Map(prev).set(newProfile.id, newProfile));
+            }
           }
 
-          setMessages(prevMessages => [...prevMessages, payload.new]);
+          scrollToBottom();
         }
       )
       .subscribe();
@@ -217,34 +207,15 @@ const EventChatPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-<<<<<<< HEAD
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId, user, navigate]);
-=======
   }, [eventId, user, profileMap]);
->>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const getSenderProfile = (userId) => {
-    return profileMap.get(userId) || {};
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-<<<<<<< HEAD
-    
-    if (eventStatus === 'Concluído') {
-      alert('Este evento foi concluído. O chat está em modo leitura.');
-      return;
-    }
-    
-    if (newMessage.trim() === '' || !user) return;
-=======
     if (!newMessage.trim() || eventStatus === 'Concluído') return;
->>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
 
     try {
       const { error } = await supabase
@@ -252,108 +223,62 @@ const EventChatPage = () => {
         .insert({
           event_id: eventId,
           user_id: user.id,
-          content: newMessage,
+          content: newMessage.trim(),
         });
 
-<<<<<<< HEAD
-    const { error } = await supabase
-      .from('event_messages')
-      .insert({
-        content: content,
-        event_id: eventId,
-        user_id: user.id,
-      });
-
-    if (error) {
-      console.error('Erro ao enviar mensagem:', error);
-      alert('Não foi possível enviar a mensagem.');
-      setNewMessage(content);
-=======
       if (error) throw error;
       setNewMessage('');
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
-      setError('Erro ao enviar mensagem.');
->>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
     }
   };
 
   const handleDeleteMessage = async (messageId) => {
+    if (!confirm('Apagar esta mensagem?')) return;
+
     try {
       const { error } = await supabase
         .from('event_messages')
         .delete()
-        .eq('id', messageId);
+        .eq('id', messageId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      setMessages(prevMessages => 
-        prevMessages.filter(msg => msg.id !== messageId)
-      );
+      setMessages(prev => prev.filter(m => m.id !== messageId));
     } catch (err) {
-      console.error('Erro ao deletar mensagem:', err);
-      setError('Erro ao deletar mensagem.');
+      console.error('Erro ao apagar mensagem:', err);
     }
-  };
-
-  const getAvatarUrl = (profile) => {
-    if (profile?.avatar_url) {
-<<<<<<< HEAD
-      if (profile.avatar_url.startsWith('http')) {
-        return profile.avatar_url;
-=======
-      try {
-        if (profile.avatar_url.startsWith('http')) {
-          return profile.avatar_url;
-        }
-      } catch {
-        return `https://ui-avatars.com/api/?name=U&background=8b5cf6&color=fff&size=40`;
->>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
-      }
-      
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(profile.avatar_url);
-      
-      return data.publicUrl;
-    }
-    
-    const name = profile?.username || profile?.full_name || 'U';
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=40`;
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
-        <Loader2 className="w-12 h-12 text-purple-500 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-12 h-12 animate-spin text-purple-500" />
       </div>
     );
   }
 
   if (error) {
-    // 🆕 TELA DE ERRO MELHORADA com informação sobre tipo de evento
     const isInstitutional = event?.event_type === 'institucional';
-    
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center px-4">
-        <div className="glass-effect rounded-2xl p-8 border border-white/10 max-w-md">
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="text-center glass-effect rounded-2xl p-8 border border-white/10 max-w-md">
           <Lock className="w-16 h-16 text-purple-500 mb-4 mx-auto" />
           <h2 className="text-2xl font-semibold text-white mb-3">Chat não disponível</h2>
           <p className="text-white/70 mb-6">{error}</p>
-          
+
           {isInstitutional && !isCreator && isApprovedParticipant && (
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
               <p className="text-blue-300 text-sm">
-                💡 <strong>Evento Institucional:</strong> O chat será liberado automaticamente assim que o primeiro participante for aprovado.
+                Evento Institucional: O chat será liberado automaticamente assim que o primeiro participante for aprovado.
               </p>
             </div>
           )}
-          
+
           {!isInstitutional && !isCreator && isApprovedParticipant && event && (
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
-              <p className="text-purple-300 text-sm mb-2">
-                📊 <strong>Progresso do evento:</strong>
-              </p>
+              <p className="text-purple-300 text-sm mb-2">Progresso do evento:</p>
               <p className="text-white text-lg font-semibold">
                 {event.approvedCount} / {event.vagas} vagas preenchidas
               </p>
@@ -362,7 +287,7 @@ const EventChatPage = () => {
               </p>
             </div>
           )}
-          
+
           <Button onClick={() => navigate(`/event/${eventId}`)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar ao Evento
@@ -377,7 +302,7 @@ const EventChatPage = () => {
       <Helmet>
         <title>Chat: {eventName || 'Evento'} | Mesapra2</title>
       </Helmet>
-      
+
       <div className="flex flex-col h-[calc(100vh-8rem)] bg-gray-900/50 rounded-2xl border border-white/10 overflow-hidden">
         <header className="flex items-center p-4 border-b border-white/10 bg-background/80 backdrop-blur-sm z-10">
           <Link to={`/event/${eventId}`} className="mr-4">
@@ -395,27 +320,23 @@ const EventChatPage = () => {
         </header>
 
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
-          {/* 🆕 Mensagem informativa para eventos institucionais */}
           {event?.event_type === 'institucional' && messages.length === 0 && (
             <div className="text-center py-8">
               <div className="inline-block p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
                 <p className="text-purple-300 text-sm">
-                  🎉 Chat liberado! Este é um evento institucional.<br />
+                  Chat liberado! Este é um evento institucional.<br />
                   Aproveite para interagir e tirar dúvidas com os outros participantes.
                 </p>
               </div>
             </div>
           )}
-          
+
           {messages.map((msg) => {
             const senderProfile = getSenderProfile(msg.user_id);
             const isMe = msg.user_id === user.id;
 
             return (
-              <div
-                key={msg.id}
-                className={`flex items-end gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={msg.id} className={`flex items-end gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}>
                 {!isMe && (
                   <img
                     src={getAvatarUrl(senderProfile)}
@@ -429,9 +350,7 @@ const EventChatPage = () => {
                 <div className="flex items-end gap-2">
                   <div
                     className={`flex flex-col max-w-xs md:max-w-md p-3 rounded-lg ${
-                      isMe
-                        ? 'bg-purple-600 text-white rounded-br-none'
-                        : 'bg-gray-800 text-white/90 rounded-bl-none'
+                      isMe ? 'bg-purple-600 text-white rounded-br-none' : 'bg-gray-800 text-white/90 rounded-bl-none'
                     }`}
                   >
                     {!isMe && (
@@ -444,19 +363,16 @@ const EventChatPage = () => {
                       {format(new Date(msg.created_at), 'HH:mm', { locale: ptBR })}
                     </span>
                   </div>
-                  
+
                   {(isMe || isCreator) && (
                     <SimpleDropdown
                       trigger={
                         <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 hover:opacity-100 transition-opacity">
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="h-4 h-4" />
                         </Button>
                       }
                     >
-                      <SimpleDropdownItem 
-                        onClick={() => handleDeleteMessage(msg.id)}
-                        className="text-red-400"
-                      >
+                      <SimpleDropdownItem onClick={() => handleDeleteMessage(msg.id)} className="text-red-400">
                         <Trash2 className="w-4 h-4 mr-2" />
                         Apagar mensagem
                       </SimpleDropdownItem>
@@ -483,7 +399,7 @@ const EventChatPage = () => {
           {eventStatus === 'Concluído' && (
             <div className="mb-3 p-2 rounded-lg bg-gray-700/50 border border-gray-600/50">
               <p className="text-gray-300 text-xs text-center">
-                🔒 Evento concluído - Chat em modo leitura
+                Evento concluído - Chat em modo leitura
               </p>
             </div>
           )}
@@ -493,15 +409,14 @@ const EventChatPage = () => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={eventStatus === 'Concluído' ? 'Chat encerrado...' : 'Digite sua mensagem...'}
-              aria-label="Campo de mensagem do chat"
               className="flex-1 bg-gray-800 border-gray-700"
               autoComplete="off"
               disabled={eventStatus === 'Concluído'}
             />
-            <Button 
-              type="submit" 
-              size="icon" 
-              className="flex-shrink-0" 
+            <Button
+              type="submit"
+              size="icon"
+              className="flex-shrink-0"
               disabled={!newMessage.trim() || eventStatus === 'Concluído'}
             >
               <Send className="w-5 h-5" />
