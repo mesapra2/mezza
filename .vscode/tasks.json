@@ -1,0 +1,43 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Git: Status",
+      "type": "shell",
+      "command": "git status",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Add All",
+      "type": "shell",
+      "command": "git add .",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Commit",
+      "type": "shell",
+      "command": "git commit -m '${input:commitMessage}'",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Push",
+      "type": "shell",
+      "command": "git push origin main",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Save (Add + Commit + Push)",
+      "type": "shell",
+      "command": "git add . && git commit -m '${input:commitMessage}' && git push origin main",
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "commitMessage",
+      "type": "promptString",
+      "description": "Mensagem do commit",
+      "default": "Update files"
+    }
+  ]
+}

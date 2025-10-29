@@ -10,7 +10,11 @@ import { Input } from '@/features/shared/components/ui/input';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SimpleDropdown, SimpleDropdownItem } from '@/features/shared/components/ui/SimpleDropdown';
+<<<<<<< HEAD
 import { isChatAvailable } from '@/utils/chatAvailability';
+=======
+import { isChatAvailable } from '@/utils/chatAvailability.js';
+>>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
 
 const EventChatPage = () => {
   const { id } = useParams(); 
@@ -204,21 +208,8 @@ const EventChatPage = () => {
              };
              fetchNewProfile();
           }
-          setMessages((currentMessages) => [...currentMessages, payload.new]);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'event_messages',
-          filter: `event_id=eq.${eventId}`,
-        },
-        (payload) => {
-          setMessages((currentMessages) => 
-            currentMessages.filter(msg => msg.id !== payload.old.id)
-          );
+
+          setMessages(prevMessages => [...prevMessages, payload.new]);
         }
       )
       .subscribe();
@@ -226,15 +217,24 @@ const EventChatPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+<<<<<<< HEAD
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, user, navigate]);
+=======
+  }, [eventId, user, profileMap]);
+>>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  const getSenderProfile = (userId) => {
+    return profileMap.get(userId) || {};
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+<<<<<<< HEAD
     
     if (eventStatus === 'Concluído') {
       alert('Este evento foi concluído. O chat está em modo leitura.');
@@ -242,10 +242,20 @@ const EventChatPage = () => {
     }
     
     if (newMessage.trim() === '' || !user) return;
+=======
+    if (!newMessage.trim() || eventStatus === 'Concluído') return;
+>>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
 
-    const content = newMessage.trim();
-    setNewMessage('');
+    try {
+      const { error } = await supabase
+        .from('event_messages')
+        .insert({
+          event_id: eventId,
+          user_id: user.id,
+          content: newMessage,
+        });
 
+<<<<<<< HEAD
     const { error } = await supabase
       .from('event_messages')
       .insert({
@@ -258,40 +268,47 @@ const EventChatPage = () => {
       console.error('Erro ao enviar mensagem:', error);
       alert('Não foi possível enviar a mensagem.');
       setNewMessage(content);
+=======
+      if (error) throw error;
+      setNewMessage('');
+    } catch (err) {
+      console.error('Erro ao enviar mensagem:', err);
+      setError('Erro ao enviar mensagem.');
+>>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
     }
   };
 
   const handleDeleteMessage = async (messageId) => {
-    if (!confirm('Tem certeza que deseja apagar esta mensagem?')) return;
+    try {
+      const { error } = await supabase
+        .from('event_messages')
+        .delete()
+        .eq('id', messageId);
 
-    const { error } = await supabase
-      .from('event_messages')
-      .delete()
-      .eq('id', messageId);
+      if (error) throw error;
 
-    if (error) {
-      console.error('Erro ao deletar mensagem:', error);
-      alert('Não foi possível deletar a mensagem.');
+      setMessages(prevMessages => 
+        prevMessages.filter(msg => msg.id !== messageId)
+      );
+    } catch (err) {
+      console.error('Erro ao deletar mensagem:', err);
+      setError('Erro ao deletar mensagem.');
     }
   };
 
-  const getSenderProfile = (userId) => {
-    const profile = profileMap.get(userId);
-    if (profile) {
-      return profile;
-    }
-    return { 
-      id: userId,
-      username: 'Usuário', 
-      avatar_url: null,
-      full_name: null
-    }; 
-  };
-  
   const getAvatarUrl = (profile) => {
     if (profile?.avatar_url) {
+<<<<<<< HEAD
       if (profile.avatar_url.startsWith('http')) {
         return profile.avatar_url;
+=======
+      try {
+        if (profile.avatar_url.startsWith('http')) {
+          return profile.avatar_url;
+        }
+      } catch {
+        return `https://ui-avatars.com/api/?name=U&background=8b5cf6&color=fff&size=40`;
+>>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
       }
       
       const { data } = supabase.storage

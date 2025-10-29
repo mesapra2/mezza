@@ -6,7 +6,11 @@ import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, Calendar, Users, ArrowLeft, ExternalLink, Gift } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/features/shared/components/ui/button';
+<<<<<<< HEAD
 import { GoogleBusinessBadge } from '@/features/shared/components/ui/GoogleBusinessBadge';
+=======
+//import { GoogleBusinessBadge } from '@/features/shared/components/ui/GoogleBusinessBadge.jsx';
+>>>>>>> 7e4ec2f2c8c5f0a65bc5f08c9ff536b9106e1370
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
