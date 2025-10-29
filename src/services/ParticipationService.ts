@@ -256,7 +256,7 @@ class ParticipationService {
       await NotificationService.createForUser({
         target_user_id: (participation as any).user_id,
         target_event_id: parseInt(eventId),
-        notification_type: 'participation_approved',
+       notification_type: 'candidate_approved',  // ou 'participation_approved' se existir
         title: '✅ Participação Aprovada',
         message: `Sua participação em "${eventData.title}" foi aprovada!`
       });
