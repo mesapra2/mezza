@@ -14,7 +14,8 @@ import {
   MapPin,
   Phone,
   Globe,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/features/shared/components/ui/button';
@@ -29,7 +30,7 @@ import {
 } from '@/utils/validateCNPJ';
 
 const PartnerRegisterPage = () => {
-  const [step, setStep] = useState(1); // 1 ou 2
+  const [step, setStep] = useState(1); // 1, 2 ou 'success'
   const [loading, setLoading] = useState(false);
   const [cnpjValidating, setCnpjValidating] = useState(false);
   const navigate = useNavigate();
@@ -196,134 +197,219 @@ const PartnerRegisterPage = () => {
     setLoading(true);
 
     try {
-      // 1. Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: personalData.email,
-        password: personalData.password,
-        options: {
-          data: {
-            full_name: personalData.fullName,
-            profile_type: 'partner'
-          }
+      console.log('📤 Criando partner via função SQL automatizada...');
+
+      // Montar endereço em formato JSONB
+      const address = {
+        rua: restaurantData.street || '',
+        numero: restaurantData.number || '',
+        complemento: restaurantData.complement || '',
+        bairro: restaurantData.neighborhood || '',
+        cidade: restaurantData.city || '',
+        estado: restaurantData.state || '',
+        cep: restaurantData.zipCode || ''
+      };
+
+      // ✅ CHAMAR A FUNÇÃO SQL QUE FAZ TUDO AUTOMATICAMENTE
+      // (cria usuário, profile e partner de uma vez)
+      const { data, error: rpcError } = await supabase.rpc('create_partner_complete', {
+        p_email: personalData.email.toLowerCase().trim(),
+        p_password: personalData.password,
+        p_name: restaurantData.restaurantName,
+        p_cnpj: cleanCNPJ(restaurantData.cnpj),
+        p_phone: restaurantData.phone,
+        p_contact_name: restaurantData.contactName || restaurantData.restaurantName,
+        p_address: address,
+        p_cuisine_type: restaurantData.cuisineType || 'bar',
+        p_price_range: restaurantData.priceRange || '$$',
+        p_capacity: restaurantData.capacity ? parseInt(restaurantData.capacity) : 50
+      });
+
+      if (rpcError) {
+        console.error('❌ Erro ao criar partner:', rpcError);
+        
+        // Tratamento especial para email já cadastrado
+        if (rpcError.message.includes('duplicate key') || rpcError.message.includes('already exists')) {
+          throw new Error('Este email já está cadastrado. Tente fazer login ou recuperar sua senha.');
         }
+        
+        throw new Error(rpcError.message || 'Erro ao criar perfil do restaurante');
+      }
+
+      if (!data?.success) {
+        console.error('❌ Erro retornado pela função:', data);
+        throw new Error(data?.error || 'Erro ao criar perfil do restaurante');
+      }
+
+      console.log('✅ Partner criado com sucesso!', data);
+
+      // ✅ FAZER LOGIN AUTOMATICAMENTE
+      const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: personalData.email.toLowerCase().trim(),
+        password: personalData.password
       });
 
-      if (authError) throw authError;
+      if (loginError) {
+        console.error('❌ Erro no login automático:', loginError);
+        // Não falha - apenas mostra tela de sucesso e pede para fazer login
+        setStep('success');
+        return;
+      }
 
-      const userId = authData.user.id;
+      console.log('✅ Login automático realizado!', authData);
 
-      // 2. Criar registro na tabela partners
-      const { data: partnerData, error: partnerError } = await supabase
-        .from('partners')
-        .insert({
-          cnpj: cleanCNPJ(restaurantData.cnpj),
-          name: restaurantData.restaurantName,
-          contact_name: restaurantData.contactName,
-          description: restaurantData.description,
-          email: personalData.email,
-          phone: restaurantData.phone.replace(/\D/g, ''),
-          website: restaurantData.website || null,
-          address: {
-            street: restaurantData.street,
-            number: restaurantData.number,
-            complement: restaurantData.complement,
-            neighborhood: restaurantData.neighborhood,
-            city: restaurantData.city,
-            state: restaurantData.state,
-            zip_code: restaurantData.zipCode
-          },
-          cuisine_type: restaurantData.cuisineType || null,
-          price_range: restaurantData.priceRange || null,
-          capacity: restaurantData.capacity ? parseInt(restaurantData.capacity) : null,
-          owner_id: userId,
-          is_verified: false, // Aguarda aprovação manual
-          is_active: true,
-          type: 'normal',
-          photos: []
-        })
-        .select()
-        .single();
-
-      if (partnerError) throw partnerError;
-
-      // 3. Atualizar profile com partner_id
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          partner_id: partnerData.id,
-          profile_type: 'partner',
-          username: restaurantData.restaurantName
-        })
-        .eq('id', userId);
-
-      if (profileError) throw profileError;
-
+      // ✅ REDIRECIONAR para dashboard do partner
       toast({
-        title: 'Cadastro realizado com sucesso! 🎉',
-        description: 'Seu restaurante está em análise. Você já pode configurar seu perfil!'
+        title: 'Cadastro realizado!',
+        description: 'Bem-vindo ao Mesapra2! Aguarde aprovação do administrador.'
       });
 
-      // Redireciona para o dashboard do parceiro
-      navigate('/partner/dashboard');
+      setTimeout(() => {
+        navigate('/partner/dashboard');
+      }, 1500);
 
     } catch (error) {
-      console.error('Erro no cadastro:', error);
+      console.error('❌ Erro no cadastro:', error);
       toast({
         variant: 'destructive',
         title: 'Erro no cadastro',
-        description: error.message || 'Tente novamente mais tarde'
+        description: error.message || 'Erro ao criar conta. Tente novamente.'
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // Tela de sucesso - aguardando confirmação de email
+  const SuccessScreen = () => (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="text-center space-y-6 py-8"
+    >
+      <div className="flex justify-center">
+        <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center">
+          <Mail className="w-10 h-10 text-green-500" />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-2xl font-bold text-white">Cadastro Realizado!</h2>
+        <p className="text-white/60">
+          Enviamos um email de confirmação para:
+        </p>
+        <p className="text-purple-400 font-semibold">{personalData.email}</p>
+      </div>
+
+      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+        <div className="flex items-start gap-3 text-left">
+          <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-200 space-y-2">
+            <p className="font-semibold">Próximos passos:</p>
+            <ol className="list-decimal list-inside space-y-1 text-blue-200/80">
+              <li>Acesse seu email e clique no link de confirmação</li>
+              <li>Após confirmar, faça login com seu email e senha</li>
+              <li>Configure seu perfil e aguarde aprovação do admin</li>
+              <li>Você receberá contato via WhatsApp para verificação</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+        <div className="flex items-start gap-3 text-left">
+          <CheckCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-yellow-200">
+            <p className="font-semibold mb-1">Aprovação Manual Necessária</p>
+            <p className="text-yellow-200/80">
+              Seu restaurante ficará invisível no feed público até que um administrador 
+              aprove seu cadastro após conferir os dados e entrar em contato via WhatsApp.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Button
+        onClick={() => navigate('/login')}
+        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+      >
+        Ir para Login
+      </Button>
+
+      <p className="text-sm text-white/40">
+        Não recebeu o email? Verifique sua caixa de spam ou entre em contato conosco.
+      </p>
+    </motion.div>
+  );
+
   return (
     <>
       <Helmet>
-        <title>Cadastro de Parceiro - Mesapra2</title>
-        <meta name="description" content="Cadastre seu restaurante na plataforma Mesapra2" />
+        <title>Cadastro de Parceiro - Mesa Pra 2</title>
       </Helmet>
 
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-2xl"
         >
-          <div className="glass-effect rounded-2xl p-8 border border-white/10">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 mb-4">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="inline-block p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4"
+              >
                 <Store className="w-8 h-8 text-white" />
-              </div>
-              <h1 className="text-3xl font-bold gradient-text mb-2">
+              </motion.div>
+              <h1 className="text-3xl font-bold text-white mb-2">
                 Cadastro de Parceiro
               </h1>
               <p className="text-white/60">
-                {step === 1 ? 'Dados pessoais' : 'Dados do restaurante'}
+                {step === 'success' ? 'Cadastro Concluído' : `Etapa ${step} de 2`}
               </p>
             </div>
 
-            {/* Progress Indicator */}
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <div className={`w-12 h-2 rounded-full transition-colors ${
-                step === 1 ? 'bg-purple-500' : 'bg-green-500'
-              }`} />
-              <div className={`w-12 h-2 rounded-full transition-colors ${
-                step === 2 ? 'bg-purple-500' : 'bg-white/20'
-              }`} />
-            </div>
+            {/* Progress Bar */}
+            {step !== 'success' && (
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm ${step >= 1 ? 'text-purple-400' : 'text-white/40'}`}>
+                    Dados Pessoais
+                  </span>
+                  <span className={`text-sm ${step >= 2 ? 'text-purple-400' : 'text-white/40'}`}>
+                    Dados do Restaurante
+                  </span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                    initial={{ width: '0%' }}
+                    animate={{ width: `${(step / 2) * 100}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+              </div>
+            )}
 
-            {/* Forms */}
+            {/* Tela de Sucesso */}
+            {step === 'success' && <SuccessScreen />}
+
+            {/* Formulários */}
             <AnimatePresence mode="wait">
-              {step === 1 ? (
-                <motion.div
+              {step === 1 && (
+                <motion.form
                   key="step1"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-6"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleNextStep();
+                  }}
                 >
                   {/* Nome Completo */}
                   <div className="space-y-2">
@@ -357,6 +443,9 @@ const PartnerRegisterPage = () => {
                         required
                       />
                     </div>
+                    <p className="text-xs text-white/40">
+                      Enviaremos um email de confirmação para este endereço
+                    </p>
                   </div>
 
                   {/* Senha */}
@@ -372,6 +461,7 @@ const PartnerRegisterPage = () => {
                         onChange={(e) => setPersonalData({ ...personalData, password: e.target.value })}
                         className="pl-10"
                         required
+                        minLength={6}
                       />
                     </div>
                   </div>
@@ -393,23 +483,25 @@ const PartnerRegisterPage = () => {
                     </div>
                   </div>
 
+                  {/* Botão Próximo */}
                   <Button
-                    type="button"
-                    onClick={handleNextStep}
+                    type="submit"
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
                   >
-                    Próximo: Dados do Restaurante
+                    Próxima Etapa
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
-                </motion.div>
-              ) : (
+                </motion.form>
+              )}
+
+              {step === 2 && (
                 <motion.form
                   key="step2"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  onSubmit={handleSubmit}
                   className="space-y-6"
+                  onSubmit={handleSubmit}
                 >
                   {/* CNPJ */}
                   <div className="space-y-2">
@@ -421,18 +513,12 @@ const PartnerRegisterPage = () => {
                         type="text"
                         placeholder="00.000.000/0000-00"
                         value={restaurantData.cnpj}
-                        onChange={(e) => setRestaurantData({ 
-                          ...restaurantData, 
-                          cnpj: formatCNPJ(e.target.value) 
-                        })}
+                        onChange={(e) => setRestaurantData({ ...restaurantData, cnpj: formatCNPJ(e.target.value) })}
                         className="pl-10"
-                        maxLength={18}
                         required
+                        maxLength={18}
                       />
                     </div>
-                    <p className="text-xs text-white/40">
-                      Verificaremos se o CNPJ já está cadastrado
-                    </p>
                   </div>
 
                   {/* Nome do Restaurante */}
@@ -443,7 +529,7 @@ const PartnerRegisterPage = () => {
                       <Input
                         id="restaurantName"
                         type="text"
-                        placeholder="Nome fantasia do estabelecimento"
+                        placeholder="Nome do estabelecimento"
                         value={restaurantData.restaurantName}
                         onChange={(e) => setRestaurantData({ ...restaurantData, restaurantName: e.target.value })}
                         className="pl-10"
@@ -452,17 +538,21 @@ const PartnerRegisterPage = () => {
                     </div>
                   </div>
 
-                  {/* Nome de Contato */}
+                  {/* Nome do Contato */}
                   <div className="space-y-2">
                     <Label htmlFor="contactName">Nome do Responsável *</Label>
-                    <Input
-                      id="contactName"
-                      type="text"
-                      placeholder="Nome da pessoa responsável"
-                      value={restaurantData.contactName}
-                      onChange={(e) => setRestaurantData({ ...restaurantData, contactName: e.target.value })}
-                      required
-                    />
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                      <Input
+                        id="contactName"
+                        type="text"
+                        placeholder="Nome do proprietário/gerente"
+                        value={restaurantData.contactName}
+                        onChange={(e) => setRestaurantData({ ...restaurantData, contactName: e.target.value })}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
                   </div>
 
                   {/* Descrição */}
@@ -470,10 +560,10 @@ const PartnerRegisterPage = () => {
                     <Label htmlFor="description">Descrição do Restaurante *</Label>
                     <Textarea
                       id="description"
-                      placeholder="Conte sobre seu restaurante, especialidades, diferenciais... (mínimo 20 caracteres)"
+                      placeholder="Conte um pouco sobre seu restaurante, especialidades, ambiente..."
                       value={restaurantData.description}
                       onChange={(e) => setRestaurantData({ ...restaurantData, description: e.target.value })}
-                      rows={4}
+                      className="min-h-[100px]"
                       required
                     />
                     <p className="text-xs text-white/40">
@@ -483,7 +573,7 @@ const PartnerRegisterPage = () => {
 
                   {/* Telefone */}
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone *</Label>
+                    <Label htmlFor="phone">Telefone/WhatsApp *</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                       <Input
@@ -496,6 +586,9 @@ const PartnerRegisterPage = () => {
                         required
                       />
                     </div>
+                    <p className="text-xs text-white/40">
+                      Usaremos este número para confirmar seu cadastro via WhatsApp
+                    </p>
                   </div>
 
                   {/* Website (opcional) */}
@@ -649,11 +742,12 @@ const PartnerRegisterPage = () => {
                     <div className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                       <div className="text-sm text-yellow-200">
-                        <p className="font-semibold mb-1">Aprovação Manual</p>
+                        <p className="font-semibold mb-1">Processo de Aprovação</p>
                         <p className="text-yellow-200/80">
-                          Seu restaurante será analisado pela nossa equipe. Você já pode configurar 
-                          seu perfil e explorar a plataforma, mas seu estabelecimento só aparecerá 
-                          na lista pública após aprovação.
+                          Após confirmar seu email, você poderá fazer login e configurar seu perfil. 
+                          No entanto, seu restaurante só aparecerá na lista pública após um 
+                          administrador aprovar seu cadastro e entrar em contato via WhatsApp 
+                          para confirmar os dados.
                         </p>
                       </div>
                     </div>
@@ -666,6 +760,7 @@ const PartnerRegisterPage = () => {
                       onClick={handlePrevStep}
                       variant="outline"
                       className="flex-1"
+                      disabled={loading}
                     >
                       <ArrowLeft className="mr-2 w-4 h-4" />
                       Voltar
@@ -684,12 +779,14 @@ const PartnerRegisterPage = () => {
             </AnimatePresence>
 
             {/* Link para login */}
-            <p className="text-center text-white/60 mt-6 text-sm">
-              Já tem uma conta?{' '}
-              <Link to="/login" className="text-purple-400 hover:text-purple-300 font-semibold">
-                Faça login
-              </Link>
-            </p>
+            {step !== 'success' && (
+              <p className="text-center text-white/60 mt-6 text-sm">
+                Já tem uma conta?{' '}
+                <Link to="/login" className="text-purple-400 hover:text-purple-300 font-semibold">
+                  Faça login
+                </Link>
+              </p>
+            )}
           </div>
         </motion.div>
       </div>

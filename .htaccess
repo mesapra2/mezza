@@ -1,0 +1,119 @@
+# .htaccess - Coloque na RAIZ do site (/public_html)
+
+# ===== CORS PARA ARQUIVOS ESTÁTICOS =====
+<IfModule mod_headers.c>
+    # Permite acesso de qualquer origem
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header always set Access-Control-Max-Age "3600"
+</IfModule>
+
+# ===== PREFLIGHT OPTIONS (CORS) E FALLBACK DO REACT (SPA) =====
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Trata as requisições OPTIONS (CORS preflight)
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+
+    # Regra de fallback para SPAs (React)
+    # Se a requisição NÃO for para um arquivo real...
+    RewriteCond %{REQUEST_FILENAME} !-f
+    # E também NÃO for para um diretório real...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Então, reescreva a requisição para o index.html
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# ===== ARQUIVOS CSV E LOG - ACESSO DIRETO =====
+<FilesMatch "\.(csv|log)$">
+    # Permite leitura de todos
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+    
+    # Force tipo de conteúdo como texto
+    <IfModule mod_headers.c>
+        Header set Content-Type "text/plain; charset=utf-8"
+        Header set Access-Control-Allow-Origin "*"
+    </IfModule>
+</FilesMatch>
+
+# ===== ARQUIVOS PHP =====
+<FilesMatch "\.php$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+    
+    <IfModule mod_headers.c>
+        Header set Access-Control-Allow-Origin "*"
+    </IfModule>
+</FilesMatch>
+
+# ===== PERMISSÕES ESPECÍFICAS =====
+<Files "leads.csv">
+   
+<IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    ForceType text/plain
+</Files>
+
+<Files "sms_envio.log">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    ForceType text/plain
+</Files>
+
+<Files "send_sms.php">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+</Files>
+
+# ===== SEGURANÇA =====
+# Impede listagem de diretórios
+Options -Indexes
+
+# Protege arquivos ocultos
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+   
+<IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Protege composer e vendor
+<FilesMatch "(composer\.(json|lock)|package\.json)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </OfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_dir.c>
+    DirectoryIndex index.html index.php
+</IfModule>
+
+# ===== MIME TYPES =====
+<IfModule mod_mime.c>
+    AddType text/plain .csv
+    AddType text/plain .log
+</IfModule>

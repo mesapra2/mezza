@@ -10,6 +10,7 @@ import EventStatusService from '@/services/EventStatusService';
 import Layout from '@/components/Layout';
 
 // Autenticação
+import AuthCallbackPage from '@/features/shared/pages/AuthCallbackPage';
 import LoginPage from '@/features/shared/pages/LoginPage';
 import RegisterPage from '@/features/shared/pages/RegisterPage';
 import PartnerRegisterPage from '@/features/partner/pages/PartnerRegisterPage';
@@ -122,6 +123,9 @@ function App() {
       </Helmet>
 
       <Routes>
+        {/* ===== 🔐 ROTA DO CALLBACK - DEVE ESTAR FORA DO CONDICIONAL user ===== */}
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
         {/* ROTAS PÚBLICAS (sem login) */}
         {!user ? (
           <Route path="/" element={<Layout isPublic={true} />}>
