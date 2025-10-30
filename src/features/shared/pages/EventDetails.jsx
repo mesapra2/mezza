@@ -102,31 +102,78 @@ const EventDetails = () => {
   const [entryStatus, setEntryStatus] = useState('');
   const [userHasAccess, setUserHasAccess] = useState(false);
 
-  const fetchEventData = useCallback(async () => {
+const fetchEventData = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    console.log('🔍 Carregando evento ID:', id);
+
+    // ✅ CORREÇÃO: Buscar evento primeiro, sem joins
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (eventError) {
+      console.error('❌ Erro ao buscar evento:', eventError);
+      throw eventError;
+    }
+    
+    if (!eventData) {
+      throw new Error('Evento não encontrado');
+    }
+
+    console.log('✅ Evento carregado:', eventData);
+    setEvent(eventData);
+
+    // ✅ Buscar partner separadamente (se existir)
+    if (eventData.partner_id) {
+      try {
+        const { data: partnerData, error: partnerError } = await supabase
+          .from('partners')
+          .select('id, name, address')
+          .eq('id', eventData.partner_id)
+          .single();
+
+        if (!partnerError && partnerData) {
+          // Adicionar partner ao evento
+          eventData.partner = partnerData;
+          setEvent({ ...eventData, partner: partnerData });
+          console.log('✅ Partner carregado:', partnerData);
+        } else {
+          console.warn('⚠️ Partner não encontrado:', eventData.partner_id);
+        }
+      } catch (partnerErr) {
+        console.warn('⚠️ Erro ao buscar partner (não crítico):', partnerErr);
+      }
+    } else {
+      console.log('ℹ️ Evento sem partner_id');
+    }
+
+    // ✅ Buscar creator
     try {
-      setLoading(true);
-      setError(null);
-
-      const { data: eventData, error: eventError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (eventError) throw eventError;
-      setEvent(eventData);
-
       const { data: creatorData, error: creatorError } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, public_profile')
         .eq('id', eventData.creator_id)
         .single();
 
-      if (creatorError) throw creatorError;
-      setCreator(creatorData);
+      if (creatorError) {
+        console.warn('⚠️ Erro ao buscar creator:', creatorError);
+      } else {
+        setCreator(creatorData);
+        console.log('✅ Creator carregado:', creatorData);
+      }
+    } catch (creatorErr) {
+      console.warn('⚠️ Creator não encontrado (não crítico):', creatorErr);
+    }
 
-      if (user) {
-        const { data: userPartData } = await supabase
+    // ✅ Buscar participação do usuário logado
+    if (user) {
+      try {
+        const { data: userPartData, error: userPartError } = await supabase
           .from('event_participants')
           .select('*')
           .eq('event_id', id)
@@ -134,41 +181,94 @@ const EventDetails = () => {
           .eq('status', 'aprovado')
           .maybeSingle();
 
-        setUserParticipation(userPartData);
+        if (!userPartError && userPartData) {
+          setUserParticipation(userPartData);
+          console.log('✅ Participação do usuário encontrada:', userPartData);
+        } else {
+          setUserParticipation(null);
+          console.log('ℹ️ Usuário não está participando deste evento');
+        }
+      } catch (userPartErr) {
+        console.warn('⚠️ Erro ao buscar participação do usuário:', userPartErr);
+        setUserParticipation(null);
       }
+    }
 
+    // ✅ Buscar participantes aprovados
+    try {
       const { data: participationsData, error: participationsError } = await supabase
         .from('event_participants')
         .select('user_id')
         .eq('event_id', id)
         .eq('status', 'aprovado');
 
-      if (participationsError) throw participationsError;
-
-      if (participationsData.length > 0) {
+      if (participationsError) {
+        console.warn('⚠️ Erro ao buscar participações:', participationsError);
+        setParticipants([]);
+      } else if (participationsData && participationsData.length > 0) {
         const userIds = participationsData.map(p => p.user_id);
+        
         const { data: participantsData, error: participantsError } = await supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url, public_profile')
           .in('id', userIds);
 
-        if (participantsError) throw participantsError;
-        setParticipants(participantsData);
+        if (participantsError) {
+          console.warn('⚠️ Erro ao buscar perfis dos participantes:', participantsError);
+          setParticipants([]);
+        } else {
+          setParticipants(participantsData || []);
+          console.log('✅ Participantes carregados:', participantsData?.length || 0);
+        }
       } else {
         setParticipants([]);
+        console.log('ℹ️ Nenhum participante aprovado ainda');
       }
-    } catch (err) {
-      setError('Erro ao carregar detalhes do evento');
-      console.error(err);
-    } finally {
-      setLoading(false);
+    } catch (participantsErr) {
+      console.warn('⚠️ Erro ao carregar participantes:', participantsErr);
+      setParticipants([]);
     }
-  }, [id, user]);
+
+    console.log('✅ Carregamento completo do evento concluído');
+
+  } catch (err) {
+    console.error('❌ Erro crítico ao carregar evento:', err);
+    setError('Erro ao carregar detalhes do evento');
+  } finally {
+    setLoading(false);
+  }
+}, [id, user]);
 
   useEffect(() => {
     fetchEventData();
-  }, [fetchEventData]);
-
+      }, [fetchEventData]);
+const getPartnerDisplay = () => {
+  if (!event) return null;
+  
+  if (event.partner && event.partner.name) {
+    // Tem partner completo
+    let addressText = event.partner.name;
+    
+    if (event.partner.address) {
+      if (typeof event.partner.address === 'string') {
+        addressText += ` - ${event.partner.address}`;
+      } else if (typeof event.partner.address === 'object') {
+        const parts = [
+          event.partner.address.street,
+          event.partner.address.city
+        ].filter(Boolean);
+        if (parts.length > 0) {
+          addressText += ` - ${parts.join(', ')}`;
+        }
+      }
+    }
+    
+    return addressText;
+  }
+  
+  // Não tem partner ou partner incompleto
+  return 'Local a definir';
+};
   // 🆕 EFFECT: Monitorar timing de entrada (executar a cada segundo)
   useEffect(() => {
     if (!event || !user || !userParticipation) return;
@@ -384,12 +484,17 @@ const EventDetails = () => {
               De {format(new Date(event.start_time), 'HH:mm', { locale: ptBR })} até {format(new Date(event.end_time), 'HH:mm', { locale: ptBR })}
             </div>
 
-            {event.partner && (
-              <div className="flex items-center text-white/60">
-                <MapPin className="w-5 h-5 mr-3" />
-                {event.partner.name} - {event.partner.address}
-              </div>
-            )}
+            {/*
+              // ============================================
+              // 🔧 SUA CORREÇÃO APLICADA AQUI
+              // ============================================
+              // Substituímos o acesso direto por event.partner.name
+              // pela sua função getPartnerDisplay()
+            */}
+            <div className="flex items-center text-white/60">
+              <MapPin className="w-5 h-5 mr-3" />
+              {getPartnerDisplay()}
+            </div>
 
             <div className="flex items-center text-white/60">
               <Users className="w-5 h-5 mr-3" />
