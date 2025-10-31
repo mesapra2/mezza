@@ -4,28 +4,32 @@
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
-  console.log("📋 [OG] Query:", req.query);
+  // 1) pega da query primeiro (porque a Vercel está reescrevendo assim)
+  const { event_id: qEventId, partner_id: qPartnerId } = req.query || {};
 
-  // Valores padrão
+  // valores padrão
   let title = "Mesapra2 - Social Dining";
-  let description = "Conectando pessoas através de experiências gastronômicas únicas.";
+  let description =
+    "Conectando pessoas através de experiências gastronômicas únicas.";
   let image = "https://app.mesapra2.com/og-default.jpg";
   let url = "https://app.mesapra2.com/";
 
+  // 2) mantém detecção por pathname SÓ COMO BACKUP
   const pathname = req.url || "";
-let event_id = null;
-let partner_id = null;
+  let event_id = qEventId || null;
+  let partner_id = qPartnerId || null;
 
-// Detectar se é rota de evento ou restaurante
-const eventMatch = pathname.match(/\/event\/([^/?]+)/);
-const partnerMatch = pathname.match(/\/restaurant\/([^/?]+)/);
+  if (!event_id && !partner_id) {
+    const eventMatch = pathname.match(/\/event\/([^/?]+)/);
+    const partnerMatch = pathname.match(/\/restaurant\/([^/?]+)/);
+    if (eventMatch) event_id = eventMatch[1];
+    if (partnerMatch) partner_id = partnerMatch[1];
+  }
 
-if (eventMatch) event_id = eventMatch[1];
-if (partnerMatch) partner_id = partnerMatch[1];
-
-  // ✅ Variáveis de ambiente (tenta com e sem VITE_)
+  // 3) envs ok (você disse que já estão OK)
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  const supabaseAnonKey =
+    process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("❌ [OG] Variáveis de ambiente não configuradas!");
@@ -34,57 +38,68 @@ if (partnerMatch) partner_id = partnerMatch[1];
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  // ===== ROTA: /event/:id =====
+  // =========================================================
+  // CENÁRIO 1: /event/:id  -> sempre pegar a foto do restaurante do evento
+  // =========================================================
   if (event_id) {
-    console.log("📅 [OG] Processando evento:", event_id);
-    
     try {
+      // você já tinha isso: events -> partner:partners(...)
       const { data: event, error } = await supabase
         .from("events")
-        .select(`
+        .select(
+          `
           id,
           title,
           description,
           partner:partners (
+            id,
             name,
             photos
           )
-        `)
+        `
+        )
         .eq("id", event_id)
         .single();
 
-      if (error) {
-        console.error("⚠️ [OG] Erro ao buscar evento:", error.message);
-      } else if (event) {
-        title = event.title || `Evento #${event.id} - Mesapra2`;
-        description = event.description || `Participe de uma experiência gastronômica inesquecível${event.partner?.name ? ` em ${event.partner.name}` : ""}.`;
+      if (!error && event) {
+        // título
+        title = event.title
+          ? event.title
+          : `Evento #${event.id} - Mesapra2`;
 
-        // ✅ CORREÇÃO CRÍTICA: Pegar foto do restaurante (bucket photos)
+        // descrição
+        description =
+          event.description ||
+          `Participe de uma experiência gastronômica incrível${
+            event.partner?.name ? ` em ${event.partner.name}` : ""
+          }.`;
+
+        // foto do restaurante (bucket)
         if (event.partner?.photos && event.partner.photos.length > 0) {
           const photoUrl = event.partner.photos[0];
-          
-          // Se já é URL completa
-          if (photoUrl.startsWith('http')) {
+
+          if (photoUrl.startsWith("http")) {
             image = photoUrl;
           } else {
-            // ✅ Construir URL do Supabase Storage (bucket photos)
+            // monta do bucket, que foi o que você pediu
             image = `${supabaseUrl}/storage/v1/object/public/photos/${photoUrl}`;
           }
-          console.log("✅ [OG] Usando foto do restaurante:", image);
-        } else {
-          console.log("⚠️ [OG] Nenhuma foto do restaurante, usando padrão");
         }
 
+        // url final do evento
         url = `https://app.mesapra2.com/event/${event.id}`;
+      } else {
+        console.warn("⚠️ [OG] Evento não encontrado:", error?.message);
       }
     } catch (err) {
       console.error("❌ [OG] Erro ao buscar evento:", err);
     }
   }
-  // ===== ROTA: /restaurant/:id =====
+
+  // =========================================================
+  // CENÁRIO 2: /restaurant/:id  -> mesma lógica
+  // =========================================================
   else if (partner_id) {
-    console.log("🍽️ [OG] Processando restaurante:", partner_id);
-    
     try {
       const { data: partner, error } = await supabase
         .from("partners")
@@ -92,41 +107,45 @@ if (partnerMatch) partner_id = partnerMatch[1];
         .eq("id", partner_id)
         .single();
 
-      if (error) {
-        console.error("⚠️ [OG] Erro ao buscar restaurante:", error.message);
-      } else if (partner) {
+      if (!error && partner) {
         title = partner.name || `Restaurante #${partner.id} - Mesapra2`;
-        description = partner.description || `Conheça ${partner.name || "este restaurante"} e descubra experiências gastronômicas incríveis.`;
+        description =
+          partner.description ||
+          `Conheça ${partner.name || "este restaurante"} e descubra experiências gastronômicas incríveis.`;
 
-        // ✅ Pegar foto do restaurante
         if (partner.photos && partner.photos.length > 0) {
           const photoUrl = partner.photos[0];
-          
-          if (photoUrl.startsWith('http')) {
+          if (photoUrl.startsWith("http")) {
             image = photoUrl;
           } else {
             image = `${supabaseUrl}/storage/v1/object/public/photos/${photoUrl}`;
           }
-          console.log("✅ [OG] Usando foto do restaurante:", image);
         }
 
         url = `https://app.mesapra2.com/restaurant/${partner.id}`;
+      } else {
+        console.warn("⚠️ [OG] Restaurante não encontrado:", error?.message);
       }
     } catch (err) {
       console.error("❌ [OG] Erro ao buscar restaurante:", err);
     }
   }
 
+  // 4) devolve SÓ o HTML com meta (SEM redirect)
   return sendMetaTags(res, title, description, image, url);
 }
 
-// Função para enviar HTML
+// ------------------------------------------------------------------
+// HTML final pros crawlers
+// ------------------------------------------------------------------
 function sendMetaTags(res, title, description, image, url) {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600, stale-while-revalidate=86400");
-  
-  res.status(200).send(`
-<!doctype html>
+  res.setHeader(
+    "Cache-Control",
+    "public, max-age=300, s-maxage=600, stale-while-revalidate=86400"
+  );
+
+  res.status(200).send(`<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -140,7 +159,6 @@ function sendMetaTags(res, title, description, image, url) {
     <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:url" content="${escapeHtml(url)}" />
     <meta property="og:site_name" content="Mesapra2" />
     <meta property="og:locale" content="pt_BR" />
@@ -149,18 +167,11 @@ function sendMetaTags(res, title, description, image, url) {
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${escapeHtml(image)}" />
-    
-    <script>
-      window.location.href = "${escapeHtml(url)}";
-    </script>
   </head>
   <body>
-    <noscript>
-      <meta http-equiv="refresh" content="0;url=${escapeHtml(url)}" />
-    </noscript>
+    <p>Preview OG de ${escapeHtml(title)}</p>
   </body>
-</html>
-  `);
+</html>`);
 }
 
 function escapeHtml(text) {
