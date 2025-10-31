@@ -1,15 +1,13 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { process } from 'node:process'; // <-- ADIÇÃO PARA CORRIGIR O ESLINT
+import { process } from 'node:process';
 
 /**
  * Vercel Serverless Function - api/og.js
- * SOLUÇÃO DEFINITIVA (EVOLUÍDA)
- * * O que faz:
- * 1. Detecta bots (WhatsApp, Facebook, etc.).
- * 2. Carrega o 'index.html' real, gerado pelo build do React (da pasta 'dist').
- * 3. Se for BOT: Injeta as meta tags dinâmicas (og:title, og:image) no HTML.
- * 4. Se for HUMANO: Serve o HTML original, deixando o React carregar normalmente.
+ * SOLUÇÃO DEFINITIVA (CORRIGIDA)
+ * * O que mudou:
+ * O 'indexPath' agora aponta para 'index.html' na raiz, 
+ * e não para 'dist/index.html', que não existe no runtime.
  */
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
@@ -38,14 +36,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    // --- 3. Carregar o index.html de produção (da pasta 'dist') ---
-    // O Vercel coloca o 'outputDirectory' (dist) na raiz do 'cwd'
-    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    // --- 3. Carregar o index.html de produção (da raiz) ---
+    // 
+    // ***** A CORREÇÃO ESTÁ AQUI *****
+    // O 'dist' é removido durante o build, o index.html fica na raiz.
+    const indexPath = path.join(process.cwd(), 'index.html');
+    //
+    // *******************************
+    
     let html = await fs.readFile(indexPath, 'utf-8');
 
     // --- 4. Injetar Tags SOMENTE se for um Bot ---
     if (isBot) {
-      // Tags dinâmicas
       const ogTags = [
         `<meta property="og:title" content="${title}" />`,
         `<meta property="og:description" content="${description}" />`,
@@ -62,26 +64,18 @@ export default async function handler(req, res) {
         `<meta name="twitter:image" content="${image}" />`,
       ].join('\n');
       
-      // Substitui o <title> e injeta o restante no final do <head>
-      // Isso preserva os links <script> e <link> originais do React
       html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
       html = html.replace('</head>', `${ogTags}\n</head>`);
     }
     
-    // --- 5. Servir o HTML (modificado para bots, original para humanos) ---
+    // --- 5. Servir o HTML (modificado ou não) ---
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400'); // Cache para bots
+    res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
     res.status(200).send(html);
 
   } catch (e) {
     console.error('ERRO AO LER O index.html OU GERAR TAGS:', e.message);
-    // Se falhar, pelo menos envia o index.html original
-    try {
-      const indexPath = path.join(process.cwd(), 'dist', 'index.html');
-      const html = await fs.readFile(indexPath, 'utf-8');
-      res.status(200).send(html);
-    } catch (readErr) {
-      res.status(500).send('Erro ao processar a página.');
-    }
+    // Log do erro para o Vercel
+    res.status(500).send(`Erro interno ao gerar tags: ${e.message}`);
   }
 }
