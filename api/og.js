@@ -4,15 +4,17 @@
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
-  // 🔹 Valores padrão
+  console.log("🔍 Query params:", req.query);
+
+  // Valores padrão
   let title = "Mesapra2 - Social Dining";
   let description = "Conectando pessoas através de experiências gastronômicas únicas.";
   let image = "https://app.mesapra2.com/og-default.jpg";
   let url = "https://app.mesapra2.com/";
 
-  const { event_id } = req.query;
+  const { event_id, partner_id } = req.query;
 
-  // 🔹 Validar variáveis de ambiente
+  // Validar variáveis de ambiente
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -21,11 +23,13 @@ export default async function handler(req, res) {
     return sendMetaTags(res, title, description, image, url);
   }
 
-  // 🔹 Se houver event_id, busca o evento + parceiro
-  if (event_id) {
-    try {
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+  // ===== ROTA: /event/:id =====
+  if (event_id) {
+    console.log("📅 Processando evento:", event_id);
+    
+    try {
       const { data: event, error } = await supabase
         .from("events")
         .select(`
@@ -46,7 +50,6 @@ export default async function handler(req, res) {
       if (error) {
         console.error("⚠️ Erro ao buscar evento:", error.message);
       } else if (event) {
-        // 🔹 Definir título e descrição
         title = event.title || `Evento #${event.id} - Mesapra2`;
         description =
           event.description ||
@@ -54,48 +57,79 @@ export default async function handler(req, res) {
             event.partner?.name ? ` em ${event.partner.name}` : ""
           }.`;
 
-        // 🔹 LÓGICA DE IMAGEM (prioridade)
-        let selectedImage = null;
-
-        // 1️⃣ Primeira foto do evento
-        if (event.event_photos && event.event_photos.length > 0) {
-          selectedImage = event.event_photos[0];
-          console.log("✅ Usando foto do evento:", selectedImage);
-        }
-        // 2️⃣ Primeira foto do parceiro
-        else if (event.partner?.photos && event.partner.photos.length > 0) {
-          selectedImage = event.partner.photos[0];
-          console.log("✅ Usando foto do parceiro:", selectedImage);
-        }
-        // 3️⃣ Logo do parceiro
-        else if (event.partner?.logo_url) {
-          selectedImage = event.partner.logo_url;
-          console.log("✅ Usando logo do parceiro:", selectedImage);
-        }
-
-        // 🔹 Construir URL completa da imagem
-        if (selectedImage) {
-          // Se já for URL completa (http/https), usa direto
-          if (selectedImage.startsWith("http")) {
-            image = selectedImage;
-          } else {
-            // Senão, constrói URL do Supabase Storage
-            image = `${supabaseUrl}/storage/v1/object/public/photos/${selectedImage}`;
-          }
-        }
+        image = selectImage(
+          event.event_photos,
+          event.partner?.photos,
+          event.partner?.logo_url,
+          supabaseUrl
+        );
 
         url = `https://app.mesapra2.com/event/${event.id}`;
+        console.log("✅ Evento processado. Imagem:", image);
       }
     } catch (err) {
-      console.error("❌ Erro inesperado:", err);
-      // Continua com valores padrão
+      console.error("❌ Erro ao buscar evento:", err);
+    }
+  }
+  // ===== ROTA: /restaurant/:id =====
+  else if (partner_id) {
+    console.log("🍽️ Processando restaurante:", partner_id);
+    
+    try {
+      const { data: partner, error } = await supabase
+        .from("partners")
+        .select("id, name, description, logo_url, photos")
+        .eq("id", partner_id)
+        .single();
+
+      if (error) {
+        console.error("⚠️ Erro ao buscar restaurante:", error.message);
+      } else if (partner) {
+        title = partner.name || `Restaurante #${partner.id} - Mesapra2`;
+        description =
+          partner.description ||
+          `Conheça ${partner.name || "este restaurante"} e descubra experiências gastronômicas incríveis.`;
+
+        image = selectImage(null, partner.photos, partner.logo_url, supabaseUrl);
+
+        url = `https://app.mesapra2.com/restaurant/${partner.id}`;
+        console.log("✅ Restaurante processado. Imagem:", image);
+      }
+    } catch (err) {
+      console.error("❌ Erro ao buscar restaurante:", err);
     }
   }
 
   return sendMetaTags(res, title, description, image, url);
 }
 
-// 🔹 Função auxiliar para enviar HTML
+// Função para selecionar imagem (prioridade)
+function selectImage(eventPhotos, partnerPhotos, logoUrl, supabaseUrl) {
+  let selected = null;
+
+  if (eventPhotos && eventPhotos.length > 0) {
+    selected = eventPhotos[0];
+    console.log("  → Usando foto do evento");
+  } else if (partnerPhotos && partnerPhotos.length > 0) {
+    selected = partnerPhotos[0];
+    console.log("  → Usando foto do parceiro");
+  } else if (logoUrl) {
+    selected = logoUrl;
+    console.log("  → Usando logo do parceiro");
+  }
+
+  if (selected) {
+    if (selected.startsWith("http")) {
+      return selected;
+    }
+    return `${supabaseUrl}/storage/v1/object/public/photos/${selected}`;
+  }
+
+  console.log("  → Usando og-default.jpg");
+  return "https://app.mesapra2.com/og-default.jpg";
+}
+
+// Função para enviar HTML
 function sendMetaTags(res, title, description, image, url) {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.status(200).send(`
@@ -135,14 +169,14 @@ function sendMetaTags(res, title, description, image, url) {
   `);
 }
 
-// 🔹 Função para escapar HTML (segurança)
+// Função para escapar HTML
 function escapeHtml(text) {
   const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
   };
-  return String(text).replace(/[&<>"']/g, m => map[m]);
+  return String(text).replace(/[&<>"']/g, (m) => map[m]);
 }
