@@ -14,8 +14,7 @@ export default async function handler(req, res) {
 
   const { event_id, partner_id } = req.query;
 
-  
-  // Validar variáveis de ambiente
+  // Validar variáveis de ambiente (CORRIGIDO PARA VITE_)
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
@@ -58,10 +57,11 @@ export default async function handler(req, res) {
             event.partner?.name ? ` em ${event.partner.name}` : ""
           }.`;
 
+        // ✅ LÓGICA DE SELEÇÃO DE IMAGEM INVOCADA
         image = selectImage(
-          event.event_photos,
-          event.partner?.photos,
-          event.partner?.logo_url,
+          event.partner?.photos, // P1: Foto do restaurante
+          event.event_photos,    // P2: Foto do evento
+          event.partner?.logo_url, // P3: Logo do restaurante
           supabaseUrl
         );
 
@@ -91,7 +91,13 @@ export default async function handler(req, res) {
           partner.description ||
           `Conheça ${partner.name || "este restaurante"} e descubra experiências gastronômicas incríveis.`;
 
-        image = selectImage(null, partner.photos, partner.logo_url, supabaseUrl);
+        // ✅ LÓGICA DE SELEÇÃO DE IMAGEM INVOCADA (Aqui a ordem está correta)
+        image = selectImage(
+          partner.photos, 
+          null, // Sem foto de evento
+          partner.logo_url, 
+          supabaseUrl
+        );
 
         url = `https://app.mesapra2.com/restaurant/${partner.id}`;
         console.log("✅ Restaurante processado. Imagem:", image);
@@ -104,22 +110,30 @@ export default async function handler(req, res) {
   return sendMetaTags(res, title, description, image, url);
 }
 
-// Função para selecionar imagem (prioridade)
-function selectImage(eventPhotos, partnerPhotos, logoUrl, supabaseUrl) {
+// =================================================================
+// 🚀 FUNÇÃO 'selectImage' ATUALIZADA
+// =================================================================
+function selectImage(partnerPhotos, eventPhotos, logoUrl, supabaseUrl) {
   let selected = null;
 
-  if (eventPhotos && eventPhotos.length > 0) {
-    selected = eventPhotos[0];
-    console.log("  → Usando foto do evento");
-  } else if (partnerPhotos && partnerPhotos.length > 0) {
+  // ✅ PRIORIDADE 1: Foto do restaurante (partnerPhotos)
+  if (partnerPhotos && partnerPhotos.length > 0) {
     selected = partnerPhotos[0];
-    console.log("  → Usando foto do parceiro");
+    console.log("  → Usando foto do parceiro (Prioridade 1)");
+  
+  // ✅ PRIORIDADE 2: Foto do evento (eventPhotos)
+  } else if (eventPhotos && eventPhotos.length > 0) {
+    selected = eventPhotos[0];
+    console.log("  → Usando foto do evento (Prioridade 2)");
+
+  // ✅ PRIORIDADE 3: Logo do restaurante (logoUrl)
   } else if (logoUrl) {
     selected = logoUrl;
-    console.log("  → Usando logo do parceiro");
+    console.log("  → Usando logo do parceiro (Prioridade 3)");
   }
 
   if (selected) {
+    // Se a URL já for completa, retorna ela
     if (selected.startsWith("http")) {
       // Adiciona cache bust apenas para og-default.jpg
       if (selected.includes("og-default.jpg")) {
@@ -127,10 +141,11 @@ function selectImage(eventPhotos, partnerPhotos, logoUrl, supabaseUrl) {
       }
       return selected;
     }
+    // Constrói a URL do Supabase Storage (conforme seu exemplo)
     return `${supabaseUrl}/storage/v1/object/public/photos/${selected}`;
   }
 
-  console.log("  → Usando og-default.jpg");
+  console.log("  → Usando og-default.jpg (Fallback)");
   // Cache bust para forçar atualização da imagem padrão
   return `https://app.mesapra2.com/og-default.jpg?v=${Date.now()}`;
 }
