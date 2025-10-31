@@ -4,5 +4,7 @@
 
 # Você também pode querer ignorar outras coisas, como:
 .env
+.env.production
+.env.development
 dist
 build

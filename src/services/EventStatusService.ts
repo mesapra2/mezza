@@ -313,45 +313,48 @@ class EventStatusService {
   /**
    * 📊 Obtém estatísticas do evento
    */
-  static async getEventStats(eventId: number): Promise<{
-    success: boolean;
-    data?: any;
-    error?: any;
-  }> {
-    try {
-      const { data: event, error: eventError } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', eventId)
-        .single();
+  // src/services/EventStatusService.ts
+static async getEventStats(eventId: number): Promise<{
+  success: boolean;
+  data?: any;
+  error?: any;
+}> {
+  try {
+    const { data: event, error: eventError } = await supabase
+      .from('events')
+      .select('*')
+      .eq('id', eventId)
+      .single();
 
-      if (eventError) throw eventError;
+    if (eventError) throw eventError;
 
-      const { data: participations, error: partError } = await supabase
-        .from('event_participants')
-        .select('status, presenca_confirmada, com_acesso, avaliacao_feita')
-        .eq('event_id', eventId);
+    // FORÇAR user_id e campos necessários
+    const { data: participations, error: partError } = await supabase
+      .from('event_participants')
+      .select(`
+        id,
+        user_id,
+        status,
+        presenca_confirmada,
+        com_acesso,
+        avaliacao_feita
+      `)
+      .eq('event_id', eventId);
 
-      if (partError) throw partError;
+    if (partError) throw partError;
 
-      const stats = {
+    return {
+      success: true,
+      data: {
         event,
-        participants: {
-          total: participations?.length || 0,
-          approved: participations?.filter(p => p.status === 'aprovado').length || 0,
-          present: participations?.filter(p => p.presenca_confirmada).length || 0,
-          withAccess: participations?.filter(p => p.com_acesso).length || 0,
-          evaluated: participations?.filter(p => p.avaliacao_feita).length || 0
-        }
-      };
-
-      return { success: true, data: stats };
-    } catch (error) {
-      console.error('❌ Erro ao obter stats do evento:', error);
-      return { success: false, error };
-    }
+        participants: participations || []
+      }
+    };
+  } catch (error) {
+    console.error('Erro ao obter stats do evento:', error);
+    return { success: false, error };
   }
-
+}
   // ============================================
   // 🔄 MÉTODOS DE AUTO-UPDATE
   // ============================================

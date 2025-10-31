@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from "react-helmet-async";
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, Star, MapPin, Clock, Settings as SettingsIcon, UserPlus, XCircle, CheckCircle, MessageSquare, Heart } from 'lucide-react';
+import { Calendar, Users, Star, MapPin, Clock, Settings as SettingsIcon, UserPlus, XCircle, CheckCircle, MessageSquare, Heart, Loader } from 'lucide-react'; // <-- 1. LOADER ADICIONADO
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/features/shared/components/ui/button';
 import { format } from 'date-fns';
@@ -41,7 +41,8 @@ const Dashboard = () => {
   const [userParticipations, setUserParticipations] = useState({});
   const [crusherInvites, setCrusherInvites] = useState({});
   const [pendingParticipations, setPendingParticipations] = useState({});
-  
+  const [isRegistering, setIsRegistering] = useState(false); // <-- 2. ESTADO ADICIONADO
+
   const loadUserAvatar = useCallback(async () => {
     if (!user) return;
     try {
@@ -70,10 +71,10 @@ const Dashboard = () => {
       for (const event of events) {
         const { data: participants, error } = await supabase
           .from('event_participants')
-          .select(`
+        .select(`
             id,
             status,
-            user:profiles!event_participants_user_id_fkey(id, username, avatar_url)
+            user:profiles!NOME_DA_CONSTRAINT_AQUI(id, username, avatar_url)
           `)
           .eq('event_id', event.id)
           .eq('status', 'aprovado');
@@ -399,6 +400,47 @@ const Dashboard = () => {
         title: "Erro", 
         description: "Não foi possível recusar o convite." 
       });
+    }
+  };
+
+  // =================================================================
+  // 🆕 3. FUNÇÃO PARA INSCRIÇÃO DIRETA (INSTITUCIONAL) ADICIONADA
+  // =================================================================
+  const handleInstitutionalApply = async (event) => {
+    if (!user || !event) return;
+    
+    setIsRegistering(true);
+    try {
+      // Inscrição direta, status 'aprovado', sem mensagem_candidatura
+      const { error } = await supabase
+        .from('event_participants')
+        .insert({
+          event_id: event.id,
+          user_id: user.id,
+          status: 'aprovado' 
+        });
+      
+      if (error) throw error;
+
+      toast({
+        title: '✅ Inscrição Confirmada!',
+        description: 'Você foi inscrito automaticamente neste evento.',
+      });
+      
+      // Recarrega os dados do dashboard
+      await loadDashboardData();
+      // Fecha o modal
+      setApplyModalOpen(false);
+
+    } catch (error) {
+      console.error('Erro ao inscrever-se (institucional):', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro na inscrição',
+        description: error.message || 'Não foi possível se inscrever.',
+      });
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -960,19 +1002,47 @@ const Dashboard = () => {
         onClose={() => setSettingsOpen(false)} 
       />
 
+      {/* ================================================================= */}
+      {/* 💡 4. DIALOG CORRIGIDO COM LÓGICA CONDICIONAL 💡 */}
+      {/* ================================================================= */}
       <Dialog open={applyModalOpen} onOpenChange={setApplyModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedEvent?.title}</DialogTitle>
             <DialogDescription>
-              Candidate-se para participar deste evento
+              {selectedEvent?.event_type === 'institucional'
+                ? 'Confirme sua inscrição para este evento.'
+                : 'Candidate-se para participar deste evento'}
             </DialogDescription>
           </DialogHeader>
+          
           {selectedEvent && (
-            <EventApply 
-              event={selectedEvent} 
-              onSuccess={handleApplySuccess}
-            />
+            <>
+              {selectedEvent.event_type === 'institucional' ? (
+                // 1. Lógica para Evento Institucional
+                <div className="space-y-4 pt-4">
+                  <div className="p-4 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm">
+                    <p>Este é um evento institucional. Sua inscrição será aprovada automaticamente.</p>
+                  </div>
+                  <Button
+                    onClick={() => handleInstitutionalApply(selectedEvent)}
+                    disabled={isRegistering}
+                    className="w-full"
+                  >
+                    {isRegistering ? (
+                      <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    {isRegistering ? 'Inscrevendo...' : 'Inscrever-se Agora'}
+                  </Button>
+                </div>
+              ) : (
+                // 2. Lógica para Evento Normal (como estava antes)
+                <EventApply 
+                  event={selectedEvent} 
+                  onSuccess={handleApplySuccess}
+                />
+              )}
+            </>
           )}
         </DialogContent>
       </Dialog>
