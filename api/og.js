@@ -1,10 +1,11 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { process } from 'node:process'; // <-- CORREÇÃO: 'in' substituído por 'from'
+import { process } from 'node:process';
 
 /**
  * Vercel Serverless Function - api/og.js
- * SOLUÇÃO FINAL (Corrigindo erro de sintaxe e path do index.html)
+ * CORREÇÃO FINAL: O path DEVE apontar para 'dist/index.html'
+ * como especificado no outputDirectory do vercel.json.
  */
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
@@ -34,8 +35,12 @@ export default async function handler(req, res) {
 
   try {
     // --- 3. Carregar o index.html de produção ---
-    // O Vercel move o conteúdo de 'dist' (especificado no vercel.json) para a raiz ('/').
-    const indexPath = path.join(process.cwd(), 'index.html');
+    // 
+    // ***** A CORREÇÃO FINAL ESTÁ AQUI *****
+    // A função deve ler o 'index.html' de DENTRO da 'dist'.
+    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    //
+    // **************************************
     
     let html = await fs.readFile(indexPath, 'utf-8');
 
