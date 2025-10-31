@@ -23,25 +23,56 @@ const EventsPage = () => {
     loadEvents();
   }, []);
 
-  // ✅ CORREÇÃO: Helper para Avatar - constrói URL correta do Supabase
+  // ✅ FUNÇÃO CORRIGIDA: getAvatarUrl
   const getAvatarUrl = (profile, nameFallback = 'U') => {
-    // Se não tem avatar_url, retorna fallback
+    // Fallback se não tem avatar
     if (!profile?.avatar_url) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(
         profile?.username || profile?.full_name || nameFallback
       )}&background=8b5cf6&color=fff&size=40`;
     }
 
-    // Se já é URL completa (http/https), retorna direto
-    if (profile.avatar_url.startsWith('http')) {
-      return profile.avatar_url;
+    // ✅ CORREÇÃO 1: Limpar URL (remover espaços/quebras de linha)
+    const cleanUrl = profile.avatar_url.trim();
+    
+    // ✅ DEBUG: Log para verificar (remova depois que funcionar)
+    console.log('🔍 DEBUG Avatar:', {
+      profileId: profile?.id,
+      username: profile?.username,
+      originalUrl: profile?.avatar_url,
+      cleanUrl: cleanUrl,
+      isHttp: cleanUrl.startsWith('http')
+    });
+    
+    // ✅ CORREÇÃO 2: Validar se URL está completa e válida
+    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+      // Adicionar timestamp para forçar atualização (quebrar cache)
+      const separator = cleanUrl.includes('?') ? '&' : '?';
+      return `${cleanUrl}${separator}t=${Date.now()}`;
     }
 
-    // ✅ CORREÇÃO CRÍTICA: Constrói a URL pública do Supabase
-    const { data } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_url);
-    
-    // Adiciona timestamp para evitar cache
-    return `${data.publicUrl}?t=${new Date().getTime()}`;
+    // ✅ CORREÇÃO 3: Se for path relativo, construir URL do Supabase
+    // Detectar bucket correto
+    let bucketName = 'avatars';
+    if (cleanUrl.includes('photos/') || cleanUrl.startsWith('photos/')) {
+      bucketName = 'photos';
+    } else if (cleanUrl.includes('event-photos/')) {
+      bucketName = 'event-photos';
+    }
+
+    try {
+      const { data } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(cleanUrl);
+      
+      return `${data.publicUrl}?t=${Date.now()}`;
+    } catch (error) {
+      console.error('Erro ao construir URL do avatar:', error);
+      // Retornar fallback em caso de erro
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+        profile?.username || profile?.full_name || nameFallback
+      )}&background=8b5cf6&color=fff&size=40`;
+    }
   };
 
   const loadEvents = async () => {
@@ -216,17 +247,14 @@ const EventsPage = () => {
       <Helmet>
         <title>Eventos - Mesapra2</title>
         <meta name="description" content="Descubra eventos sociais incríveis em restaurantes. Encontre pessoas com interesses similares." />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Mesapra2 - Descubra Eventos Incríveis" />
+        <meta property="og:description" content="Participe de experiências gastronômicas únicas e conecte-se com pessoas de verdade." />
+        <meta property="og:image" content="https://app.mesapra2.com/og-default.jpg" />
+        <meta property="og:url" content="https://app.mesapra2.com/eventos" />
+        <meta property="og:site_name" content="Mesapra2" />
+        <meta property="og:locale" content="pt_BR" />
       </Helmet>
-{/* ✅ Metatags OG genéricas para todos os eventos */}
-<Helmet>
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="Mesapra2 - Descubra Eventos Incríveis" />
-  <meta property="og:description" content="Participe de experiências gastronômicas únicas e conecte-se com pessoas de verdade." />
-  <meta property="og:image" content="https://app.mesapra2.com/og-default.jpg" />
-  <meta property="og:url" content="https://app.mesapra2.com/eventos" />
-  <meta property="og:site_name" content="Mesapra2" />
-  <meta property="og:locale" content="pt_BR" />
-</Helmet>
 
       <div className="space-y-8 py-6 px-4">
         {/* HEADER COM BOTÃO CRIAR */}
@@ -301,6 +329,7 @@ const EventsPage = () => {
                       {event.creator && (
                         <div className="flex items-center gap-2 mb-4">
                            <Avatar
+                              key={`avatar-creator-${event.creator.id}-${event.creator.avatar_url || 'default'}`}
                               url={getAvatarUrl(event.creator)}
                               name={event.creator.username || event.creator.full_name}
                               size="sm"
@@ -399,7 +428,7 @@ const EventsPage = () => {
                           <div className="flex flex-wrap gap-2">
                               {participantsForEvent.slice(0, 5).map(participant => (
                                 <Avatar
-                                    key={participant.id}
+                                    key={`avatar-participant-${participant.id}-${participant.avatar_url || 'default'}`}
                                     url={getAvatarUrl(participant)}
                                     name={participant.username || participant.full_name}
                                     size="xs"
