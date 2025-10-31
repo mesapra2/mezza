@@ -74,7 +74,7 @@ const Dashboard = () => {
         .select(`
             id,
             status,
-         user:profiles!event_participants_user_id_fkey(id, username, avatar_url)
+            user:profiles!event_participants_user_id_fkey(id, username, avatar_url)
           `)
           .eq('event_id', event.id)
           .eq('status', 'aprovado');
