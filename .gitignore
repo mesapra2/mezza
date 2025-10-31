@@ -8,3 +8,8 @@
 .env.development
 dist
 build
+echo "docs/keys" >> .gitignore
+echo "**/*.key" >> .gitignore
+echo "**/*.env.local" >> .gitignore
+git add .gitignore
+git commit -m "chore: update gitignore"

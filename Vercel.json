@@ -10,8 +10,12 @@
   },
   "rewrites": [
     {
-      "source": "/api/og",
-      "destination": "/api/og.js"
+      "source": "/event/:id",
+      "destination": "/api/og?event_id=:id"
+    },
+    {
+      "source": "/",
+      "destination": "/api/og"
     },
     {
       "source": "/(.*)",
@@ -19,6 +23,19 @@
     }
   ],
   "headers": [
+    {
+      "source": "/api/og",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [
