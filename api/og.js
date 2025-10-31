@@ -4,8 +4,8 @@ import { process } from 'node:process';
 
 /**
  * Vercel Serverless Function - api/og.js
- * CORREÇÃO FINAL: O path DEVE apontar para 'dist/index.html'
- * como especificado no outputDirectory do vercel.json.
+ * CORREÇÃO FINAL (O path é a raiz, não 'dist', 
+ * porque o outputDirectory move o 'dist' para a raiz)
  */
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
@@ -36,11 +36,11 @@ export default async function handler(req, res) {
   try {
     // --- 3. Carregar o index.html de produção ---
     // 
-    // ***** A CORREÇÃO FINAL ESTÁ AQUI *****
-    // A função deve ler o 'index.html' de DENTRO da 'dist'.
-    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    // ***** A CORREÇÃO FINAL DE VERDADE ESTÁ AQUI *****
+    // O Vercel move o conteúdo de 'dist' para a raiz ('/').
+    const indexPath = path.join(process.cwd(), 'index.html');
     //
-    // **************************************
+    // *************************************************
     
     let html = await fs.readFile(indexPath, 'utf-8');
 
