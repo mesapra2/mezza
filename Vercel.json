@@ -16,6 +16,10 @@
     {
       "source": "/restaurant/:id",
       "destination": "/api/og?partner_id=:id"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
