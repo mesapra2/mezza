@@ -12,6 +12,10 @@
     {
       "source": "/event/:id",
       "destination": "/api/og?event_id=:id"
+    },
+    {
+      "source": "/restaurant/:id",
+      "destination": "/api/og?partner_id=:id"
     }
   ]
 }
