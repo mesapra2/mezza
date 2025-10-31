@@ -135,7 +135,8 @@ const EventsPage = () => {
         const eventIds = validEvents.map(e => e.id);
         const { data: participationsData, error: participantsError } = await supabase
           .from('event_participants')
-          .select('event_id, user_id, profiles!event_participants_user_id_fkey(id, username, avatar_url, full_name, public_profile)')
+          .select('event_id, user_id, profiles(id, username, avatar_url, full_name, public_profile)')
+
           .in('event_id', eventIds)
           .eq('status', 'aprovado');
 

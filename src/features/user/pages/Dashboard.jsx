@@ -69,15 +69,12 @@ const Dashboard = () => {
       const participantsMap = {};
 
       for (const event of events) {
-        const { data: participants, error } = await supabase
-          .from('event_participants')
-        .select(`
-            id,
-            status,
-            user:profiles!event_participants_user_id_fkey(id, username, avatar_url)
-          `)
-          .eq('event_id', event.id)
-          .eq('status', 'aprovado');
+       const { data: participants, error } = await supabase
+  .from('event_participants')
+  .select('id, status, user:profiles(id, username, avatar_url)')
+  .eq('event_id', event.id)
+  .eq('status', 'aprovado');
+
 
         if (!error && participants) {
           participantsMap[event.id] = participants;
