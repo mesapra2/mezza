@@ -1,13 +1,10 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { process } from 'node:process';
+import { process } from 'node:process'; // <-- CORREÇÃO: 'in' substituído por 'from'
 
 /**
  * Vercel Serverless Function - api/og.js
- * SOLUÇÃO DEFINITIVA (CORRIGIDA)
- * * O que mudou:
- * O 'indexPath' agora aponta para 'index.html' na raiz, 
- * e não para 'dist/index.html', que não existe no runtime.
+ * SOLUÇÃO FINAL (Corrigindo erro de sintaxe e path do index.html)
  */
 export default async function handler(req, res) {
   const userAgent = req.headers['user-agent'] || '';
@@ -36,13 +33,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    // --- 3. Carregar o index.html de produção (da raiz) ---
-    // 
-    // ***** A CORREÇÃO ESTÁ AQUI *****
-    // O 'dist' é removido durante o build, o index.html fica na raiz.
+    // --- 3. Carregar o index.html de produção ---
+    // O Vercel move o conteúdo de 'dist' (especificado no vercel.json) para a raiz ('/').
     const indexPath = path.join(process.cwd(), 'index.html');
-    //
-    // *******************************
     
     let html = await fs.readFile(indexPath, 'utf-8');
 
@@ -75,7 +68,6 @@ export default async function handler(req, res) {
 
   } catch (e) {
     console.error('ERRO AO LER O index.html OU GERAR TAGS:', e.message);
-    // Log do erro para o Vercel
     res.status(500).send(`Erro interno ao gerar tags: ${e.message}`);
   }
 }
