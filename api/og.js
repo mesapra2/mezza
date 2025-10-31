@@ -12,7 +12,16 @@ export default async function handler(req, res) {
   let image = "https://app.mesapra2.com/og-default.jpg";
   let url = "https://app.mesapra2.com/";
 
-  const { event_id, partner_id } = req.query;
+  const pathname = req.url || "";
+let event_id = null;
+let partner_id = null;
+
+// Detectar se é rota de evento ou restaurante
+const eventMatch = pathname.match(/\/event\/([^/?]+)/);
+const partnerMatch = pathname.match(/\/restaurant\/([^/?]+)/);
+
+if (eventMatch) event_id = eventMatch[1];
+if (partnerMatch) partner_id = partnerMatch[1];
 
   // ✅ Variáveis de ambiente (tenta com e sem VITE_)
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
