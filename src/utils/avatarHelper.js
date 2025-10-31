@@ -14,18 +14,38 @@ export const getAvatarUrl = (avatarUrl, name = 'U', size = 40) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=${size}`;
   }
 
-  // Se já é URL completa (http/https), retorna direto
-  if (avatarUrl.startsWith('http')) {
-    return avatarUrl;
+  // ✅ CORREÇÃO 1: Limpar URL (remover espaços/quebras)
+  const cleanUrl = avatarUrl.trim();
+
+  // ✅ CORREÇÃO 2: Se já é URL completa (http/https), adiciona timestamp e retorna
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+    // Adicionar timestamp para quebrar cache
+    const separator = cleanUrl.includes('?') ? '&' : '?';
+    return `${cleanUrl}${separator}t=${Date.now()}`;
   }
 
-  // Constrói a URL pública do Supabase Storage
-  const { data } = supabase.storage
-    .from('avatars')
-    .getPublicUrl(avatarUrl);
+  // ✅ CORREÇÃO 3: Detectar bucket correto baseado no path
+  let bucketName = 'avatars'; // padrão
   
-  // Adiciona timestamp para evitar cache
-  return `${data.publicUrl}?t=${new Date().getTime()}`;
+  if (cleanUrl.includes('photos/') || cleanUrl.startsWith('photos/')) {
+    bucketName = 'photos';
+  } else if (cleanUrl.includes('event-photos/') || cleanUrl.startsWith('event-photos/')) {
+    bucketName = 'event-photos';
+  }
+
+  // ✅ CORREÇÃO 4: Tentar construir URL com tratamento de erro
+  try {
+    const { data } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(cleanUrl);
+    
+    // Adiciona timestamp para evitar cache
+    return `${data.publicUrl}?t=${Date.now()}`;
+  } catch (error) {
+    console.error('Erro ao construir URL do avatar:', error, { avatarUrl, bucketName });
+    // Retornar fallback em caso de erro
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=${size}`;
+  }
 };
 
 /**
