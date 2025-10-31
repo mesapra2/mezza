@@ -4,7 +4,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
-  console.log("🔍 Query params:", req.query);
+  console.log("📋 Query params:", req.query);
 
   // Valores padrão
   let title = "Mesapra2 - Social Dining";
@@ -120,18 +120,26 @@ function selectImage(eventPhotos, partnerPhotos, logoUrl, supabaseUrl) {
 
   if (selected) {
     if (selected.startsWith("http")) {
+      // Adiciona cache bust apenas para og-default.jpg
+      if (selected.includes("og-default.jpg")) {
+        return `${selected}?v=${Date.now()}`;
+      }
       return selected;
     }
     return `${supabaseUrl}/storage/v1/object/public/photos/${selected}`;
   }
 
   console.log("  → Usando og-default.jpg");
-  return "https://app.mesapra2.com/og-default.jpg";
+  // Cache bust para forçar atualização da imagem padrão
+  return `https://app.mesapra2.com/og-default.jpg?v=${Date.now()}`;
 }
 
 // Função para enviar HTML
 function sendMetaTags(res, title, description, image, url) {
+  // Headers importantes para o Facebook
   res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "public, max-age=300, s-maxage=600, stale-while-revalidate=86400");
+  
   res.status(200).send(`
 <!doctype html>
 <html lang="pt-BR">
