@@ -19,7 +19,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/api/og"
     }
   ],
   "headers": [
