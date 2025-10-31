@@ -21,31 +21,67 @@ export default async function handler(req, res) {
     return sendMetaTags(res, title, description, image, url);
   }
 
-  // 🔹 Se houver event_id, busca o evento
+  // 🔹 Se houver event_id, busca o evento + parceiro
   if (event_id) {
     try {
       const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
       const { data: event, error } = await supabase
         .from("events")
-        .select("id, title, description, cover_image")
+        .select(`
+          id,
+          title,
+          description,
+          event_photos,
+          partner_id,
+          partner:partners (
+            name,
+            logo_url,
+            photos
+          )
+        `)
         .eq("id", event_id)
         .single();
 
       if (error) {
         console.error("⚠️ Erro ao buscar evento:", error.message);
-        // Continua com valores padrão
       } else if (event) {
+        // 🔹 Definir título e descrição
         title = event.title || `Evento #${event.id} - Mesapra2`;
         description =
           event.description ||
-          "Participe de uma experiência gastronômica inesquecível.";
+          `Participe de uma experiência gastronômica inesquecível${
+            event.partner?.name ? ` em ${event.partner.name}` : ""
+          }.`;
 
-        // 🔹 Usar imagem do evento se existir
-        if (event.cover_image) {
-          image = event.cover_image.startsWith("http")
-            ? event.cover_image
-            : `${supabaseUrl}/storage/v1/object/public/event_covers/${event.cover_image}`;
+        // 🔹 LÓGICA DE IMAGEM (prioridade)
+        let selectedImage = null;
+
+        // 1️⃣ Primeira foto do evento
+        if (event.event_photos && event.event_photos.length > 0) {
+          selectedImage = event.event_photos[0];
+          console.log("✅ Usando foto do evento:", selectedImage);
+        }
+        // 2️⃣ Primeira foto do parceiro
+        else if (event.partner?.photos && event.partner.photos.length > 0) {
+          selectedImage = event.partner.photos[0];
+          console.log("✅ Usando foto do parceiro:", selectedImage);
+        }
+        // 3️⃣ Logo do parceiro
+        else if (event.partner?.logo_url) {
+          selectedImage = event.partner.logo_url;
+          console.log("✅ Usando logo do parceiro:", selectedImage);
+        }
+
+        // 🔹 Construir URL completa da imagem
+        if (selectedImage) {
+          // Se já for URL completa (http/https), usa direto
+          if (selectedImage.startsWith("http")) {
+            image = selectedImage;
+          } else {
+            // Senão, constrói URL do Supabase Storage
+            image = `${supabaseUrl}/storage/v1/object/public/photos/${selectedImage}`;
+          }
         }
 
         url = `https://app.mesapra2.com/event/${event.id}`;
@@ -75,6 +111,8 @@ function sendMetaTags(res, title, description, image, url) {
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />
     <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:url" content="${escapeHtml(url)}" />
     <meta property="og:site_name" content="Mesapra2" />
