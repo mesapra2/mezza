@@ -217,6 +217,16 @@ const EventsPage = () => {
         <title>Eventos - Mesapra2</title>
         <meta name="description" content="Descubra eventos sociais incríveis em restaurantes. Encontre pessoas com interesses similares." />
       </Helmet>
+{/* ✅ Metatags OG genéricas para todos os eventos */}
+<Helmet>
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Mesapra2 - Descubra Eventos Incríveis" />
+  <meta property="og:description" content="Participe de experiências gastronômicas únicas e conecte-se com pessoas de verdade." />
+  <meta property="og:image" content="https://app.mesapra2.com/og-default.jpg" />
+  <meta property="og:url" content="https://app.mesapra2.com/eventos" />
+  <meta property="og:site_name" content="Mesapra2" />
+  <meta property="og:locale" content="pt_BR" />
+</Helmet>
 
       <div className="space-y-8 py-6 px-4">
         {/* HEADER COM BOTÃO CRIAR */}
