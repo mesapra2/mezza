@@ -16,10 +16,16 @@
     {
       "source": "/restaurant/:id",
       "destination": "/api/og?partner_id=:id"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/og",
+      "dest": "/api/og.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
