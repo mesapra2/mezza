@@ -5,8 +5,7 @@
   "functions": {
     "api/og.js": {
       "memory": 1024,
-      "maxDuration": 15,
-      "runtime": "edge" 
+      "maxDuration": 10
     }
   },
   "rewrites": [
@@ -19,7 +18,7 @@
           "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
         }
       ],
-      "destination": "/api/og.js?type=event&id=:id"
+      "destination": "/api/og.js?event_id=:id"
     },
     {
       "source": "/restaurant/:id",
@@ -30,20 +29,11 @@
           "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
         }
       ],
-      "destination": "/api/og.js?type=restaurant&id=:id"
+      "destination": "/api/og.js?partner_id=:id"
     },
     {
       "source": "/(.*)",
       "destination": "/"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/og.js",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=3600" },
-        { "key": "Content-Type", "value": "text/html; charset=utf-8" }
-      ]
     }
   ]
 }
