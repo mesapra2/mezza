@@ -12,29 +12,23 @@
   "rewrites": [
     {
       "source": "/event/:id",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
-        }
-      ],
+      "destination": "/api/og.js?type=event&id=:id"
+    },
+    {
+      "source": "/event/:id/",
       "destination": "/api/og.js?type=event&id=:id"
     },
     {
       "source": "/restaurant/:id",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
-        }
-      ],
+      "destination": "/api/og.js?type=restaurant&id=:id"
+    },
+    {
+      "source": "/restaurant/:id/",
       "destination": "/api/og.js?type=restaurant&id=:id"
     },
     {
       "source": "/(.*)",
-      "destination": "/"
+      "destination": "/index.html"
     }
   ]
 }
