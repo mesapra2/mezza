@@ -1,28 +1,28 @@
-// /api/og.js
 /* eslint-env node */
-
 import { createClient } from "@supabase/supabase-js";
 
-export default async function handler(req, res) {
-  // descobrir domínio atual (vercel preview, prod, etc.)
-  const host = req.headers["x-forwarded-host"] || req.headers.host || "app.mesapra2.com";
-  const proto = req.headers["x-forwarded-proto"] || "https";
+export const config = { runtime: "edge" };
+
+export default async function handler(req) {
+  const urlObj = new URL(req.url);
+  const searchParams = urlObj.searchParams;
+  let type = searchParams.get("type");
+  let id = searchParams.get("id");
+
+  // domínio que chamou
+  const host = req.headers.get("x-forwarded-host") || urlObj.host || "app.mesapra2.com";
+  const proto = req.headers.get("x-forwarded-proto") || urlObj.protocol.replace(":", "") || "https";
   const baseUrl = `${proto}://${host}`;
 
   // defaults
-  let title = "Mesapra2 - Social Dining";
-  let description = "Conectando pessoas através de experiências gastronômicas únicas.";
+  let title = "Mesapra2 — Jantares sociais que conectam pessoas";
+  let description = "Conheça pessoas incríveis em jantares sociais com o aplicativo Mesapra2.";
   let image = `${baseUrl}/og-default.jpg`;
-  let url = `${baseUrl}/`;
+  let pageUrl = `${baseUrl}/`;
 
-  // query do rewrite: /api/og.js?type=event&id=32
-  const q = req.query || {};
-  let type = q.type || null;
-  let id = q.id || null;
-
-  // fallback: detectar pelo path (/event/32, /restaurant/9)
-  const pathname = (req.url || "").split("?")[0] || "";
+  // se chamarem direto /event/32 sem query (algum bot pode fazer isso)
   if (!type || !id) {
+    const pathname = urlObj.pathname || "";
     const mEvent = pathname.match(/\/event\/([^/?]+)/);
     const mRest = pathname.match(/\/restaurant\/([^/?]+)/);
     if (mEvent) {
@@ -34,167 +34,157 @@ export default async function handler(req, res) {
     }
   }
 
-  // envs do supabase
   const supabaseUrl =
-    process.env.SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL;
   const supabaseAnonKey =
-    process.env.SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
     process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("❌ [OG] SUPABASE_URL / SUPABASE_ANON_KEY não configurados.");
-    return sendMetaTags(res, title, description, image, url);
+    return htmlResponse({
+      title,
+      description,
+      image,
+      url: pageUrl
+    });
   }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  // helper pra montar link do storage
+  // helper pra montar url do storage
   const buildStorageUrl = (raw) => {
     if (!raw) return null;
-    if (raw.startsWith("http://") || raw.startsWith("https://")) {
-      return raw;
-    }
+    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
     if (raw.startsWith("event-photos/")) {
       return `${supabaseUrl}/storage/v1/object/public/event-photos/${raw.replace(
         /^event-photos\//,
         ""
       )}`;
     }
-    // default: bucket "photos"
     return `${supabaseUrl}/storage/v1/object/public/photos/${raw.replace(/^photos\//, "")}`;
   };
 
-  // helper: detectar se a foto veio do bucket "photos" (provavelmente upload de usuário)
-  const isSupabasePhoto = (urlStr) => {
+  // helper pra saber se é foto "de usuário" (seu caso do evento 32)
+  const isUserPhoto = (urlStr) => {
     if (!urlStr) return false;
-    return (
-      urlStr.startsWith(`${supabaseUrl}/storage/v1/object/public/photos/`) ||
-      urlStr.startsWith("photos/") ||
-      urlStr.includes("/storage/v1/object/public/photos/")
-    );
+    return urlStr.includes("/storage/v1/object/public/photos/");
   };
 
-  // ==========================================================
+  // =========================================
   // EVENTO
-  // ==========================================================
+  // =========================================
   if (type === "event" && id) {
-    try {
-      const { data: event, error } = await supabase
-        .from("events")
-        .select(
-          `
-          id,
-          title,
-          description,
-          photo,
-          photos,
-          banner,
-          partner:partners (
-            id,
-            name,
-            photos
-          )
+    const { data: event, error } = await supabase
+      .from("events")
+      .select(
         `
+        id,
+        title,
+        description,
+        photo,
+        photos,
+        banner,
+        partners (
+          id,
+          name,
+          photos
         )
-        .eq("id", id)
-        .single();
+      `
+      )
+      .eq("id", id)
+      .single();
 
-      if (error) {
-        console.error("⚠️ [OG] erro ao buscar evento:", error.message);
-      } else if (event) {
-        title = event.title || `Evento #${event.id} - Mesapra2`;
-        description =
-          event.description ||
-          `Participe de uma experiência gastronômica${
-            event.partner?.name ? ` em ${event.partner.name}` : ""
-          }.`;
+    if (!error && event) {
+      title = event.title || title;
+      description =
+        event.description ||
+        `Participe de uma experiência gastronômica${
+          event.partners?.name ? ` em ${event.partners.name}` : ""
+        }.`;
 
-        // 1) o que veio do evento
-        let eventCandidate =
-          event.photo ||
-          event.banner ||
-          (Array.isArray(event.photos) && event.photos.length > 0 ? event.photos[0] : null);
+      // 1. candidatos do evento
+      let eventCandidate =
+        event.photo ||
+        event.banner ||
+        (Array.isArray(event.photos) && event.photos.length > 0 ? event.photos[0] : null);
 
-        // 2) o que veio do parceiro (restaurante) — ex: Skys, Belini, etc.
-        let partnerCandidate =
-          event.partner?.photos && event.partner.photos.length > 0
-            ? event.partner.photos[0]
-            : null;
+      // 2. candidato do restaurante/parceiro
+      let partnerCandidate =
+        event.partners?.photos && event.partners.photos.length > 0
+          ? event.partners.photos[0]
+          : null;
 
-        // regra que resolve o seu caso:
-        // - se a foto do evento for de "photos/" (upload de user)
-        // - e o parceiro tiver foto
-        // -> usa a foto do parceiro
-        let finalImage = null;
-        if (eventCandidate && isSupabasePhoto(eventCandidate) && partnerCandidate) {
-          finalImage = buildStorageUrl(partnerCandidate);
-        } else if (eventCandidate) {
-          finalImage = buildStorageUrl(eventCandidate);
-        } else if (partnerCandidate) {
-          finalImage = buildStorageUrl(partnerCandidate);
-        }
-
-        if (finalImage) {
-          image = finalImage;
-        }
-
-        url = `${baseUrl}/event/${event.id}`;
+      // regra: se a foto do evento for de user (bucket photos) mas o restaurante tem foto → usa a do restaurante
+      let finalImage = null;
+      if (eventCandidate && isUserPhoto(buildStorageUrl(eventCandidate)) && partnerCandidate) {
+        finalImage = buildStorageUrl(partnerCandidate);
+      } else if (eventCandidate) {
+        finalImage = buildStorageUrl(eventCandidate);
+      } else if (partnerCandidate) {
+        finalImage = buildStorageUrl(partnerCandidate);
       }
-    } catch (err) {
-      console.error("❌ [OG] erro inesperado ao montar evento:", err);
+
+      if (finalImage) {
+        image = finalImage;
+      }
+
+      pageUrl = `${baseUrl}/event/${event.id}`;
     }
 
-    return sendMetaTags(res, title, description, image, url);
+    return htmlResponse({
+      title,
+      description,
+      image,
+      url: pageUrl
+    });
   }
 
-  // ==========================================================
+  // =========================================
   // RESTAURANTE
-  // ==========================================================
+  // =========================================
   if (type === "restaurant" && id) {
-    try {
-      const { data: partner, error } = await supabase
-        .from("partners")
-        .select("id, name, description, photos")
-        .eq("id", id)
-        .single();
+    const { data: partner, error } = await supabase
+      .from("partners")
+      .select("id, name, description, photos")
+      .eq("id", id)
+      .single();
 
-      if (error) {
-        console.error("⚠️ [OG] erro ao buscar restaurante:", error.message);
-      } else if (partner) {
-        title = partner.name || `Restaurante #${partner.id} - Mesapra2`;
-        description =
-          partner.description ||
-          `Conheça ${partner.name || "este restaurante"} e descubra experiências gastronômicas.`;
+    if (!error && partner) {
+      title = partner.name || title;
+      description =
+        partner.description ||
+        `Conheça ${partner.name || "este restaurante"} e viva experiências gastronômicas únicas.`;
 
-        if (partner.photos && partner.photos.length > 0) {
-          image = buildStorageUrl(partner.photos[0]);
-        }
-
-        url = `${baseUrl}/restaurant/${partner.id}`;
+      if (partner.photos && partner.photos.length > 0) {
+        image = buildStorageUrl(partner.photos[0]);
       }
-    } catch (err) {
-      console.error("❌ [OG] erro inesperado ao montar restaurante:", err);
+
+      pageUrl = `${baseUrl}/restaurant/${partner.id}`;
     }
 
-    return sendMetaTags(res, title, description, image, url);
+    return htmlResponse({
+      title,
+      description,
+      image,
+      url: pageUrl
+    });
   }
 
   // fallback
-  return sendMetaTags(res, title, description, image, url);
+  return htmlResponse({
+    title,
+    description,
+    image,
+    url: pageUrl
+  });
 }
 
-function sendMetaTags(res, title, description, image, url) {
-  res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader(
-    "Cache-Control",
-    "public, max-age=300, s-maxage=600, stale-while-revalidate=86400"
-  );
-
-  res.status(200).send(`
-<!doctype html>
+function htmlResponse({ title, description, image, url }) {
+  const html = `
+<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
@@ -206,8 +196,6 @@ function sendMetaTags(res, title, description, image, url) {
     <meta property="og:description" content="${escapeHtml(description)}" />
     <meta property="og:image" content="${escapeHtml(image)}" />
     <meta property="og:image:secure_url" content="${escapeHtml(image)}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
     <meta property="og:url" content="${escapeHtml(url)}" />
     <meta property="og:site_name" content="Mesapra2" />
     <meta property="og:locale" content="pt_BR" />
@@ -217,13 +205,19 @@ function sendMetaTags(res, title, description, image, url) {
     <meta name="twitter:description" content="${escapeHtml(description)}" />
     <meta name="twitter:image" content="${escapeHtml(image)}" />
 
-    <script>window.location.href = "${escapeHtml(url)}";</script>
+    <script>window.location.href="${escapeHtml(url)}";</script>
   </head>
   <body>
-    <noscript><meta http-equiv="refresh" content="0;url=${escapeHtml(url)}" /></noscript>
+    <h1>${escapeHtml(title)}</h1>
+    <p>${escapeHtml(description)}</p>
+    <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" style="max-width:100%;height:auto" />
   </body>
 </html>
-  `);
+  `.trim();
+
+  return new Response(html, {
+    headers: { "Content-Type": "text/html; charset=utf-8" }
+  });
 }
 
 function escapeHtml(text) {
