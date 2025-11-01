@@ -22,25 +22,25 @@ export default async function handler(req, res) {
 
   // Busca variáveis de ambiente com TODAS as variações possíveis
   const supabaseUrl = 
-    process.env.VITE_NEXT_PUBLIC_SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL || 
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL || 
     process.env.SUPABASE_URL;
     
   const supabaseAnonKey = 
-    process.env.VITE_NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.VITE_SUPABASE_ANON_KEY || 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY || 
     process.env.SUPABASE_ANON_KEY;
 
   console.log("🔑 [OG] Verificando variáveis de ambiente:");
-  console.log("   VITE_NEXT_PUBLIC_SUPABASE_URL:", !!process.env.VITE_NEXT_PUBLIC_SUPABASE_URL);
+  console.log("   NEXT_PUBLIC_SUPABASE_URL:", !!process.envNEXT_PUBLIC_SUPABASE_URL);
   console.log("   NEXT_PUBLIC_SUPABASE_URL:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
-  console.log("   VITE_SUPABASE_URL:", !!process.env.VITE_SUPABASE_URL);
   console.log("   SUPABASE_URL:", !!process.env.SUPABASE_URL);
-  console.log("   VITE_NEXT_PUBLIC_SUPABASE_ANON_KEY:", !!process.env.VITE_NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  console.log("   SUPABASE_URL:", !!process.env.SUPABASE_URL);
   console.log("   NEXT_PUBLIC_SUPABASE_ANON_KEY:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  console.log("   VITE_SUPABASE_ANON_KEY:", !!process.env.VITE_SUPABASE_ANON_KEY);
+  console.log("   NEXT_PUBLIC_SUPABASE_ANON_KEY:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  console.log("   SUPABASE_ANON_KEY:", !!process.env.SUPABASE_ANON_KEY);
   console.log("   SUPABASE_ANON_KEY:", !!process.env.SUPABASE_ANON_KEY);
   console.log("   ✅ supabaseUrl encontrada:", !!supabaseUrl);
   console.log("   ✅ supabaseAnonKey encontrada:", !!supabaseAnonKey);
