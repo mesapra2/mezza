@@ -5,7 +5,8 @@
   "functions": {
     "api/og.js": {
       "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 15,
+      "runtime": "edge"
     }
   },
   "rewrites": [
@@ -18,7 +19,7 @@
           "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
         }
       ],
-      "destination": "/api/og.js?event_id=:id"
+      "destination": "/api/og.js?type=event&id=:id"
     },
     {
       "source": "/restaurant/:id",
@@ -29,7 +30,7 @@
           "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
         }
       ],
-      "destination": "/api/og.js?partner_id=:id"
+      "destination": "/api/og.js?type=restaurant&id=:id"
     },
     {
       "source": "/(.*)",
