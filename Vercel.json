@@ -11,11 +11,29 @@
   "rewrites": [
     {
       "source": "/event/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
+        }
+      ],
       "destination": "/api/og.js?event_id=:id"
     },
     {
       "source": "/restaurant/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
+        }
+      ],
       "destination": "/api/og.js?partner_id=:id"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/"
     }
   ]
 }
