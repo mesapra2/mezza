@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.24",
+    "@types/react": "^19.2.2",
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.1",
@@ -56,6 +57,6 @@
     "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vite": "^4.4.5"
+    "vite": "^7.1.12"
   }
 }

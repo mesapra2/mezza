@@ -37,7 +37,6 @@ class PushNotificationService {
 
       if (tokenError) {
         console.warn('⚠️ Erro ao buscar tokens de dispositivo:', tokenError);
-        // Não falhar - pode não ter tabela ou tokens
         return { success: true, message: 'Push registrada (sem devices)' };
       }
 
@@ -60,8 +59,7 @@ class PushNotificationService {
           });
           sentCount++;
         } catch (deviceError) {
-          console.error(`❌ Erro ao enviar push para device:`, deviceError);
-          // Continuar com próximo device
+          console.error('❌ Erro ao enviar push para device:', deviceError);
         }
       }
 
@@ -97,10 +95,28 @@ class PushNotificationService {
     eventTitle: string
   ): Promise<SendPushResult> {
     try {
-      console.log(`📨 Enviando senha para anfitrião ${hostId}`);
+      console.log(`🔨 Enviando senha para anfitrião ${hostId}`);
 
       const title = '🔑 Sua Senha do Evento';
       const body = `Evento "${eventTitle}" vai começar em 1 minuto. Compartilhe a senha: ${password}`;
+
+      // 🆕 IMPORTANTE: Criar notificação no banco com data.password
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: hostId,
+          event_id: eventId,
+          notification_type: 'event_password',
+          title,
+          message: body,
+          data: { password },
+          sent: false,
+          created_at: new Date().toISOString()
+        });
+
+      if (notifError) {
+        console.error('❌ Erro ao criar notificação:', notifError);
+      }
 
       return this.sendPush({
         userId: hostId,
@@ -131,12 +147,11 @@ class PushNotificationService {
     eventTitle: string
   ): Promise<SendPushResult> {
     try {
-      console.log(`📨 Enviando notificação de início para ${participantIds.length} participantes`);
+      console.log(`🔨 Enviando notificação de início para ${participantIds.length} participantes`);
 
       const title = '🎉 Seu Evento está Começando!';
       const body = `"${eventTitle}" começa em 1 minuto. Digite a senha para entrar!`;
 
-      // 📤 Enviar para todos os participantes
       let successCount = 0;
       const errors: any[] = [];
 
@@ -225,7 +240,7 @@ class PushNotificationService {
   }
 
   /**
-   * 🔗 Envia push para múltiplos usuários com mesma mensagem
+   * 📣 Envia push para múltiplos usuários com mesma mensagem
    */
   static async sendBroadcast(
     userIds: string[],
@@ -268,7 +283,6 @@ class PushNotificationService {
 
   /**
    * 🔧 Método PRIVADO: Enviar para um device específico
-   * (Implementar com Firebase Cloud Messaging ou Expo)
    */
   private static async sendPushToDevice(params: {
     token: string;
@@ -278,11 +292,7 @@ class PushNotificationService {
     data?: Record<string, any>;
     eventId?: number;
   }): Promise<void> {
-    const { token, platform, title, body, data, eventId } = params;
-
-    // TODO: Implementar com Firebase Cloud Messaging
-    // Para web (agora): usar Web Push API
-    // Para mobile (Flutter): usar FCM
+    const { token, platform, title, body } = params;
 
     console.log(`📤 Enviando para ${platform} device:`, {
       token: token.substring(0, 10) + '...',
@@ -292,10 +302,8 @@ class PushNotificationService {
 
     // Placeholder - será implementado com FCM
     if (platform === 'web') {
-      // Usar Web Push API
       console.log('💻 Web Push (placeholder)');
     } else if (platform === 'android' || platform === 'ios') {
-      // Usar Firebase Cloud Messaging
       console.log('📱 FCM (placeholder)');
     }
   }
@@ -323,13 +331,11 @@ class PushNotificationService {
       });
     } catch (error) {
       console.warn('⚠️ Erro ao registrar log de notificação:', error);
-      // Não falhar - é só logging
     }
   }
 
   /**
    * 📱 Registra token de dispositivo do usuário
-   * (Chamar do mobile quando fizer login)
    */
   static async registerDeviceToken(
     userId: string,
@@ -367,7 +373,7 @@ class PushNotificationService {
 
       if (error) throw error;
 
-      console.log(`✅ Device token removido`);
+      console.log('✅ Device token removido');
       return { success: true, message: 'Device removido com sucesso' };
     } catch (error) {
       console.error('❌ Erro ao remover device token:', error);

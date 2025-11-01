@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, X, UserPlus, Calendar, AlertCircle, Hand } from 'lucide-react';
+import { Bell, Check, X,  UserPlus,   Calendar,   AlertCircle,   Hand,  Key,  Copy,  CheckCircle} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import NotificationService from '@/services/NotificationService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useToast } from '@/features/shared/components/ui/use-toast';
 
 const NotificationDropdown = ({ userId }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ const NotificationDropdown = ({ userId }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const loadNotifications = useCallback(async () => {
     setLoading(true);
@@ -23,7 +25,7 @@ const NotificationDropdown = ({ userId }) => {
     while (retries > 0) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const { data: notificationsData, error: notifError } = await supabase
           .from('notifications')
@@ -73,7 +75,7 @@ const NotificationDropdown = ({ userId }) => {
         );
 
         setNotifications(notificationsWithUsers);
-        break; // Sucesso, sai do loop
+        break;
       } catch (error) {
         retries--;
         if (retries === 0) {
@@ -81,7 +83,7 @@ const NotificationDropdown = ({ userId }) => {
           setNotifications([]);
         } else {
           console.warn(`⚠️ Erro ao carregar notificações. Tentando novamente... (${retries} tentativas restantes)`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1s antes de tentar novamente
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
@@ -95,7 +97,7 @@ const NotificationDropdown = ({ userId }) => {
     while (retries > 0) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
@@ -124,7 +126,7 @@ const NotificationDropdown = ({ userId }) => {
         if (pokesError) throw pokesError;
 
         setPokes(pokesData || []);
-        break; // Sucesso, sai do loop
+        break;
       } catch (error) {
         retries--;
         if (retries === 0) {
@@ -132,7 +134,7 @@ const NotificationDropdown = ({ userId }) => {
           setPokes([]);
         } else {
           console.warn(`⚠️ Erro ao carregar cutucadas. Tentando novamente... (${retries} tentativas restantes)`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1s antes de tentar novamente
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
@@ -144,7 +146,7 @@ const NotificationDropdown = ({ userId }) => {
     while (retries > 0) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const notifCount = await NotificationService.getUnreadCount(userId);
         const { count: pokesCount } = await supabase
@@ -156,7 +158,7 @@ const NotificationDropdown = ({ userId }) => {
         clearTimeout(timeoutId);
 
         setUnreadCount(notifCount + (pokesCount || 0));
-        break; // Sucesso, sai do loop
+        break;
       } catch (error) {
         retries--;
         if (retries === 0) {
@@ -164,7 +166,7 @@ const NotificationDropdown = ({ userId }) => {
           setUnreadCount(0);
         } else {
           console.warn(`⚠️ Erro ao contar não lidas. Tentando novamente... (${retries} tentativas restantes)`);
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda 1s antes de tentar novamente
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
@@ -294,7 +296,6 @@ const NotificationDropdown = ({ userId }) => {
   };
 
   const handleNotificationClick = (notification) => {
-    // ✅ Usar event_id diretamente da notificação
     if (notification.event_id) {
       navigate(`/event/${notification.event_id}`);
       handleMarkAsRead(notification.id);
@@ -310,16 +311,66 @@ const NotificationDropdown = ({ userId }) => {
     setIsOpen(false);
   };
 
+  // 🆕 Função para copiar senha
+  const handleCopyPassword = (password, eventTitle) => {
+    navigator.clipboard.writeText(password);
+    toast({
+      title: '🔐 Senha copiada!',
+      description: `Senha do evento "${eventTitle}" copiada para área de transferência`,
+    });
+  };
+
+  // 🆕 Função para renderizar notificação com senha
+  const renderPasswordNotification = (notification) => {
+    if (notification.notification_type !== 'event_password') return null;
+
+    // Extrair senha do data ou message
+    const password = notification.data?.password || 
+                    notification.message?.match(/\d{4}/)?.[0];
+
+    if (!password) return null;
+
+    return (
+      <div className="mt-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Key className="w-4 h-4 text-green-400" />
+            <div>
+              <p className="text-xs text-green-300 font-semibold">Senha de Entrada</p>
+              <p className="text-2xl font-bold text-green-400 font-mono tracking-wider">
+                {password}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopyPassword(password, notification.title);
+            }}
+            className="p-2 rounded-lg hover:bg-white/10 text-green-400 transition-colors"
+            title="Copiar senha"
+          >
+            <Copy className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-green-200/70 mt-2">
+          Compartilhe esta senha com os participantes para entrarem no evento
+        </p>
+      </div>
+    );
+  };
+
   const getNotificationIcon = (type) => {
     const icons = {
       'Candidatura Recebida': UserPlus,
       'Candidatura Aprovada': Check,
       'Candidatura Rejeitada': X,
       'Novo Evento': Calendar,
-      event_cancelled: AlertCircle,
-      event_confirmed: Check,
-      event_reminder: Calendar,
-      poke: Hand,
+      'event_cancelled': AlertCircle,
+      'event_confirmed': Check,
+      'event_reminder': Calendar,
+      'event_password': Key, // 🆕
+      'poke': Hand,
     };
     return icons[type] || Bell;
   };
@@ -330,10 +381,11 @@ const NotificationDropdown = ({ userId }) => {
       'Candidatura Aprovada': 'text-green-400',
       'Candidatura Rejeitada': 'text-red-400',
       'Novo Evento': 'text-blue-400',
-      event_cancelled: 'text-yellow-400',
-      event_confirmed: 'text-blue-400',
-      event_reminder: 'text-orange-400',
-      poke: 'text-pink-400',
+      'event_cancelled': 'text-yellow-400',
+      'event_confirmed': 'text-blue-400',
+      'event_reminder': 'text-orange-400',
+      'event_password': 'text-green-400', // 🆕
+      'poke': 'text-pink-400',
     };
     return colors[type] || 'text-white';
   };
@@ -418,6 +470,7 @@ const NotificationDropdown = ({ userId }) => {
                     const Icon = getNotificationIcon(item.notification_type);
                     const iconColor = getNotificationColor(item.notification_type);
                     const isUnread = !item.sent;
+                    const isPasswordNotif = item.notification_type === 'event_password'; // 🆕
 
                     return (
                       <motion.button
@@ -431,7 +484,7 @@ const NotificationDropdown = ({ userId }) => {
                         }}
                         className={`w-full text-left p-4 hover:bg-white/5 transition-colors ${
                           isUnread ? 'bg-purple-500/10' : ''
-                        }`}
+                        } ${isPasswordNotif ? 'bg-green-500/5' : ''}`} // 🆕
                         whileHover={{ x: 4 }}
                       >
                         <div className="flex items-start gap-3">
@@ -488,7 +541,11 @@ const NotificationDropdown = ({ userId }) => {
                               )}
                             </div>
                             <p className="text-white/60 text-sm mb-2">{item.message}</p>
-                            <p className="text-white/40 text-xs">
+                            
+                            {/* 🆕 Renderizar senha se for notificação de senha */}
+                            {renderPasswordNotification(item)}
+                            
+                            <p className="text-white/40 text-xs mt-2">
                               {format(new Date(item.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
                             </p>
                           </div>
@@ -501,7 +558,7 @@ const NotificationDropdown = ({ userId }) => {
             </div>
 
             {allItems.length > 0 && (
-              <div className="p-3 text-center">
+              <div className="p-3 text-center border-t border-white/10">
                 <button
                   onClick={() => {
                     navigate('/notifications');
