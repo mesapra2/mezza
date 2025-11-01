@@ -1,5 +1,5 @@
 // src/services/EventStatusService.ts
-// ✅ VERSÃO CONSOLIDADA FINAL
+// ✅ VERSÃO CORRIGIDA - Geração de senha 1 minuto antes
 
 import { supabase } from '../lib/supabaseClient';
 import EventSecurityService from './EventSecurityService';
@@ -12,6 +12,9 @@ interface Event {
   start_time: string;
   end_time: string;
   creator_id: string;
+  title: string;
+  event_entry_password?: string;
+  entry_locked?: boolean;
   [key: string]: any;
 }
 
@@ -26,14 +29,10 @@ interface Participation {
 }
 
 class EventStatusService {
-  // ============================================
-  // 🔄 PROPRIEDADE PRIVADA PARA AUTO-UPDATE
-  // ============================================
   private static updateInterval: ReturnType<typeof setInterval> | null = null;
 
   /**
    * 🎯 Atualiza status de TODOS os eventos
-   * Executa a cada X segundos (Real-time via Supabase)
    */
   static async updateAllEventStatuses(): Promise<void> {
     try {
@@ -77,12 +76,12 @@ class EventStatusService {
     const currentStatus = event.status;
 
     // ============================================
-    // 🎯 FASE 1: Detectar "falta 1 minuto" → Gerar senha + Enviar push
+    // 🎯 FASE 1: Gerar senha 1 minuto antes
     // ============================================
     await this.detectAndHandlePasswordGeneration(event, now, startTime);
 
     // ============================================
-    // 🎯 FASE 2: Detectar "falta 2 minutos para fim" → Bloquear entrada
+    // 🎯 FASE 2: Bloquear entrada 1 minuto antes do fim
     // ============================================
     await this.detectAndHandleEntryLocking(event, now, endTime);
 
@@ -97,7 +96,7 @@ class EventStatusService {
     // 🎯 FASE 4: Evento terminou
     // ============================================
     if (now >= endTime && currentStatus !== 'Finalizado') {
-      console.log(`⏹️ Evento ${event.id} terminou`);
+      console.log(`ℹ️ Evento ${event.id} terminou`);
       await this.updateEventStatus(event.id, 'Finalizado');
 
       // 📊 Penalizar não-presenças
@@ -113,6 +112,7 @@ class EventStatusService {
 
   /**
    * 🎲 Detecta "falta 1 minuto" → Gera senha + Envia push
+   * ✅ CORRIGIDO: Agora gera quando falta EXATAMENTE 1 minuto OU MENOS (se ainda não foi gerada)
    */
   private static async detectAndHandlePasswordGeneration(
     event: Event,
@@ -120,81 +120,107 @@ class EventStatusService {
     startTime: Date
   ): Promise<void> {
     try {
-      // Calcular: falta 1 minuto?
-      const oneMinBeforeStart = new Date(startTime.getTime() - 60 * 1000);
-      const twoMinBeforeStart = new Date(startTime.getTime() - 120 * 1000);
+      // ✅ Se já tem senha, não precisa gerar de novo
+      if (event.event_entry_password) {
+        return;
+      }
 
-      // ✅ Se está na faixa de 1-2 minutos antes
-      if (now >= twoMinBeforeStart && now < oneMinBeforeStart) {
-        // Verificar se JÁ foi gerada senha
-        if (event.event_entry_password) {
-          console.log(`✅ Evento ${event.id} já tem senha. Pulando geração.`);
-          return;
+      // Calcular: falta 1 minuto ou menos?
+      const oneMinuteBeforeStart = new Date(startTime.getTime() - 60 * 1000);
+      const timeUntilEvent = startTime.getTime() - now.getTime();
+      const minutesUntilEvent = Math.floor(timeUntilEvent / 1000 / 60);
+
+      // ✅ Gerar senha quando:
+      // 1. Falta 1 minuto OU menos
+      // 2. Evento ainda não começou
+      // 3. Senha ainda não foi gerada
+      const shouldGeneratePassword = now >= oneMinuteBeforeStart && now < startTime;
+
+      if (!shouldGeneratePassword) {
+        // Log apenas se estiver próximo (nos últimos 5 minutos)
+        if (minutesUntilEvent <= 5 && minutesUntilEvent > 0) {
+          console.log(`⏳ Evento ${event.id}: faltam ${minutesUntilEvent} minutos (senha será gerada em 1 min)`);
         }
+        return;
+      }
 
-        console.log(`🎲 Gerando senha para evento ${event.id}...`);
+      console.log(`🎲 Gerando senha para evento ${event.id} (faltam ${minutesUntilEvent} minutos)...`);
 
-        // 1️⃣ Gerar e salvar senha
-        const passwordResult = await EventSecurityService.generateAndSavePassword(event.id);
-        if (!passwordResult.success) {
-          console.error('❌ Erro ao gerar senha:', passwordResult.error);
-          return;
-        }
+      // 1️⃣ Gerar e salvar senha
+      const passwordResult = await EventSecurityService.generateAndSavePassword(event.id);
+      if (!passwordResult.success) {
+        console.error('❌ Erro ao gerar senha:', passwordResult.error);
+        return;
+      }
 
-        const password = passwordResult.password!;
+      const password = passwordResult.password!;
+      console.log(`✅ Senha gerada: ${password}`);
 
-        // 2️⃣ Buscar anfitrião e participantes
-        const { data: hostProfile, error: hostError } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', event.creator_id)
-          .single();
+      // 2️⃣ Buscar anfitrião
+      const { data: hostProfile, error: hostError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', event.creator_id)
+        .single();
 
-        if (hostError) {
-          console.error('❌ Erro ao buscar anfitrião:', hostError);
-          return;
-        }
+      if (hostError) {
+        console.error('❌ Erro ao buscar anfitrião:', hostError);
+        return;
+      }
 
-        const { data: participations, error: partError } = await supabase
-          .from('event_participants')
-          .select('user_id')
-          .eq('event_id', event.id)
-          .eq('status', 'aprovado');
+      // 3️⃣ Buscar participantes aprovados
+      const { data: participations, error: partError } = await supabase
+        .from('event_participants')
+        .select('user_id')
+        .eq('event_id', event.id)
+        .eq('status', 'aprovado');
 
-        if (partError) {
-          console.error('❌ Erro ao buscar participantes:', partError);
-          return;
-        }
+      if (partError) {
+        console.error('❌ Erro ao buscar participantes:', partError);
+        return;
+      }
 
-        // 3️⃣ Enviar push para ANFITRIÃO (com senha)
-        console.log(`📨 Enviando SENHA para anfitrião...`);
-        await PushNotificationService.sendPasswordToHost(
-          event.creator_id,
+      // 4️⃣ Enviar push para ANFITRIÃO (com senha)
+      console.log(`📨 Enviando SENHA para anfitrião ${event.creator_id}...`);
+      const hostResult = await PushNotificationService.sendPasswordToHost(
+        event.creator_id,
+        event.id,
+        password,
+        event.title
+      );
+
+      if (hostResult.success) {
+        console.log(`✅ Senha enviada para anfitrião`);
+      } else {
+        console.error('❌ Erro ao enviar senha para anfitrião:', hostResult.error);
+      }
+
+      // 5️⃣ Enviar push para PARTICIPANTES (genérica, sem senha)
+      if (participations && participations.length > 0) {
+        const participantIds = participations.map(p => p.user_id);
+        console.log(`📨 Enviando notificação de INÍCIO para ${participantIds.length} participantes...`);
+        
+        const participantsResult = await PushNotificationService.sendEventStartNotificationToParticipants(
+          participantIds,
           event.id,
-          password,
           event.title
         );
 
-        // 4️⃣ Enviar push para PARTICIPANTES (genérica)
-        if (participations && participations.length > 0) {
-          const participantIds = participations.map(p => p.user_id);
-          console.log(`📨 Enviando notificação de INÍCIO para ${participantIds.length} participantes...`);
-          await PushNotificationService.sendEventStartNotificationToParticipants(
-            participantIds,
-            event.id,
-            event.title
-          );
+        if (participantsResult.success) {
+          console.log(`✅ Notificações enviadas para participantes`);
+        } else {
+          console.error('❌ Erro ao enviar para participantes:', participantsResult.error);
         }
-
-        console.log(`✅ Notificações de entrada enviadas para evento ${event.id}`);
       }
+
+      console.log(`✅ Processo de geração de senha completo para evento ${event.id}`);
     } catch (error) {
       console.error('❌ Erro ao processar geração de senha:', error);
     }
   }
 
   /**
-   * 🔒 Detecta "falta 2 minutos para fim" → Bloqueia entrada
+   * 🔒 Detecta "falta 1 minuto para fim" → Bloqueia entrada
    */
   private static async detectAndHandleEntryLocking(
     event: Event,
@@ -202,11 +228,18 @@ class EventStatusService {
     endTime: Date
   ): Promise<void> {
     try {
-      const twoMinBeforeEnd = new Date(endTime.getTime() - 2 * 60 * 1000);
+      // ✅ Se já está bloqueado, não precisa bloquear de novo
+      if (event.entry_locked) {
+        return;
+      }
 
-      // ✅ Se chegou à faixa de bloqueio (falta 2 min ou menos)
-      if (now >= twoMinBeforeEnd && !event.entry_locked) {
-        console.log(`🔒 Bloqueando entrada do evento ${event.id}...`);
+      const oneMinuteBeforeEnd = new Date(endTime.getTime() - 60 * 1000);
+      const timeUntilEnd = endTime.getTime() - now.getTime();
+      const minutesUntilEnd = Math.floor(timeUntilEnd / 1000 / 60);
+
+      // ✅ Bloquear quando falta 1 minuto ou menos para terminar
+      if (now >= oneMinuteBeforeEnd && now < endTime) {
+        console.log(`🔒 Bloqueando entrada do evento ${event.id} (faltam ${minutesUntilEnd} min para terminar)...`);
 
         const lockResult = await EventSecurityService.lockEventEntry(event.id);
         if (lockResult.success) {
@@ -221,7 +254,7 @@ class EventStatusService {
   }
 
   /**
-   * 👇 Verifica auto-conclusão (7 dias OU todos avaliaram)
+   * 💡 Verifica auto-conclusão (7 dias OU todos avaliaram)
    */
   static async shouldAutoCompleteEvent(event: Event): Promise<boolean> {
     let retries = 2;
@@ -238,7 +271,7 @@ class EventStatusService {
           return true;
         }
 
-        // 💡 Condição 2: Todos que compareceram avaliaram TUDO?
+        // 💡 Condição 2: Todos que compareceram avaliaram?
         const { data: participations, error: participationsError } = await supabase
           .from('event_participants')
           .select('id, avaliacao_feita, presenca_confirmada')
@@ -267,7 +300,7 @@ class EventStatusService {
         const allEvaluated = presentParticipants.every(p => p.avaliacao_feita === true);
 
         if (allEvaluated) {
-          console.log(`✅ Evento ${event.id} auto-concluído - TODOS avaliaram TUDO`);
+          console.log(`✅ Evento ${event.id} auto-concluído - TODOS avaliaram`);
           return true;
         }
 
@@ -313,48 +346,47 @@ class EventStatusService {
   /**
    * 📊 Obtém estatísticas do evento
    */
-  // src/services/EventStatusService.ts
-static async getEventStats(eventId: number): Promise<{
-  success: boolean;
-  data?: any;
-  error?: any;
-}> {
-  try {
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .select('*')
-      .eq('id', eventId)
-      .single();
+  static async getEventStats(eventId: number): Promise<{
+    success: boolean;
+    data?: any;
+    error?: any;
+  }> {
+    try {
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single();
 
-    if (eventError) throw eventError;
+      if (eventError) throw eventError;
 
-    // FORÇAR user_id e campos necessários
-    const { data: participations, error: partError } = await supabase
-      .from('event_participants')
-      .select(`
-        id,
-        user_id,
-        status,
-        presenca_confirmada,
-        com_acesso,
-        avaliacao_feita
-      `)
-      .eq('event_id', eventId);
+      const { data: participations, error: partError } = await supabase
+        .from('event_participants')
+        .select(`
+          id,
+          user_id,
+          status,
+          presenca_confirmada,
+          com_acesso,
+          avaliacao_feita
+        `)
+        .eq('event_id', eventId);
 
-    if (partError) throw partError;
+      if (partError) throw partError;
 
-    return {
-      success: true,
-      data: {
-        event,
-        participants: participations || []
-      }
-    };
-  } catch (error) {
-    console.error('Erro ao obter stats do evento:', error);
-    return { success: false, error };
+      return {
+        success: true,
+        data: {
+          event,
+          participants: participations || []
+        }
+      };
+    } catch (error) {
+      console.error('Erro ao obter stats do evento:', error);
+      return { success: false, error };
+    }
   }
-}
+
   // ============================================
   // 🔄 MÉTODOS DE AUTO-UPDATE
   // ============================================
@@ -362,10 +394,8 @@ static async getEventStats(eventId: number): Promise<{
   /**
    * 🚀 Inicia atualização automática de eventos
    * @param intervalSeconds - Intervalo em segundos (padrão: 30)
-   * @returns ID do intervalo para poder parar depois
    */
   static startAutoUpdate(intervalSeconds: number = 30): ReturnType<typeof setInterval> {
-    // Se já existe um intervalo rodando, para ele primeiro
     if (this.updateInterval) {
       this.stopAutoUpdate();
     }
