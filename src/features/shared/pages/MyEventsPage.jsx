@@ -15,7 +15,7 @@ import {
   CheckCircle,
   AlertCircle,
   Loader,
-  Star, // NOVO: ícone de estrela
+  Star,
 } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
@@ -39,26 +39,25 @@ const MyEventsPage = () => {
   const [eventStats, setEventStats] = useState({});
   const [uploading, setUploading] = useState({});
 
-  // Carregar eventos criados pelo usuário
-  useEffect(() => {
-    if (user?.id) {
-      loadEvents();
-    }
-  }, [user?.id]);
-
+  // --------------------------------------------------
+  // CARREGAR EVENTOS DO USUÁRIO LOGADO
+  // --------------------------------------------------
   const loadEvents = useCallback(async () => {
+    if (!user?.id) return;
     setLoading(true);
     setError(null);
     try {
       const { data, error: fetchError } = await supabase
         .from('events')
-        .select(`
+        .select(
+          `
           *,
           partner:partners(id, name, address),
           creator:profiles!events_creator_id_fkey(
             id, username, avatar_url, full_name, public_profile
           )
-        `)
+        `,
+        )
         .eq('creator_id', user.id)
         .eq('hidden', false)
         .order('start_time', { ascending: false });
@@ -74,9 +73,18 @@ const MyEventsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [user?.id]); // <-- Adicione esta linha com a dependência
+  }, [user?.id]);
 
-  // Carregar estatísticas de participação
+  // carrega assim que tiver user e quando loadEvents mudar
+  useEffect(() => {
+    if (user?.id) {
+      loadEvents();
+    }
+  }, [user?.id, loadEvents]);
+
+  // --------------------------------------------------
+  // CARREGAR ESTATÍSTICAS DE PARTICIPAÇÃO
+  // --------------------------------------------------
   const loadEventStats = async (eventList) => {
     const stats = {};
     for (const event of eventList) {
@@ -88,7 +96,9 @@ const MyEventsPage = () => {
     setEventStats(stats);
   };
 
-  // Filtrar eventos
+  // --------------------------------------------------
+  // FILTRAR EVENTOS
+  // --------------------------------------------------
   const filterEvents = useCallback(() => {
     const now = new Date();
     let filtered = events;
@@ -117,9 +127,13 @@ const MyEventsPage = () => {
     filterEvents();
   }, [filterEvents]);
 
-  // Ocultar evento
+  // --------------------------------------------------
+  // OCULTAR EVENTO
+  // --------------------------------------------------
   const handleHideEvent = async (eventId) => {
-    if (!window.confirm('Tem certeza que deseja ocultar este evento? Ele não aparecerá mais no seu histórico.')) return;
+    if (!window.confirm('Tem certeza que deseja ocultar este evento? Ele não aparecerá mais no seu histórico.')) {
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -129,16 +143,25 @@ const MyEventsPage = () => {
 
       if (error) throw error;
 
-      toast({ title: 'Evento ocultado', description: 'O evento foi removido do seu histórico.' });
+      toast({
+        title: 'Evento ocultado',
+        description: 'O evento foi removido do seu histórico.',
+      });
       await loadEvents();
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível ocultar o evento.' });
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Não foi possível ocultar o evento.',
+      });
     }
   };
 
-  // Upload de foto
+  // --------------------------------------------------
+  // UPLOAD DE FOTO
+  // --------------------------------------------------
   const handlePhotoUpload = async (eventId) => {
-    const file = fileInputRef.current?.files[0];
+    const file = fileInputRef.current?.files?.[0];
     if (!file) return;
 
     setUploading((prev) => ({ ...prev, [eventId]: true }));
@@ -158,7 +181,9 @@ const MyEventsPage = () => {
     }
   };
 
-  // Verifica se pode enviar foto
+  // --------------------------------------------------
+  // PODE ENVIAR FOTO?
+  // --------------------------------------------------
   const canUploadPhoto = (event) => {
     if (!['Finalizado', 'Concluído'].includes(event.status)) return false;
 
@@ -172,7 +197,9 @@ const MyEventsPage = () => {
     return monthsSinceEnd < 6;
   };
 
-  // Loading
+  // --------------------------------------------------
+  // LOADING
+  // --------------------------------------------------
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -181,7 +208,9 @@ const MyEventsPage = () => {
     );
   }
 
-  // Filtros
+  // --------------------------------------------------
+  // FILTROS
+  // --------------------------------------------------
   const filters = [
     { value: 'futuros', label: 'Futuros' },
     { value: 'passados', label: 'Passados' },
@@ -198,7 +227,7 @@ const MyEventsPage = () => {
 
       <div className="py-6 px-4 sm:px-6 lg:px-8 space-y-6 max-w-7xl mx-auto">
         {/* Cabeçalho */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <h1 className="text-3xl font-bold text-white">Meus Eventos</h1>
           <Link to="/criar-evento">
             <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
@@ -214,11 +243,11 @@ const MyEventsPage = () => {
               key={f.value}
               variant={filter === f.value ? 'default' : 'outline'}
               onClick={() => setFilter(f.value)}
-              className={`${
+              className={
                 filter === f.value
                   ? 'bg-gradient-to-r from-purple-500 to-pink-500'
                   : 'glass-effect border-white/10'
-              }`}
+              }
             >
               {f.label}
             </Button>
@@ -318,34 +347,27 @@ const MyEventsPage = () => {
                   )}
 
                   {/* Ações */}
-                  <div className="flex gap-2 pt-4 border-t border-white/10">
+                  <div className="flex gap-2 pt-4 border-t border-white/10 flex-wrap">
                     {/* Editar + Ver Detalhes (não concluído) */}
                     {!isConcluded && (
                       <>
-                        <Link to={`/event/${event.id}/editar`} className="flex-1">
+                        <Link to={`/event/${event.id}/editar`} className="flex-1 min-w-[110px]">
                           <Button variant="outline" className="w-full border-white/20">
                             <Edit className="w-4 h-4 mr-2" /> Editar
                           </Button>
                         </Link>
-                        <Link to={`/event/${event.id}`} className="w-auto">
-  <Button
-    size="sm"
-    className="min-w-[120px] px-4 bg-gradient-to-r from-yellow-500 to-orange-500 
-               hover:from-yellow-600 hover:to-orange-600 text-white 
-               font-semibold shadow-md hover:shadow-lg transition-all"
-  >
-    <Star className="w-4 h-4 mr-2" />
-    Qualificar
-  </Button>
-</Link>
-
+                        <Link to={`/event/${event.id}`} className="flex-1 min-w-[110px]">
+                          <Button variant="outline" className="w-full border-white/20">
+                            Ver Detalhes
+                          </Button>
+                        </Link>
                       </>
                     )}
 
                     {/* Concluído: apenas Ver + Ocultar */}
                     {isConcluded && (
                       <>
-                        <Link to={`/event/${event.id}`} className="flex-1">
+                        <Link to={`/event/${event.id}`} className="flex-1 min-w-[110px]">
                           <Button variant="outline" className="w-full border-white/20">
                             Ver Detalhes
                           </Button>
@@ -360,11 +382,12 @@ const MyEventsPage = () => {
                       </>
                     )}
 
-                    {/* NOVO: BOTÃO QUALIFICAR */}
+                    {/* BOTÃO QUALIFICAR (ajustado) */}
                     {(isFinalized || isConcluded) && (
-                      <Link to={`/event/${event.id}`} className="flex-1">
+                      <Link to={`/event/${event.id}`} className="shrink-0">
                         <Button
-                          className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                          size="sm"
+                          className="h-9 px-4 min-w-[120px] bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold"
                         >
                           <Star className="w-4 h-4 mr-2" />
                           Qualificar
@@ -403,13 +426,21 @@ const MyEventsPage = () => {
             })}
           </div>
         ) : (
-          /* Sem eventos */
+          // Sem eventos
           <div className="glass-effect rounded-2xl p-12 border border-white/10 text-center">
             <AlertCircle className="w-16 h-16 text-white/20 mx-auto mb-4" />
             <p className="text-white/60 text-lg mb-4">
               {events.length === 0
                 ? 'Você não criou eventos ainda'
-                : `Nenhum evento ${filter === 'futuros' ? 'futuro' : filter === 'passados' ? 'passado' : filter === 'finalizados' ? 'finalizado' : 'concluído'}`}
+                : `Nenhum evento ${
+                    filter === 'futuros'
+                      ? 'futuro'
+                      : filter === 'passados'
+                      ? 'passado'
+                      : filter === 'finalizados'
+                      ? 'finalizado'
+                      : 'concluído'
+                  }`}
             </p>
             <Link to="/criar-evento">
               <Button className="bg-gradient-to-r from-purple-500 to-pink-500">
