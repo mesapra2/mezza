@@ -11,21 +11,11 @@
   "rewrites": [
     {
       "source": "/event/:id",
-      "destination": "/api/og?event_id=:id"
+      "destination": "/api/og.js?event_id=:id"
     },
     {
       "source": "/restaurant/:id",
-      "destination": "/api/og?partner_id=:id"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/og",
-      "dest": "/api/og.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/"
+      "destination": "/api/og.js?partner_id=:id"
     }
   ]
 }
