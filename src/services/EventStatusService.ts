@@ -67,21 +67,28 @@ class EventStatusService {
   }
 
   /**
-   * 📊 Calcula o status de um evento específico
+   * 🧠 Lógica de status de UM evento
    */
-  static async calculateEventStatus(event: Event): Promise<void> {
+  private static async calculateEventStatus(event: Event): Promise<void> {
     const now = new Date();
     const startTime = new Date(event.start_time);
     const endTime = new Date(event.end_time);
     const currentStatus = event.status;
 
     // ============================================
-    // 🎯 FASE 1: Gerar senha 1 minuto antes
+    // 🎯 FASE 1: Evento futuro
     // ============================================
-    await this.detectAndHandlePasswordGeneration(event, now, startTime);
+    if (now < startTime) {
+      // checa se falta 1 min → gera senha → envia push
+      await this.detectAndHandlePasswordGeneration(event, now, startTime);
+
+      // checa se precisa bloquear entrada próximo do fim
+      await this.detectAndHandleEntryLocking(event, now, endTime);
+      return;
+    }
 
     // ============================================
-    // 🎯 FASE 2: Bloquear entrada 1 minuto antes do fim
+    // 🎯 FASE 2: Evento prestes a acabar
     // ============================================
     await this.detectAndHandleEntryLocking(event, now, endTime);
 
@@ -120,26 +127,35 @@ class EventStatusService {
     startTime: Date
   ): Promise<void> {
     try {
-      // ✅ Se já tem senha, não precisa gerar de novo
-      if (event.event_entry_password) {
+      // já tem senha? não faz nada
+      if (event.event_entry_password && event.event_entry_password.length > 0) {
         return;
       }
 
-      // Calcular: falta 1 minuto ou menos?
-      const oneMinuteBeforeStart = new Date(startTime.getTime() - 60 * 1000);
-      const timeUntilEvent = startTime.getTime() - now.getTime();
-      const minutesUntilEvent = Math.floor(timeUntilEvent / 1000 / 60);
+      // falta quantos minutos?
+      const diffMs = startTime.getTime() - now.getTime();
+      const minutesUntilEvent = Math.floor(diffMs / (1000 * 60));
 
-      // ✅ Gerar senha quando:
-      // 1. Falta 1 minuto OU menos
-      // 2. Evento ainda não começou
+      // só processa quem está até 5 min do início (pra não ficar logando demais)
+      if (minutesUntilEvent > 5) return;
+
+      // 1. Evento ainda não começou
+      if (now >= startTime) {
+        return;
+      }
+
+      // 2. Está dentro da janela de 1 minuto
+      const oneMinuteBeforeStart = new Date(startTime.getTime() - 60 * 1000);
+
       // 3. Senha ainda não foi gerada
       const shouldGeneratePassword = now >= oneMinuteBeforeStart && now < startTime;
 
       if (!shouldGeneratePassword) {
         // Log apenas se estiver próximo (nos últimos 5 minutos)
         if (minutesUntilEvent <= 5 && minutesUntilEvent > 0) {
-          console.log(`⏳ Evento ${event.id}: faltam ${minutesUntilEvent} minutos (senha será gerada em 1 min)`);
+          console.log(
+            `⏳ Evento ${event.id}: faltam ${minutesUntilEvent} minutos (senha será gerada em 1 min)`
+          );
         }
         return;
       }
@@ -148,6 +164,7 @@ class EventStatusService {
 
       // 1️⃣ Gerar e salvar senha
       const passwordResult = await EventSecurityService.generateAndSavePassword(event.id);
+
       if (!passwordResult.success) {
         console.error('❌ Erro ao gerar senha:', passwordResult.error);
         return;
@@ -165,7 +182,6 @@ class EventStatusService {
 
       if (hostError) {
         console.error('❌ Erro ao buscar anfitrião:', hostError);
-        return;
       }
 
       // 3️⃣ Buscar participantes aprovados
@@ -220,7 +236,7 @@ class EventStatusService {
   }
 
   /**
-   * 🔒 Detecta "falta 1 minuto para fim" → Bloqueia entrada
+   * 🔒 Bloqueia entrada 1 minuto antes do fim
    */
   private static async detectAndHandleEntryLocking(
     event: Event,
@@ -228,10 +244,8 @@ class EventStatusService {
     endTime: Date
   ): Promise<void> {
     try {
-      // ✅ Se já está bloqueado, não precisa bloquear de novo
-      if (event.entry_locked) {
-        return;
-      }
+      // se já está bloqueado, não faz nada
+      if (event.entry_locked) return;
 
       const oneMinuteBeforeEnd = new Date(endTime.getTime() - 60 * 1000);
       const timeUntilEnd = endTime.getTime() - now.getTime();
@@ -314,7 +328,6 @@ class EventStatusService {
           return false;
         } else {
           console.warn(`⚠️ Erro ao verificar auto-complete. Tentando novamente...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
@@ -331,7 +344,7 @@ class EventStatusService {
         .from('events')
         .update({
           status: newStatus,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', eventId);
 
@@ -345,6 +358,7 @@ class EventStatusService {
 
   /**
    * 📊 Obtém estatísticas do evento
+   * (corrigido para usar event_id e já trazer o perfil do participante)
    */
   static async getEventStats(eventId: number): Promise<{
     success: boolean;
@@ -365,11 +379,19 @@ class EventStatusService {
         .select(`
           id,
           user_id,
+          event_id,
           status,
           presenca_confirmada,
           com_acesso,
-          avaliacao_feita
+          avaliacao_feita,
+          profiles:profiles!event_participants_user_id_fkey (
+            id,
+            username,
+            avatar_url,
+            full_name
+          )
         `)
+        // 👇 aqui estava dando 406 no frontend quando vinham UUIDs
         .eq('event_id', eventId);
 
       if (partError) throw partError;
@@ -378,8 +400,8 @@ class EventStatusService {
         success: true,
         data: {
           event,
-          participants: participations || []
-        }
+          participants: participations || [],
+        },
       };
     } catch (error) {
       console.error('Erro ao obter stats do evento:', error);

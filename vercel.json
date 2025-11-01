@@ -6,7 +6,7 @@
     "api/og.js": {
       "memory": 1024,
       "maxDuration": 15,
-      "runtime": "edge"
+      "runtime": "nodejs20.x"
     }
   },
   "rewrites": [
