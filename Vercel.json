@@ -16,18 +16,7 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
-        }
-      ],
-      "destination": "/api/og.js?type=event&id=:id"
-    },
-    {
-      "source": "/event/:id/",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
         }
       ],
       "destination": "/api/og.js?type=event&id=:id"
@@ -38,25 +27,14 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
-        }
-      ],
-      "destination": "/api/og.js?type=restaurant&id=:id"
-    },
-    {
-      "source": "/restaurant/:id/",
-      "has": [
-        {
-          "type": "header",
-          "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot)"
         }
       ],
       "destination": "/api/og.js?type=restaurant&id=:id"
     },
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "/"
     }
   ]
 }
