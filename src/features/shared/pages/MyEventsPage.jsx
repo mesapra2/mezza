@@ -327,11 +327,18 @@ const MyEventsPage = () => {
                             <Edit className="w-4 h-4 mr-2" /> Editar
                           </Button>
                         </Link>
-                        <Link to={`/event/${event.id}`} className="flex-1">
-                          <Button variant="outline" className="w-full border-white/20">
-                            Ver Detalhes
-                          </Button>
-                        </Link>
+                        <Link to={`/event/${event.id}`} className="w-auto">
+  <Button
+    size="sm"
+    className="min-w-[120px] px-4 bg-gradient-to-r from-yellow-500 to-orange-500 
+               hover:from-yellow-600 hover:to-orange-600 text-white 
+               font-semibold shadow-md hover:shadow-lg transition-all"
+  >
+    <Star className="w-4 h-4 mr-2" />
+    Qualificar
+  </Button>
+</Link>
+
                       </>
                     )}
 

@@ -90,17 +90,15 @@ function App() {
 
   const isLoading = loading || (user && !profile);
 
-  // 👇 Iniciar monitoramento automático de status de eventos
+  // 🔄 Iniciar monitoramento automático de status de eventos
   useEffect(() => {
     if (user) {
       console.log('✅ Iniciando monitoramento automático de status de eventos');
-      const intervalId = EventStatusService.startAutoUpdate();
+      EventStatusService.startAutoUpdate(30); // Atualiza a cada 30 segundos
 
       return () => {
-        if (intervalId) {
-          console.log('ℹ️ Parando monitoramento de status de eventos');
-          EventStatusService.stopAutoUpdate(intervalId);
-        }
+        console.log('ℹ️ Parando monitoramento de status de eventos');
+        EventStatusService.stopAutoUpdate();
       };
     }
   }, [user]);
@@ -147,89 +145,131 @@ function App() {
                 <Route index element={<Navigate to="/partner/dashboard" replace />} />
                 
                 {/* 🛡️ Rotas protegidas - requerem telefone verificado */}
-                <Route path="partner/dashboard" element={
-                  <RequirePhoneVerification>
-                    <PartnerDashboard />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="partner/dashboard" 
+                  element={
+                    <RequirePhoneVerification>
+                      <PartnerDashboard />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="partner/settings" element={
-                  <RequirePhoneVerification>
-                    <PartnerSettings />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="partner/settings" 
+                  element={
+                    <RequirePhoneVerification>
+                      <PartnerSettings />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="events" element={
-                  <RequirePhoneVerification>
-                    <FeedPartnerEvent />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="events" 
+                  element={
+                    <RequirePhoneVerification>
+                      <FeedPartnerEvent />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="meus-eventos" element={
-                  <RequirePhoneVerification>
-                    <EventManagementPartner />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="meus-eventos" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EventManagementPartner />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="restaurants" element={
-                  <RequirePhoneVerification>
-                    <RestaurantsPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="restaurants" 
+                  element={
+                    <RequirePhoneVerification>
+                      <RestaurantsPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="people" element={
-                  <RequirePhoneVerification>
-                    <PeoplePage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="people" 
+                  element={
+                    <RequirePhoneVerification>
+                      <PeoplePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="chats" element={
-                  <RequirePhoneVerification>
-                    <ChatHistoryPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="chats" 
+                  element={
+                    <RequirePhoneVerification>
+                      <ChatHistoryPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="profile/:id" element={
-                  <RequirePhoneVerification>
-                    <ProfilePage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="profile/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <ProfilePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="partner/create-event" element={
-                  <RequirePhoneVerification>
-                    <CreateEventPartner />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="partner/create-event" 
+                  element={
+                    <RequirePhoneVerification>
+                      <CreateEventPartner />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="partner/edit-event/:id" element={
-                  <RequirePhoneVerification>
-                    <EditEventPagePartner />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="partner/edit-event/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EditEventPagePartner />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="event/:id" element={
-                  <RequirePhoneVerification>
-                    <EventDetails />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="event/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EventDetails />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="event/:id/chat" element={
-                  <RequirePhoneVerification>
-                    <EventChatPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="event/:id/chat" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EventChatPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="restaurant/:id" element={
-                  <RequirePhoneVerification>
-                    <PartnerProfilePage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="restaurant/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <PartnerProfilePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="notifications" element={
-                  <RequirePhoneVerification>
-                    <NotificationsPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="notifications" 
+                  element={
+                    <RequirePhoneVerification>
+                      <NotificationsPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
                 <Route path="*" element={<Navigate to="/partner/dashboard" replace />} />
               </Route>
@@ -239,101 +279,149 @@ function App() {
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 
                 {/* 🛡️ Rotas protegidas - requerem telefone verificado */}
-                <Route path="dashboard" element={
-                  <RequirePhoneVerification>
-                    <Dashboard />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="dashboard" 
+                  element={
+                    <RequirePhoneVerification>
+                      <Dashboard />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="events" element={
-                  <RequirePhoneVerification>
-                    <EventsPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="events" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EventsPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="event/:id" element={
-                  <RequirePhoneVerification>
-                    <EventDetails />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="event/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EventDetails />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="event/:id/chat" element={
-                  <RequirePhoneVerification>
-                    <EventChatPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="event/:id/chat" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EventChatPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="notifications" element={
-                  <RequirePhoneVerification>
-                    <NotificationsPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="notifications" 
+                  element={
+                    <RequirePhoneVerification>
+                      <NotificationsPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="meus-eventos" element={
-                  <RequirePhoneVerification>
-                    <MyEventsPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="meus-eventos" 
+                  element={
+                    <RequirePhoneVerification>
+                      <MyEventsPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="editar-evento/:id" element={
-                  <RequirePhoneVerification>
-                    <EditEventPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="editar-evento/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <EditEventPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="criar-evento" element={
-                  <RequirePhoneVerification>
-                    <CreateEvent />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="criar-evento" 
+                  element={
+                    <RequirePhoneVerification>
+                      <CreateEvent />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="criar-evento/particular" element={
-                  <RequirePhoneVerification>
-                    <CreateEventParticular />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="criar-evento/particular" 
+                  element={
+                    <RequirePhoneVerification>
+                      <CreateEventParticular />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="criar-evento/crusher" element={
-                  <RequirePhoneVerification>
-                    <CreateEventCrusher />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="criar-evento/crusher" 
+                  element={
+                    <RequirePhoneVerification>
+                      <CreateEventCrusher />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="restaurants" element={
-                  <RequirePhoneVerification>
-                    <RestaurantsPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="restaurants" 
+                  element={
+                    <RequirePhoneVerification>
+                      <RestaurantsPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="restaurant/:id" element={
-                  <RequirePhoneVerification>
-                    <PartnerProfilePage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="restaurant/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <PartnerProfilePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="people" element={
-                  <RequirePhoneVerification>
-                    <PeoplePage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="people" 
+                  element={
+                    <RequirePhoneVerification>
+                      <PeoplePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="profile/:id" element={
-                  <RequirePhoneVerification>
-                    <ProfilePage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="profile/:id" 
+                  element={
+                    <RequirePhoneVerification>
+                      <ProfilePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="chats" element={
-                  <RequirePhoneVerification>
-                    <ChatHistoryPage />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="chats" 
+                  element={
+                    <RequirePhoneVerification>
+                      <ChatHistoryPage />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
-                <Route path="settings" element={
-                  <RequirePhoneVerification>
-                    <UserSettings />
-                  </RequirePhoneVerification>
-                } />
+                <Route 
+                  path="settings" 
+                  element={
+                    <RequirePhoneVerification>
+                      <UserSettings />
+                    </RequirePhoneVerification>
+                  } 
+                />
                 
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Route>
