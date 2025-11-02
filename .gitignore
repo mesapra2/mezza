@@ -6,6 +6,9 @@
 .env
 .env.production
 .env.development
+# arquivos temporários do Drive
+.tmp.driveupload/
+
 dist
 build
 echo "docs/keys" >> .gitignore

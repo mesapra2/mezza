@@ -1,8 +1,19 @@
-import { useState, useEffect, useCallback } from 'react'; // ✨ 1. IMPORTAR useCallback
+// src/features/shared/pages/EventManagement.jsx
+import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, Users, Clock, CheckCircle, XCircle, AlertCircle, TrendingUp, Plus, Pencil } from 'lucide-react';
+import {
+  Calendar,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  TrendingUp,
+  Plus,
+  Pencil,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
@@ -22,15 +33,14 @@ const EventManagement = () => {
   const [eventStats, setEventStats] = useState(null);
   const [eventParticipants, setEventParticipants] = useState({});
 
-  // ✨ 2. ENVOLVER loadMyEvents com useCallback
   const loadMyEvents = useCallback(async () => {
-    if (!user) return; // Depende do 'user'
+    if (!user) return;
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .eq('creator_id', user.id) // Depende do 'user'
+        .eq('creator_id', user.id)
         .order('start_time', { ascending: false });
 
       if (error) throw error;
@@ -38,15 +48,19 @@ const EventManagement = () => {
       setMyEvents(data || []);
 
       const participantsByEvent = {};
+      // eslint-disable-next-line no-restricted-syntax
       for (const event of data) {
+        // participantes aprovados
+        // eslint-disable-next-line no-await-in-loop
         const { data: participationsData } = await supabase
           .from('event_participants')
           .select('user_id')
           .eq('event_id', event.id)
           .eq('status', 'aprovado');
 
-        if (participationsData.length > 0) {
-          const userIds = participationsData.map(p => p.user_id);
+        if (participationsData && participationsData.length > 0) {
+          const userIds = participationsData.map((p) => p.user_id);
+          // eslint-disable-next-line no-await-in-loop
           const { data: participantsData } = await supabase
             .from('profiles')
             .select('id, username, full_name, avatar_url, public_profile')
@@ -58,25 +72,26 @@ const EventManagement = () => {
         }
       }
       setEventParticipants(participantsByEvent);
-    } catch (error) {
-      console.error('Erro ao carregar eventos:', error);
-      toast({ // Depende do 'toast' (importado)
-        variant: "destructive",
-        title: "Erro ao carregar eventos",
-        description: error.message,
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Erro ao carregar eventos:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao carregar eventos',
+        description: err.message,
       });
     } finally {
       setLoading(false);
     }
-  }, [user]); // ✨ 3. ADICIONAR 'user' como dependência
+  }, [user]);
 
   useEffect(() => {
     if (user) {
-      loadMyEvents(); // Chamar a função memoizada
+      loadMyEvents();
       const intervalId = EventStatusService.startAutoUpdate();
       return () => EventStatusService.stopAutoUpdate(intervalId);
     }
-    // ✨ 4. ADICIONAR loadMyEvents às dependências do useEffect
+    return undefined;
   }, [user, loadMyEvents]);
 
   const loadEventStats = async (eventId) => {
@@ -85,9 +100,9 @@ const EventManagement = () => {
       setEventStats(result.data);
     } else {
       toast({
-        variant: "destructive",
-        title: "Erro ao carregar estatísticas",
-        description: result.error?.message || "Ocorreu um erro.",
+        variant: 'destructive',
+        title: 'Erro ao carregar estatísticas',
+        description: result.error?.message || 'Ocorreu um erro.',
       });
     }
   };
@@ -95,42 +110,41 @@ const EventManagement = () => {
   const handleConfirmEvent = async (eventId) => {
     const result = await EventStatusService.confirmEvent(eventId);
     if (result.success) {
-      loadMyEvents();
+      await loadMyEvents();
       const { data: event } = await supabase
         .from('events')
         .select('title')
         .eq('id', eventId)
         .single();
 
-      const notifResult = await NotificationService.createForUser({
+      await NotificationService.createForUser({
         target_user_id: user.id,
         target_event_id: eventId,
         notification_type: 'event_confirmed',
         title: '✅ Evento Confirmado',
-        message: `Seu evento "${event.title}" foi confirmado com sucesso!`
+        message: `Seu evento "${event.title}" foi confirmado com sucesso!`,
       });
-      if (!notifResult.success) {
-         console.error("Erro ao enviar notificação de confirmação:", notifResult.error);
-      }
-       toast({
-         title: "✅ Evento confirmado!",
-       });
+
+      toast({
+        title: '✅ Evento confirmado!',
+      });
     } else {
       toast({
-        variant: "destructive",
-        title: "Erro ao confirmar evento",
-        description: result.error?.message || "Não foi possível confirmar.",
+        variant: 'destructive',
+        title: 'Erro ao confirmar evento',
+        description: result.error?.message || 'Não foi possível confirmar.',
       });
     }
   };
 
   const handleCancelEvent = async (eventId) => {
+    // eslint-disable-next-line no-alert
     const reason = prompt('Motivo do cancelamento (opcional):');
     if (reason === null) return;
 
     const result = await EventStatusService.cancelEvent(eventId, reason || '');
     if (result.success) {
-      loadMyEvents();
+      await loadMyEvents();
 
       const { data: participants } = await supabase
         .from('event_participants')
@@ -144,49 +158,53 @@ const EventManagement = () => {
         .eq('id', eventId)
         .single();
 
+      // eslint-disable-next-line no-restricted-syntax
       for (const part of participants) {
+        // eslint-disable-next-line no-await-in-loop
         await NotificationService.createForUser({
           target_user_id: part.user_id,
           target_event_id: eventId,
           notification_type: 'event_cancelled',
           title: '❌ Evento Cancelado',
-          message: `O evento "${event.title}" foi cancelado. Motivo: ${reason || 'Não especificado'}`
+          message: `O evento "${event.title}" foi cancelado. Motivo: ${
+            reason || 'Não especificado'
+          }`,
         });
       }
       toast({
-        title: "Evento cancelado",
+        title: 'Evento cancelado',
       });
     } else {
       toast({
-        variant: "destructive",
-        title: "Erro ao cancelar evento",
-        description: result.error?.message || "Não foi possível cancelar.",
+        variant: 'destructive',
+        title: 'Erro ao cancelar evento',
+        description: result.error?.message || 'Não foi possível cancelar.',
       });
     }
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      'Aberto': 'border-green-500/30 text-green-300',
-      'Confirmado': 'border-blue-500/30 text-blue-300',
+      Aberto: 'border-green-500/30 text-green-300',
+      Confirmado: 'border-blue-500/30 text-blue-300',
       'Em Andamento': 'border-purple-500/30 text-purple-300',
-      'Finalizado': 'border-yellow-500/30 text-yellow-300',
-      'Concluído': 'border-gray-500/30 text-gray-300',
-      'Cancelado': 'border-red-500/30 text-red-300',
+      Finalizado: 'border-yellow-500/30 text-yellow-300',
+      Concluído: 'border-gray-500/30 text-gray-300',
+      Cancelado: 'border-red-500/30 text-red-300',
     };
-    return colors[status] || colors['Aberto'];
+    return colors[status] || colors.Aberto;
   };
 
   const getStatusIcon = (status) => {
     const icons = {
-      'Aberto': <AlertCircle className="w-3 h-3" />,
-      'Confirmado': <CheckCircle className="w-3 h-3" />,
+      Aberto: <AlertCircle className="w-3 h-3" />,
+      Confirmado: <CheckCircle className="w-3 h-3" />,
       'Em Andamento': <TrendingUp className="w-3 h-3" />,
-      'Finalizado': <Clock className="w-3 h-3" />,
-      'Concluído': <CheckCircle className="w-3 h-3" />,
-      'Cancelado': <XCircle className="w-3 h-3" />,
+      Finalizado: <Clock className="w-3 h-3" />,
+      Concluído: <CheckCircle className="w-3 h-3" />,
+      Cancelado: <XCircle className="w-3 h-3" />,
     };
-    return icons[status] || icons['Aberto'];
+    return icons[status] || icons.Aberto;
   };
 
   return (
@@ -215,7 +233,9 @@ const EventManagement = () => {
           <div className="glass-effect rounded-2xl p-12 border border-white/10 text-center">
             <Users className="w-16 h-16 text-white/20 mx-auto mb-4" />
             <p className="text-white/60 text-lg mb-4">Você ainda não criou nenhum evento</p>
-            <p className="text-white/40 text-sm mb-6">Crie seu primeiro evento e comece a conectar pessoas!</p>
+            <p className="text-white/40 text-sm mb-6">
+              Crie seu primeiro evento e comece a conectar pessoas!
+            </p>
             <Button
               onClick={() => navigate('/criar-evento')}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
@@ -240,20 +260,46 @@ const EventManagement = () => {
                 className="glass-effect rounded-2xl p-6 border border-white/10 hover:border-purple-500/50 transition-all flex flex-col justify-between"
               >
                 <div>
-                  <div className="cursor-pointer" onClick={() => { setSelectedEvent(event); loadEventStats(event.id); }}>
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      loadEventStats(event.id);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setSelectedEvent(event);
+                        loadEventStats(event.id);
+                      }
+                    }}
+                  >
                     <h3 className="text-xl font-bold text-white mb-2">{event.title}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1 mb-4 ${getStatusColor(event.status)}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1 ${getStatusColor(
+                        event.status,
+                      )}`}
+                    >
                       {getStatusIcon(event.status)}
                       {event.status}
                     </span>
                     <div className="space-y-2 text-white/60 text-sm">
                       <p className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        {format(new Date(event.start_time), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                        {format(new Date(event.start_time), "dd 'de' MMMM 'às' HH:mm", {
+                          locale: ptBR,
+                        })}
                       </p>
                       <p className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
-                        Duração: {Math.round((new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / (1000 * 60 * 60))} horas
+                        Duração:{' '}
+                        {Math.round(
+                          (new Date(event.end_time).getTime() -
+                            new Date(event.start_time).getTime()) /
+                            (1000 * 60 * 60),
+                        )}{' '}
+                        horas
                       </p>
                       <p className="flex items-center gap-2">
                         <Users className="w-4 h-4" />
@@ -264,9 +310,11 @@ const EventManagement = () => {
 
                   {eventParticipants[event.id]?.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-white mb-2">Participantes Aprovados ({eventParticipants[event.id].length})</h4>
+                      <h4 className="text-sm font-medium text-white mb-2">
+                        Participantes Aprovados ({eventParticipants[event.id].length})
+                      </h4>
                       <div className="flex flex-wrap gap-2">
-                        {eventParticipants[event.id].map(participant => (
+                        {eventParticipants[event.id].map((participant) => (
                           <Avatar
                             key={participant.id}
                             url={participant.avatar_url}
@@ -296,7 +344,7 @@ const EventManagement = () => {
                   )}
 
                   {event.status === 'Confirmado' && (
-                    <Link to={`/editar-evento/${event.id}`} className="flex-1">
+                    <Link to={`/event/${event.id}/editar`} className="flex-1">
                       <Button
                         onClick={(e) => e.stopPropagation()}
                         variant="outline"
@@ -309,20 +357,21 @@ const EventManagement = () => {
                     </Link>
                   )}
 
-                  {event.status !== 'Cancelado' && !['Finalizado', 'Concluído'].includes(event.status) && (
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCancelEvent(event.id);
-                      }}
-                      variant="destructive"
-                      size="sm"
-                      className="flex-1"
-                    >
-                      <XCircle className="w-4 h-4 mr-1" />
-                      Cancelar Evento
-                    </Button>
-                  )}
+                  {event.status !== 'Cancelado' &&
+                    !['Finalizado', 'Concluído'].includes(event.status) && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancelEvent(event.id);
+                        }}
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Cancelar Evento
+                      </Button>
+                    )}
                 </div>
               </motion.div>
             ))}
@@ -339,12 +388,17 @@ const EventManagement = () => {
               <div className="flex justify-between items-start mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-1">{selectedEvent.title}</h2>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1 ${getStatusColor(selectedEvent.status)}`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium border inline-flex items-center gap-1 ${getStatusColor(
+                      selectedEvent.status,
+                    )}`}
+                  >
                     {getStatusIcon(selectedEvent.status)}
                     {selectedEvent.status}
                   </span>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     setSelectedEvent(null);
                     setEventStats(null);
@@ -364,7 +418,9 @@ const EventManagement = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="glass-effect rounded-lg p-4 border border-white/10">
                     <p className="text-white/60 text-sm mb-1">Total de Candidaturas</p>
-                    <p className="text-white text-2xl font-bold">{eventStats.totalCandidaturas}</p>
+                    <p className="text-white text-2xl font-bold">
+                      {eventStats.totalCandidaturas}
+                    </p>
                   </div>
                   <div className="glass-effect rounded-lg p-4 border border-white/10">
                     <p className="text-white/60 text-sm mb-1">Aprovados</p>

@@ -114,7 +114,7 @@ class EventSecurityService {
       }
 
       // 🕐 Verificar: falta 2 minutos para terminar?
-      const twoMinBeforeEnd = new Date(endTime.getTime() - 2 * 60 * 1000);
+      const twoMinBeforeEnd = new Date(endTime.getTime() - 1 * 20 * 1000);
       if (now >= twoMinBeforeEnd) {
         return {
           allowed: false,
