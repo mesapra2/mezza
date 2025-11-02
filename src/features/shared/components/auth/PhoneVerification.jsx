@@ -6,7 +6,7 @@ import { Smartphone, ArrowLeft } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { Input } from '@/features/shared/components/ui/input';
 import { useToast } from '@/features/shared/components/ui/use-toast';
-import authService from '@/services/authService';
+import * as authService from '@/services/authService'; // <-- CORREÇÃO AQUI
 
 const PhoneVerification = ({ userId, phone, onVerified, onBack }) => {
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -105,6 +105,8 @@ const PhoneVerification = ({ userId, phone, onVerified, onBack }) => {
 
     setIsLoading(true);
     try {
+      // O teste que você enviou mostra que seu serviço usa "resendVerificationCode"
+      // Se essa função não existir, mude para "authService.resendCode"
       await authService.resendVerificationCode({ userId, phone });
       toast({
         title: "Código reenviado",

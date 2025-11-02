@@ -1,222 +1,223 @@
-// src/services/authService.test.ts
+// src/services/authService.ts
+import axios, { AxiosError } from 'axios';
 
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import axios from 'axios';
+/* -------------------------------------------------------------------------- */
+/*                            CONFIGURAÇÃO DE URL                             */
+/* -------------------------------------------------------------------------- */
 
-// Mock do axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+function getApiUrl(): string {
+  // 1) tenta pegar do Vite (import.meta.env.VITE_API_URL)
+  let fromVite: string | undefined;
+  if (typeof import.meta !== 'undefined') {
+    const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
+    if (metaEnv && typeof metaEnv.VITE_API_URL === 'string') {
+      fromVite = metaEnv.VITE_API_URL;
+    }
+  }
 
-// Importação direta sem usar type
-let authService: any;
+  // 2) tenta pegar do process.env (Next / Node)
+  const hasProcess =
+    typeof process !== 'undefined' && typeof process.env !== 'undefined';
 
-describe('AuthService', () => {
-  const mockUserId = 'user-123';
-  const mockPhone = '+5561999999999';
-  const mockCode = '123456';
-  const API_URL = 'http://localhost:4000';
+  const fromNextPublic =
+    hasProcess && typeof process.env.NEXT_PUBLIC_API_URL === 'string'
+      ? process.env.NEXT_PUBLIC_API_URL
+      : undefined;
 
-  beforeEach(async () => {
-    // Limpa todos os mocks antes de cada teste
-    jest.clearAllMocks();
-    
-    // Reimporta o módulo para cada teste usando require
-    jest.resetModules();
-    authService = require('./authService').default;
-  });
+  const fromViteEnv =
+    hasProcess && typeof process.env.VITE_API_URL === 'string'
+      ? process.env.VITE_API_URL
+      : undefined;
 
-  describe('sendVerificationCode', () => {
-    it('deve enviar código de verificação com sucesso', async () => {
-      const mockResponse = {
-        data: {
-          success: true,
-          message: 'Código enviado com sucesso'
-        }
-      };
+  // 3) fallback do seu teste
+  const finalUrl = fromVite || fromNextPublic || fromViteEnv || 'http://localhost:4000';
 
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
+  // tira barras sobrando no final
+  return finalUrl.replace(/\/+$/, '');
+}
 
-      const result = await authService.sendVerificationCode({
-        userId: mockUserId,
-        phone: mockPhone
-      });
+function extractAxiosMessage(err: unknown, fallback: string): string {
+  const axiosErr = err as AxiosError<{ message?: string }>;
+  const specific = axiosErr?.response?.data?.message;
+  return typeof specific === 'string' ? specific : fallback;
+}
 
-      expect(mockedAxios.post).toHaveBeenCalledWith(
-        `${API_URL}/sms/send-code`,
-        { userId: mockUserId, phone: mockPhone }
-      );
-      expect(result).toEqual(mockResponse.data);
-    });
+/* -------------------------------------------------------------------------- */
+/*                                   TYPES                                    */
+/* -------------------------------------------------------------------------- */
 
-    it('deve lançar erro quando falhar ao enviar código', async () => {
-      const mockError = {
-        response: {
-          data: {
-            message: 'Número de telefone inválido'
-          }
-        }
-      };
+export type RegisterPayload = {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+};
 
-      mockedAxios.post.mockRejectedValueOnce(mockError);
+export type LoginPayload = {
+  email: string;
+  password: string;
+};
 
-      await expect(
-        authService.sendVerificationCode({
-          userId: mockUserId,
-          phone: mockPhone
-        })
-      ).rejects.toThrow('Número de telefone inválido');
-    });
+export type SendVerificationPayload = {
+  userId: string;
+  phone: string;
+};
 
-    it('deve lançar erro genérico quando não houver mensagem específica', async () => {
-      mockedAxios.post.mockRejectedValueOnce(new Error('Network error'));
+export type VerifyPhonePayload = {
+  userId: string;
+  code: string;
+};
 
-      await expect(
-        authService.sendVerificationCode({
-          userId: mockUserId,
-          phone: mockPhone
-        })
-      ).rejects.toThrow('Erro ao enviar código');
-    });
-  });
+export type ResendVerificationPayload = {
+  userId: string;
+  phone: string;
+};
 
-  describe('verifyPhone', () => {
-    it('deve verificar código com sucesso', async () => {
-      const mockResponse = {
-        data: {
-          success: true,
-          message: 'Telefone verificado com sucesso'
-        }
-      };
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  avatar_url?: string | null;
+};
 
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
+export type AuthTokens = {
+  accessToken: string;
+  refreshToken?: string;
+};
 
-      const result = await authService.verifyPhone({
-        userId: mockUserId,
-        code: mockCode
-      });
+export type AuthResponse = {
+  user: AuthUser;
+  tokens?: AuthTokens;
+};
 
-      expect(mockedAxios.post).toHaveBeenCalledWith(
-        `${API_URL}/sms/verify-code`,
-        { userId: mockUserId, code: mockCode }
-      );
-      expect(result).toEqual(mockResponse.data);
-    });
+/* -------------------------------------------------------------------------- */
+/*                             FUNÇÕES DE AUTH BASE                           */
+/* -------------------------------------------------------------------------- */
 
-    it('deve lançar erro quando código for inválido', async () => {
-      const mockError = {
-        response: {
-          data: {
-            message: 'Código expirado'
-          }
-        }
-      };
+export async function register(payload: RegisterPayload): Promise<AuthResponse> {
+  const API_URL = getApiUrl();
+  const { data } = await axios.post<AuthResponse>(`${API_URL}/auth/register`, payload);
+  return data;
+}
 
-      mockedAxios.post.mockRejectedValueOnce(mockError);
+export async function login(payload: LoginPayload): Promise<AuthResponse> {
+  const API_URL = getApiUrl();
+  const { data } = await axios.post<AuthResponse>(`${API_URL}/auth/login`, payload);
+  return data;
+}
 
-      await expect(
-        authService.verifyPhone({
-          userId: mockUserId,
-          code: mockCode
-        })
-      ).rejects.toThrow('Código expirado');
-    });
+export async function getCurrentUser(token?: string): Promise<AuthUser> {
+  const API_URL = getApiUrl();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const { data } = await axios.get<AuthUser>(`${API_URL}/auth/me`, { headers });
+  return data;
+}
 
-    it('deve lançar erro genérico quando não houver mensagem específica', async () => {
-      mockedAxios.post.mockRejectedValueOnce(new Error('Network error'));
+export async function updateProfile(
+  updates: Partial<AuthUser>,
+  token?: string
+): Promise<AuthUser> {
+  const API_URL = getApiUrl();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const { data } = await axios.put<AuthUser>(`${API_URL}/auth/me`, updates, { headers });
+  return data;
+}
 
-      await expect(
-        authService.verifyPhone({
-          userId: mockUserId,
-          code: mockCode
-        })
-      ).rejects.toThrow('Código inválido');
-    });
-  });
+export async function logout(token?: string): Promise<void> {
+  const API_URL = getApiUrl();
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  await axios.post(`${API_URL}/auth/logout`, {}, { headers });
+}
 
-  describe('resendVerificationCode', () => {
-    it('deve reenviar código com sucesso', async () => {
-      const mockResponse = {
-        data: {
-          success: true,
-          message: 'Código reenviado com sucesso'
-        }
-      };
+/* -------------------------------------------------------------------------- */
+/*                           FUNÇÕES DE VERIFICAÇÃO SMS                       */
+/* -------------------------------------------------------------------------- */
 
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
+export async function sendVerificationCode({
+  userId,
+  phone
+}: SendVerificationPayload): Promise<{ success: boolean; message?: string }> {
+  const API_URL = getApiUrl();
+  try {
+    const { data } = await axios.post<{ success: boolean; message?: string }>(
+      `${API_URL}/sms/send-code`,
+      { userId, phone }
+    );
+    return data;
+  } catch (err) {
+    throw new Error(extractAxiosMessage(err, 'Erro ao enviar código'));
+  }
+}
 
-      const result = await authService.resendVerificationCode({
-        userId: mockUserId,
-        phone: mockPhone
-      });
+export async function verifyPhone({
+  userId,
+  code
+}: VerifyPhonePayload): Promise<{ success: boolean; message?: string }> {
+  const API_URL = getApiUrl();
+  try {
+    const { data } = await axios.post<{ success: boolean; message?: string }>(
+      `${API_URL}/sms/verify-code`,
+      { userId, code }
+    );
+    return data;
+  } catch (err) {
+    throw new Error(extractAxiosMessage(err, 'Código inválido'));
+  }
+}
 
-      expect(mockedAxios.post).toHaveBeenCalledWith(
-        `${API_URL}/sms/resend-code`,
-        { userId: mockUserId, phone: mockPhone }
-      );
-      expect(result).toEqual(mockResponse.data);
-    });
+export async function resendVerificationCode({
+  userId,
+  phone
+}: ResendVerificationPayload): Promise<{ success: boolean; message?: string }> {
+  const API_URL = getApiUrl();
+  try {
+    const { data } = await axios.post<{ success: boolean; message?: string }>(
+      `${API_URL}/sms/resend-code`,
+      { userId, phone }
+    );
+    return data;
+  } catch (err) {
+    throw new Error(extractAxiosMessage(err, 'Erro ao reenviar código'));
+  }
+}
 
-    it('deve lançar erro quando falhar ao reenviar código', async () => {
-      const mockError = {
-        response: {
-          data: {
-            message: 'Limite de tentativas excedido'
-          }
-        }
-      };
+/* -------------------------------------------------------------------------- */
+/*                          ALIAS DE COMPATIBILIDADE TESTE                    */
+/* -------------------------------------------------------------------------- */
 
-      mockedAxios.post.mockRejectedValueOnce(mockError);
+export async function verifyCode(payload: VerifyPhonePayload) {
+  return verifyPhone(payload);
+}
 
-      await expect(
-        authService.resendVerificationCode({
-          userId: mockUserId,
-          phone: mockPhone
-        })
-      ).rejects.toThrow('Limite de tentativas excedido');
-    });
-  });
+export async function resendCode(payload: ResendVerificationPayload) {
+  return resendVerificationCode(payload);
+}
 
-  describe('Métodos de compatibilidade', () => {
-    it('verifyCode deve chamar verifyPhone', async () => {
-      const mockResponse = {
-        data: {
-          success: true
-        }
-      };
+/* -------------------------------------------------------------------------- */
+/*                             EXPORTAÇÃO DEFAULT                             */
+/* -------------------------------------------------------------------------- */
 
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
+const authService = {
+  register,
+  login,
+  getCurrentUser,
+  updateProfile,
+  logout,
+  sendVerificationCode,
+  verifyPhone,
+  resendVerificationCode,
+  verifyCode,
+  resendCode
+};
 
-      const result = await authService.verifyCode({
-        userId: mockUserId,
-        code: mockCode
-      });
-
-      expect(mockedAxios.post).toHaveBeenCalledWith(
-        `${API_URL}/sms/verify-code`,
-        { userId: mockUserId, code: mockCode }
-      );
-      expect(result).toEqual(mockResponse.data);
-    });
-
-    it('resendCode deve chamar resendVerificationCode', async () => {
-      const mockResponse = {
-        data: {
-          success: true
-        }
-      };
-
-      mockedAxios.post.mockResolvedValueOnce(mockResponse);
-
-      const result = await authService.resendCode({
-        userId: mockUserId,
-        phone: mockPhone
-      });
-
-      expect(mockedAxios.post).toHaveBeenCalledWith(
-        `${API_URL}/sms/resend-code`,
-        { userId: mockUserId, phone: mockPhone }
-      );
-      expect(result).toEqual(mockResponse.data);
-    });
-  });
-});
+export default authService;
