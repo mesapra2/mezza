@@ -30,6 +30,12 @@
       "type": "shell",
       "command": "git add . && git commit -m '${input:commitMessage}' && git push origin main",
       "problemMatcher": []
+    },
+    {
+      "label": "tree",
+      "type": "shell",
+      "command": "npx tree-node-cli -I \"node_modules|dist|.git|public|testes|api|backend\" > estrutura.md",
+      "problemMatcher": []
     }
   ],
   "inputs": [

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<TestCaseEntity>
-   <description>Logint_Test</description>
-   <name>novo teste</name>
-   <tag></tag>
-   <comment></comment>
-   <recordOption>OTHER</recordOption>
-   <testCaseGuid>88c4f981-2460-47fc-ae6b-b7744819bb18</testCaseGuid>
-</TestCaseEntity>

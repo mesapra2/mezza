@@ -9,7 +9,8 @@
     "preview": "vite preview --host :: --port 3000",
     "deploy": "npm run build && echo 'Build completo! Faça upload da pasta dist/ para seu servidor'",
     "agent:dev": "ts-node agent/src/index.ts",
-    "agent:start": "node agent/dist/index.js"
+    "agent:start": "node agent/dist/index.js",
+    "treeview": "tnc -e \"node_modules|dist|.git|public|testes|api|backend\""
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -41,6 +42,7 @@
     "tailwind-merge": "^1.14.0",
     "tailwindcss": "^3.4.0",
     "tailwindcss-animate": "^1.0.7",
+    "tree-node-cli": "^1.6.0",
     "twilio": "^4.0.0"
   },
   "devDependencies": {
@@ -48,15 +50,15 @@
     "@types/react": "^19.2.2",
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.21",
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "^10.1.8",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^10.1.0",
     "eslint-config-react-app": "^7.0.1",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.0.0",
-    "postcss": "^8.5.6",
-    "prettier": "^3.6.2",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "postcss": "^8.4.30",
+    "prettier": "^3.3.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.12"
+    "typescript": "^5.5.2",
+    "vite": "^5.3.1"
   }
 }
