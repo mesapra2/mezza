@@ -46,6 +46,7 @@ interface Event {
   [key: string]: any;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Participation {
   id: string;
   event_id: number | string;
@@ -70,8 +71,6 @@ interface ServiceResult<T = any> {
   [key: string]: any;
 }
 
-// 👇 só pra TS não reclamar que o tipo não é usado
-type __KeepParticipation = Participation;
 
 class ParticipationService {
   /**
@@ -92,23 +91,29 @@ class ParticipationService {
   static async userAlreadyInEvent(
     eventId: string | number,
     userId: string,
-  ): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('event_participants')
-      .select('id')
-      .eq('event_id', eventId)
-      .eq('user_id', userId)
-      .maybeSingle();
+  ): Promise<{ exists: boolean; participation?: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('event_participants')
+        .select('id, status, mensagem_candidatura, created_at')
+        .eq('event_id', eventId)
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    if (error) {
-      console.error(
-        '❌ Erro ao verificar se usuário já participa do evento:',
-        error,
-      );
-      return false;
+      if (error) {
+        console.error('❌ Erro ao verificar se usuário já participa do evento:', error);
+        return { exists: false };
+      }
+
+      if (data) {
+        console.log(`ℹ️ Usuário \${userId} já está inscrito no evento \${eventId} com status: \${data.status}`);
+      }
+
+      return { exists: !!data, participation: data };
+    } catch (error) {
+      console.error('❌ Erro inesperado ao verificar participação:', error);
+      return { exists: false };
     }
-
-    return !!data;
   }
 
   /**
@@ -190,6 +195,30 @@ class ParticipationService {
     message?: string,
   ): Promise<ServiceResult> {
     try {
+      console.log(`📋 Iniciando inscrição: usuário \${userId} → evento \${eventId}`);
+
+      // ✅ CORREÇÃO: Verificar se usuário já está inscrito
+      const { exists, participation: existingParticipation } = await this.userAlreadyInEvent(eventId, userId);
+      
+      if (exists && existingParticipation) {
+        const statusMessages: Record<string, string> = {
+          'pendente': 'Sua candidatura já foi enviada e está aguardando aprovação.',
+          'aprovado': 'Você já está inscrito e aprovado neste evento.',
+          'rejeitado': 'Sua candidatura anterior foi rejeitada.',
+          'cancelado': 'Você cancelou sua participação anterior neste evento.',
+        };
+
+        const msg = statusMessages[existingParticipation.status] || `Você já está inscrito neste evento (status: \${existingParticipation.status}).`;
+        console.warn(`⚠️ Tentativa de inscrição duplicada: \${msg}`);
+        
+        return {
+          success: false,
+          error: msg,
+          isDuplicate: true,
+          existingParticipation: existingParticipation,
+        };
+      }
+
       // 1. busca o evento
       const { data: event, error: eventError } = await supabase
         .from('events')
@@ -233,7 +262,7 @@ class ParticipationService {
       }
 
       // 5. insere participação
-      const { data: participation, error: participationError } = await supabase
+      const { data: newParticipation, error: participationError } = await supabase
         .from('event_participants')
         .insert({
           event_id: eventId,
@@ -247,6 +276,15 @@ class ParticipationService {
         .single();
 
       if (participationError) {
+        // ✅ CORREÇÃO: Tratamento específico para erro de duplicação
+        if (participationError.code === '23505') {
+          console.error('❌ Erro de duplicação detectado (23505):', participationError);
+          return {
+            success: false,
+            error: 'Você já está inscrito neste evento. Atualize a página e tente novamente.',
+            isDuplicate: true,
+          };
+        }
         throw participationError;
       }
 
@@ -266,7 +304,7 @@ class ParticipationService {
 
       return {
         success: true,
-        data: participation,
+        data: newParticipation,
         message:
           initialStatus === 'aprovado'
             ? 'Entrada confirmada no evento.'
