@@ -10,7 +10,8 @@
     "deploy": "npm run build && echo 'Build completo! Faça upload da pasta dist/ para seu servidor'",
     "agent:dev": "ts-node agent/src/index.ts",
     "agent:start": "node agent/dist/index.js",
-    "treeview": "tnc -e \"node_modules|dist|.git|public|testes|api|backend\""
+    "treeview": "tnc -e \"node_modules|dist|.git|public|testes|api|backend\"",
+    "test": "vitest"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -46,6 +47,8 @@
     "twilio": "^4.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@types/node": "^20.19.24",
     "@types/react": "^19.2.2",
     "@vitejs/plugin-react": "^4.0.3",
@@ -55,10 +58,12 @@
     "eslint-config-react-app": "^7.0.1",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "jsdom": "^27.1.0",
     "postcss": "^8.4.30",
     "prettier": "^3.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.2",
-    "vite": "^5.3.1"
+    "vite": "^5.3.1",
+    "vitest": "^4.0.6"
   }
 }

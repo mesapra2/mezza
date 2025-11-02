@@ -11,6 +11,8 @@ App.Mesapra2.com
 │   ├── FluxoRegistroPartner.md
 │   ├── MonitoramentoEmProdução.md
 │   ├── README.md
+│   ├── SKILL.md
+│   ├── SKILL.zip
 │   ├── SocialLoginStructions.md
 │   ├── VERCEL.COM.md
 │   ├── correções do chat.md
@@ -25,6 +27,9 @@ App.Mesapra2.com
 ├── index.html
 ├── jsconfig.json
 ├── logo.svg
+├── mesapra2-skill
+│   ├── SKILL.md
+│   └── SKILL.zip
 ├── package-lock.json
 ├── package.json
 ├── politicas.html
@@ -57,7 +62,7 @@ App.Mesapra2.com
 │   ├── features
 │   │   ├── partner
 │   │   │   ├── components
-│   │   │   │   ├── EventPasswordCard..jsx
+│   │   │   │   ├── EventPasswordCard.jsx
 │   │   │   │   ├── EventSuggestions.jsx
 │   │   │   │   └── LatestAnnouncements.jsx
 │   │   │   └── pages

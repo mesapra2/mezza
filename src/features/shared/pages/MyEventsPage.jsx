@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Loader,
   Star,
+  Key,
 } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
@@ -198,6 +199,26 @@ const MyEventsPage = () => {
   };
 
   // --------------------------------------------------
+  // DEVE MOSTRAR SENHA? (1 min antes de começar até 1 min antes de acabar)
+  // --------------------------------------------------
+  const shouldShowPassword = (event) => {
+    if (!event.event_entry_password) return false;
+    
+    const now = new Date();
+    const startTime = new Date(event.start_time);
+    const endTime = new Date(event.end_time);
+    
+    // 1 minuto antes de começar
+    const oneMinuteBeforeStart = new Date(startTime.getTime() - 60 * 1000);
+    
+    // 1 minuto antes de acabar
+    const oneMinuteBeforeEnd = new Date(endTime.getTime() - 60 * 1000);
+    
+    // Está no período correto?
+    return now >= oneMinuteBeforeStart && now < oneMinuteBeforeEnd;
+  };
+
+  // --------------------------------------------------
   // LOADING
   // --------------------------------------------------
   if (loading) {
@@ -271,6 +292,7 @@ const MyEventsPage = () => {
               const isConcluded = event.status === 'Concluído';
               const canUpload = canUploadPhoto(event);
               const isUploading = uploading[event.id];
+              const showPassword = shouldShowPassword(event);
 
               return (
                 <motion.div
@@ -294,6 +316,24 @@ const MyEventsPage = () => {
                       {event.status}
                     </span>
                   </div>
+
+                  {/* 🔑 SENHA DO EVENTO (mostra 1 min antes de começar até 1 min antes de acabar) */}
+                  {showPassword && (
+                    <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-400/40 animate-pulse">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Key className="w-5 h-5 text-purple-300" />
+                        <h4 className="text-sm font-bold text-purple-200">Senha do Evento</h4>
+                      </div>
+                      <div className="bg-black/30 rounded-lg p-3 text-center">
+                        <p className="text-3xl font-mono font-bold text-white tracking-widest">
+                          {event.event_entry_password}
+                        </p>
+                      </div>
+                      <p className="text-xs text-purple-200/80 mt-2 text-center">
+                        Compartilhe esta senha com os participantes para iniciar o evento
+                      </p>
+                    </div>
+                  )}
 
                   {/* Conteúdo */}
                   <div className="flex-1">
@@ -347,27 +387,27 @@ const MyEventsPage = () => {
                   )}
 
                   {/* Ações */}
-                  <div className="flex gap-2 pt-4 border-t border-white/10 flex-wrap">
-                    {/* Editar + Ver Detalhes (não concluído) */}
+                  <div className="space-y-2 pt-4 border-t border-white/10">
+                    {/* Primeira linha: Editar + Ver Detalhes (não concluído) */}
                     {!isConcluded && (
-                      <>
-                        <Link to={`/event/${event.id}/editar`} className="flex-1 min-w-[110px]">
+                      <div className="flex gap-2">
+                        <Link to={`/event/${event.id}/editar`} className="flex-1">
                           <Button variant="outline" className="w-full border-white/20">
                             <Edit className="w-4 h-4 mr-2" /> Editar
                           </Button>
                         </Link>
-                        <Link to={`/event/${event.id}`} className="flex-1 min-w-[110px]">
+                        <Link to={`/event/${event.id}`} className="flex-1">
                           <Button variant="outline" className="w-full border-white/20">
                             Ver Detalhes
                           </Button>
                         </Link>
-                      </>
+                      </div>
                     )}
 
-                    {/* Concluído: apenas Ver + Ocultar */}
+                    {/* Concluído: Ver + Ocultar */}
                     {isConcluded && (
-                      <>
-                        <Link to={`/event/${event.id}`} className="flex-1 min-w-[110px]">
+                      <div className="flex gap-2">
+                        <Link to={`/event/${event.id}`} className="flex-1">
                           <Button variant="outline" className="w-full border-white/20">
                             Ver Detalhes
                           </Button>
@@ -375,50 +415,51 @@ const MyEventsPage = () => {
                         <Button
                           variant="ghost"
                           onClick={() => handleHideEvent(event.id)}
-                          className="text-purple-400 hover:bg-purple-500/10"
+                          className="flex-1 text-purple-400 hover:bg-purple-500/10"
                         >
                           <EyeOff className="w-4 h-4 mr-1" /> Ocultar
                         </Button>
-                      </>
+                      </div>
                     )}
 
-                    {/* BOTÃO QUALIFICAR (ajustado) */}
+                    {/* Segunda linha: Qualificar + Foto */}
                     {(isFinalized || isConcluded) && (
-                      <Link to={`/event/${event.id}`} className="shrink-0">
-                        <Button
-                          size="sm"
-                          className="h-9 px-4 min-w-[120px] bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold"
-                        >
-                          <Star className="w-4 h-4 mr-2" />
-                          Qualificar
-                        </Button>
-                      </Link>
-                    )}
+                      <div className="flex gap-2">
+                        <Link to={`/event/${event.id}`} className="flex-1">
+                          <Button
+                            className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold"
+                          >
+                            <Star className="w-4 h-4 mr-2" />
+                            Qualificar
+                          </Button>
+                        </Link>
 
-                    {/* Botão Enviar Foto */}
-                    {canUpload && (
-                      <>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={() => handlePhotoUpload(event.id)}
-                        />
-                        <Button
-                          variant="outline"
-                          className="border-white/20"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isUploading}
-                        >
-                          {isUploading ? (
-                            <Loader className="w-4 h-4 mr-2 animate-spin" />
-                          ) : (
-                            <Camera className="w-4 h-4 mr-2" />
-                          )}
-                          {isUploading ? 'Enviando...' : 'Foto'}
-                        </Button>
-                      </>
+                        {/* Botão Enviar Foto */}
+                        {canUpload && (
+                          <>
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={() => handlePhotoUpload(event.id)}
+                            />
+                            <Button
+                              variant="outline"
+                              className="flex-1 border-white/20"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isUploading}
+                            >
+                              {isUploading ? (
+                                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                              ) : (
+                                <Camera className="w-4 h-4 mr-2" />
+                              )}
+                              {isUploading ? 'Enviando...' : 'Foto'}
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     )}
                   </div>
                 </motion.div>

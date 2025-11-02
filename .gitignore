@@ -14,3 +14,4 @@ echo "**/*.env.local" >> .gitignore
 git add .gitignore
 git commit -m "chore: update gitignore"
 .vercel
+/src/App.test.jsx

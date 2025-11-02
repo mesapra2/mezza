@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
@@ -61,5 +62,13 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       historyApiFallback: true, // ⭐ Para 'npm run preview'
     },
+
+    // --- ADIÇÃO PARA O VITEST ---
+    test: {
+      globals: true, // Permite usar 'test', 'expect', etc. sem importar
+      environment: 'jsdom', // Simula um navegador
+      setupFiles: './src/test/setup.js', // Arquivo de setup (próximo passo)
+    },
+    // --- FIM DA ADIÇÃO ---
   };
 });

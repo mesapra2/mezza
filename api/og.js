@@ -2,6 +2,40 @@
 // api/og.js
 import { createClient } from "@supabase/supabase-js";
 
+// ============================================
+// FUNÇÃO HELPER: Pegar imagem do Partner
+// ============================================
+function getPartnerImage(partner, supabaseUrl) {
+  if (!partner) return null;
+
+  // 1. PRIORIDADE: avatar_url (nova estrutura)
+  if (partner.avatar_url) {
+    // Se já é URL completa, usa direto
+    if (partner.avatar_url.startsWith('http')) {
+      return partner.avatar_url;
+    }
+    // Se é path do storage, monta URL completa
+    return `${supabaseUrl}/storage/v1/object/public/partner-avatars/${partner.avatar_url}`;
+  }
+
+  // 2. FALLBACK: photos[0] (estrutura legada)
+  const rawPhotos = partner.photos;
+  if (rawPhotos) {
+    let photoPath = Array.isArray(rawPhotos) ? rawPhotos[0] : rawPhotos;
+    
+    if (photoPath) {
+      // Se já é URL completa, usa direto
+      if (photoPath.startsWith('http')) {
+        return photoPath;
+      }
+      // Se é path do storage, monta URL completa
+      return `${supabaseUrl}/storage/v1/object/public/photos/${photoPath}`;
+    }
+  }
+
+  return null;
+}
+
 export default async function handler(req, res) {
   // Permitir CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,6 +60,8 @@ export default async function handler(req, res) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
     // ============================
     // EVENTO
     // ============================
@@ -36,7 +72,7 @@ export default async function handler(req, res) {
           id,
           title,
           description,
-          partners ( id, name, photos )
+          partners ( id, name, avatar_url, photos )
         `)
         .eq("id", id)
         .single();
@@ -47,13 +83,10 @@ export default async function handler(req, res) {
           event.description ||
           `Participe de uma experiência gastronômica incrível em ${event.partners?.name || "restaurantes parceiros"}.`;
 
-        const rawPhotos = event.partners?.photos;
-        if (rawPhotos) {
-          let photoPath = Array.isArray(rawPhotos) ? rawPhotos[0] : rawPhotos;
-          if (photoPath && !photoPath.startsWith("http")) {
-            photoPath = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${photoPath}`;
-          }
-          image = photoPath;
+        // ✅ Usar função helper para pegar imagem do partner
+        const partnerImage = getPartnerImage(event.partners, supabaseUrl);
+        if (partnerImage) {
+          image = partnerImage;
         }
 
         url = `https://app.mesapra2.com/event/${event.id}`;
@@ -66,7 +99,7 @@ export default async function handler(req, res) {
     if (type === "restaurant" && id) {
       const { data: partner, error } = await supabase
         .from("partners")
-        .select("id, name, description, photos")
+        .select("id, name, description, avatar_url, photos")
         .eq("id", id)
         .single();
 
@@ -76,13 +109,10 @@ export default async function handler(req, res) {
           partner.description ||
           `Conheça ${partner.name || "este restaurante"} e viva experiências gastronômicas únicas.`;
 
-        const rawPhotos = partner.photos;
-        if (rawPhotos) {
-          let photoPath = Array.isArray(rawPhotos) ? rawPhotos[0] : rawPhotos;
-          if (photoPath && !photoPath.startsWith("http")) {
-            photoPath = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/photos/${photoPath}`;
-          }
-          image = photoPath;
+        // ✅ Usar função helper para pegar imagem do partner
+        const partnerImage = getPartnerImage(partner, supabaseUrl);
+        if (partnerImage) {
+          image = partnerImage;
         }
 
         url = `https://app.mesapra2.com/restaurant/${partner.id}`;
@@ -102,17 +132,22 @@ export default async function handler(req, res) {
     <title>${title}</title>
     <meta name="description" content="${description}" />
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mesapra2" />
+    <meta property="og:locale" content="pt_BR" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:image" content="${image}" />
+    <meta property="og:image:secure_url" content="${image}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mesapra2" />
     <meta name="twitter:title" content="${title}" />
     <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${image}" />
