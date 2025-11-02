@@ -10,8 +10,10 @@
     "deploy": "npm run build && echo 'Build completo! Faça upload da pasta dist/ para seu servidor'",
     "agent:dev": "ts-node agent/src/index.ts",
     "agent:start": "node agent/dist/index.js",
-    "treeview": "tnc -e \"node_modules|dist|.git|public|testes|api|backend\"",
-    "test": "vitest"
+    "tree": "npx tree-node-cli -L 4 -I \"node_modules|dist|docs|.git\" > estrutura.md && type estrutura.md",
+    "treeview": "npx tree-node-cli -L 4 -I \"node_modules|dist|docs|.git\"",
+    "test": "vitest",
+    "test:jest": "jest --passWithNoTests"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",
@@ -62,9 +64,12 @@
     "eslint-config-react-app": "^7.0.1",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
     "jsdom": "^27.1.0",
     "postcss": "^8.4.30",
     "prettier": "^3.3.2",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.2",
     "vite": "^5.3.1",

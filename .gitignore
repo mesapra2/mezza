@@ -1,6 +1,7 @@
 # Ignora a pasta de dependências do Node
 /node_modules
 /backend/node_modules
+/docs
 
 # Você também pode querer ignorar outras coisas, como:
 .env
@@ -18,3 +19,5 @@ git add .gitignore
 git commit -m "chore: update gitignore"
 .vercel
 /src/App.test.jsx
+*.test.jsx
+*.test.ts

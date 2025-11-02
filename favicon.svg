@@ -1,0 +1,34 @@
+<svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="400" fill="#2E6655"/>
+
+  <path d="M 120 180 C 120 160 140 160 140 180 L 140 220 C 140 240 120 240 120 220 Z" fill="#EEDAC2"/>
+  <circle cx="130" cy="150" r="15" fill="#EEDAC2"/>
+
+  <path d="M 120 260 L 120 280 C 120 300 140 300 140 280 L 140 260 Z" fill="#EEDAC2"/>
+  <path d="M 140 280 L 160 280 L 160 300 L 140 300 Z" fill="#EEDAC2"/>
+  <circle cx="130" cy="300" r="10" fill="#EEDAC2"/>
+
+  <path d="M 460 180 C 460 160 480 160 480 180 L 480 220 C 480 240 460 240 460 220 Z" fill="#EEDAC2"/>
+  <circle cx="470" cy="150" r="15" fill="#EEDAC2"/>
+
+  <path d="M 460 260 L 460 280 C 460 300 480 300 480 280 L 480 260 Z" fill="#EEDAC2"/>
+  <path d="M 440 280 L 460 280 L 460 300 L 440 300 Z" fill="#EEDAC2"/>
+  <circle cx="470" cy="300" r="10" fill="#EEDAC2"/>
+  
+  <circle cx="300" cy="200" r="60" fill="#EEDAC2"/>
+
+  <text x="300" y="220" font-family="Arial, sans-serif" font-size="80" font-weight="bold" text-anchor="middle" fill="url(#gradientM)">M</text>
+
+  <defs>
+    <linearGradient id="gradientM" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#CCCCCC;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#999999;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CCCCCC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <path d="M 290 135 L 300 120 L 310 135 Z" fill="#EEDAC2"/>
+  <circle cx="280" cy="145" r="3" fill="#EEDAC2"/>
+  <circle cx="320" cy="145" r="3" fill="#EEDAC2"/>
+
+</svg>
