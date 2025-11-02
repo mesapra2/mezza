@@ -2,13 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/og.js": {
-      "memory": 1024,
-      "maxDuration": 15,
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/event/:id",
