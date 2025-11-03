@@ -1,29 +1,41 @@
 /* eslint-env node */
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'jsdom',
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
+  
   transform: {
     '^.+\\.(t|j)sx?$': ['ts-jest', {
       useESM: true,
+      tsconfig: {
+        module: 'ESNext',
+        moduleResolution: 'node',
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+      },
     }],
   },
+  
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
+  
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
-  // Adicione estas linhas:
-  globals: {
-    'import.meta': {
-      env: {
-        VITE_SUPABASE_URL: 'https://ksmnfhenhppasfcikefd.supabase.co',
-        VITE_SUPABASE_ANON_KEY: 'your-test-anon-key',
-        // adicione outras variáveis de ambiente que você usa
-      },
-    },
+  setupFiles: ['<rootDir>/jest.env.js'],
+  
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
   },
+  
   transformIgnorePatterns: [
-    'node_modules/(?!(@supabase)/)',
+    'node_modules/(?!(@supabase|axios)/)',
   ],
+  
+  verbose: true,
+  cache: true,
+  cacheDirectory: '<rootDir>/.jest-cache',
 };

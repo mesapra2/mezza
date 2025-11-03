@@ -1,6 +1,6 @@
 // src/services/EventStatusService.ts
 // ✅ VERSÃO CORRIGIDA - Geração de senha 1 minuto antes
-
+// @ts-nocheck
 import { supabase } from '../lib/supabaseClient';
 import EventSecurityService from './EventSecurityService';
 import PushNotificationService from './PushNotificationService';

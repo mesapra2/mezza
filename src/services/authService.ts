@@ -6,33 +6,24 @@ import axios, { AxiosError } from 'axios';
 /* -------------------------------------------------------------------------- */
 
 function getApiUrl(): string {
-  // 1) tenta pegar do Vite (import.meta.env.VITE_API_URL)
-  let fromVite: string | undefined;
-  if (typeof import.meta !== 'undefined') {
-    const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string } }).env;
-    if (metaEnv && typeof metaEnv.VITE_API_URL === 'string') {
-      fromVite = metaEnv.VITE_API_URL;
-    }
-  }
-
-  // 2) tenta pegar do process.env (Next / Node)
+  // Tenta pegar do process.env (funciona em Vite, Next, Node e Jest)
   const hasProcess =
     typeof process !== 'undefined' && typeof process.env !== 'undefined';
-
-  const fromNextPublic =
-    hasProcess && typeof process.env.NEXT_PUBLIC_API_URL === 'string'
-      ? process.env.NEXT_PUBLIC_API_URL
-      : undefined;
 
   const fromViteEnv =
     hasProcess && typeof process.env.VITE_API_URL === 'string'
       ? process.env.VITE_API_URL
       : undefined;
 
-  // 3) fallback do seu teste
-  const finalUrl = fromVite || fromNextPublic || fromViteEnv || 'http://localhost:4000';
+  const fromNextPublic =
+    hasProcess && typeof process.env.NEXT_PUBLIC_API_URL === 'string'
+      ? process.env.NEXT_PUBLIC_API_URL
+      : undefined;
 
-  // tira barras sobrando no final
+  // Fallback
+  const finalUrl = fromViteEnv || fromNextPublic || 'http://localhost:4000';
+
+  // Tira barras sobrando no final
   return finalUrl.replace(/\/+$/, '');
 }
 

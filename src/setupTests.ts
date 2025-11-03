@@ -77,19 +77,9 @@ jest.mock('@/lib/supabaseClient', () => ({
   },
 }));
 
-// Mock do authService
-jest.mock('@/services/authService', () => ({
-  default: {
-    login: jest.fn().mockResolvedValue({ success: true, data: {} }),
-    register: jest.fn().mockResolvedValue({ success: true, data: {} }),
-    logout: jest.fn().mockResolvedValue({ success: true }),
-    verifyPhone: jest.fn().mockResolvedValue({ success: true }),
-    sendVerificationCode: jest.fn().mockResolvedValue({ success: true }),
-    resetPassword: jest.fn().mockResolvedValue({ success: true }),
-    changePassword: jest.fn().mockResolvedValue({ success: true }),
-    getCurrentUser: jest.fn().mockResolvedValue(null),
-  },
-}));
+// ❌ REMOVIDO: Mock global do authService
+// Isso estava impedindo os testes unitários de funcionarem
+// Cada teste deve fazer seu próprio mock quando necessário
 
 // Mock do React Router
 jest.mock('react-router-dom', () => ({
@@ -102,4 +92,74 @@ jest.mock('react-router-dom', () => ({
     state: null 
   })),
   useParams: jest.fn(() => ({})),
+  BrowserRouter: ({ children }: any) => children,
+  Link: ({ children }: any) => children,
 }));
+
+// Mock de window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
+// Mock de IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  takeRecords() {
+    return [];
+  }
+  unobserve() {}
+} as any;
+
+// Mock de ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+} as any;
+
+// Suprime avisos específicos do console durante testes
+const originalError = console.error;
+const originalWarn = console.warn;
+
+beforeAll(() => {
+  console.error = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: ReactDOM.render') ||
+       args[0].includes('Not implemented: HTMLFormElement.prototype.submit') ||
+       args[0].includes('Error: Not implemented: HTMLFormElement.prototype.submit'))
+    ) {
+      return;
+    }
+    originalError.call(console, ...args);
+  };
+
+  console.warn = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('componentWillReceiveProps') ||
+       args[0].includes('Warning: Failed prop type'))
+    ) {
+      return;
+    }
+    originalWarn.call(console, ...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+  console.warn = originalWarn;
+});
