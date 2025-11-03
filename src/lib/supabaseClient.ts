@@ -15,9 +15,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
+  // ✅ Removido o header 'Accept' fixo que causava erro 406
   global: {
     headers: {
-      'Accept': 'application/json',
       'Content-Type': 'application/json',
     },
   },

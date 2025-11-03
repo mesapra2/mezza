@@ -1,0 +1,24 @@
+{
+  "brokenTestObjects": [
+    {
+      "approved": true,
+      "testObjectId": "Object Repository/mesatestes/Page_Login - Mesapra2/input_Email_email",
+      "brokenLocator": "//input[@id\u003d\u0027email\u0027]",
+      "brokenLocatorMethod": "XPATH",
+      "proposedLocator": "//input",
+      "proposedLocatorMethod": "XPATH",
+      "recoveryMethod": "XPATH",
+      "pathToScreenshot": "Reports/Self-healing/Object Repository/mesatestes/Page_Login - Mesapra2/input_Email_email_position.png"
+    },
+    {
+      "approved": true,
+      "testObjectId": "Object Repository/mesatestes/Page_Meus Eventos - Mesapra2/button_Aberto_inline-flex items-center just_a93f12",
+      "brokenLocator": "//div[@id\u003d\u0027root\u0027]/div/div/main/div/div/div[2]/div[2]/div[2]/button",
+      "brokenLocatorMethod": "XPATH",
+      "proposedLocator": "//div[2]/button",
+      "proposedLocatorMethod": "XPATH",
+      "recoveryMethod": "XPATH",
+      "pathToScreenshot": "Reports/Self-healing/Object Repository/mesatestes/Page_Meus Eventos - Mesapra2/button_Aberto_inline-flex items-center just_a93f12_position.png"
+    }
+  ]
+}
