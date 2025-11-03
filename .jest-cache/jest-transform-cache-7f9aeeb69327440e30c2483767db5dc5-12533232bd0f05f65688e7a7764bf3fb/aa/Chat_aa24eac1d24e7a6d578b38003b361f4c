@@ -1,0 +1,19 @@
+bab5bed49468503c5a97ce7e760053b8
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const tslib_1 = require("tslib");
+const jsx_runtime_1 = require("react/jsx-runtime");
+const react_1 = tslib_1.__importDefault(require("react"));
+const react_helmet_async_1 = require("react-helmet-async");
+const use_toast_1 = require("@/features/shared/components/ui/use-toast");
+const Chat = () => {
+    const handleAction = () => {
+        (0, use_toast_1.toast)({
+            title: "🚧 Funcionalidade em desenvolvimento",
+            description: "Esta feature ainda não está implementada—mas você pode solicitá-la no próximo prompt! 🚀",
+        });
+    };
+    return ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)(react_helmet_async_1.Helmet, { children: [(0, jsx_runtime_1.jsx)("title", { children: "Chat - Mesapra2" }), (0, jsx_runtime_1.jsx)("meta", { name: "description", content: "Converse com outros participantes." })] }), (0, jsx_runtime_1.jsxs)("div", { className: "text-center py-20", children: [(0, jsx_runtime_1.jsx)("h1", { className: "text-3xl font-bold gradient-text mb-4", children: "Chat" }), (0, jsx_runtime_1.jsx)("p", { className: "text-white/60 mb-8", children: "P\u00E1gina em constru\u00E7\u00E3o" }), (0, jsx_runtime_1.jsx)("button", { onClick: handleAction, className: "px-6 py-3 bg-purple-500 rounded-lg", children: "Testar Notifica\u00E7\u00E3o" })] })] }));
+};
+exports.default = Chat;
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJmaWxlIjoiQzpcXERFVk1peFxcQXBwLk1lc2FwcmEyLmNvbVxcc3JjXFxmZWF0dXJlc1xcc2hhcmVkXFxwYWdlc1xcQ2hhdC5qc3giLCJtYXBwaW5ncyI6Ijs7OztBQUFBLDBEQUEwQjtBQUMxQiwyREFBNEM7QUFDNUMseUVBQWtFO0FBRWxFLE1BQU0sSUFBSSxHQUFHLEdBQUcsRUFBRTtJQUNoQixNQUFNLFlBQVksR0FBRyxHQUFHLEVBQUU7UUFDeEIsSUFBQSxpQkFBSyxFQUFDO1lBQ0osS0FBSyxFQUFFLHNDQUFzQztZQUM3QyxXQUFXLEVBQUUsMEZBQTBGO1NBQ3hHLENBQUMsQ0FBQztJQUNMLENBQUMsQ0FBQztJQUVGLE9BQU8sQ0FDTCw2REFDRSx3QkFBQywyQkFBTSxlQUNMLGdFQUE4QixFQUM5QixpQ0FBTSxJQUFJLEVBQUMsYUFBYSxFQUFDLE9BQU8sRUFBQyxvQ0FBb0MsR0FBRyxJQUNqRSxFQUNULGlDQUFLLFNBQVMsRUFBQyxtQkFBbUIsYUFDaEMsK0JBQUksU0FBUyxFQUFDLHVDQUF1QyxxQkFBVSxFQUMvRCw4QkFBRyxTQUFTLEVBQUMsb0JBQW9CLG9EQUF5QixFQUMxRCxtQ0FBUSxPQUFPLEVBQUUsWUFBWSxFQUFFLFNBQVMsRUFBQyxvQ0FBb0MsNkNBRXBFLElBQ0wsSUFDTCxDQUNKLENBQUM7QUFDSixDQUFDLENBQUM7QUFFRixrQkFBZSxJQUFJLENBQUMiLCJuYW1lcyI6W10sInNvdXJjZXMiOlsiQzpcXERFVk1peFxcQXBwLk1lc2FwcmEyLmNvbVxcc3JjXFxmZWF0dXJlc1xcc2hhcmVkXFxwYWdlc1xcQ2hhdC5qc3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0IGZyb20gJ3JlYWN0JztcclxuaW1wb3J0IHsgSGVsbWV0IH0gZnJvbSAncmVhY3QtaGVsbWV0LWFzeW5jJztcclxuaW1wb3J0IHsgdG9hc3QgfSBmcm9tICdAL2ZlYXR1cmVzL3NoYXJlZC9jb21wb25lbnRzL3VpL3VzZS10b2FzdCc7XHJcblxyXG5jb25zdCBDaGF0ID0gKCkgPT4ge1xyXG4gIGNvbnN0IGhhbmRsZUFjdGlvbiA9ICgpID0+IHtcclxuICAgIHRvYXN0KHtcclxuICAgICAgdGl0bGU6IFwi8J+apyBGdW5jaW9uYWxpZGFkZSBlbSBkZXNlbnZvbHZpbWVudG9cIixcclxuICAgICAgZGVzY3JpcHRpb246IFwiRXN0YSBmZWF0dXJlIGFpbmRhIG7Do28gZXN0w6EgaW1wbGVtZW50YWRh4oCUbWFzIHZvY8OqIHBvZGUgc29saWNpdMOhLWxhIG5vIHByw7N4aW1vIHByb21wdCEg8J+agFwiLFxyXG4gICAgfSk7XHJcbiAgfTtcclxuXHJcbiAgcmV0dXJuIChcclxuICAgIDw+XHJcbiAgICAgIDxIZWxtZXQ+XHJcbiAgICAgICAgPHRpdGxlPkNoYXQgLSBNZXNhcHJhMjwvdGl0bGU+XHJcbiAgICAgICAgPG1ldGEgbmFtZT1cImRlc2NyaXB0aW9uXCIgY29udGVudD1cIkNvbnZlcnNlIGNvbSBvdXRyb3MgcGFydGljaXBhbnRlcy5cIiAvPlxyXG4gICAgICA8L0hlbG1ldD5cclxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBweS0yMFwiPlxyXG4gICAgICAgIDxoMSBjbGFzc05hbWU9XCJ0ZXh0LTN4bCBmb250LWJvbGQgZ3JhZGllbnQtdGV4dCBtYi00XCI+Q2hhdDwvaDE+XHJcbiAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC13aGl0ZS82MCBtYi04XCI+UMOhZ2luYSBlbSBjb25zdHJ1w6fDo288L3A+XHJcbiAgICAgICAgPGJ1dHRvbiBvbkNsaWNrPXtoYW5kbGVBY3Rpb259IGNsYXNzTmFtZT1cInB4LTYgcHktMyBiZy1wdXJwbGUtNTAwIHJvdW5kZWQtbGdcIj5cclxuICAgICAgICAgIFRlc3RhciBOb3RpZmljYcOnw6NvXHJcbiAgICAgICAgPC9idXR0b24+XHJcbiAgICAgIDwvZGl2PlxyXG4gICAgPC8+XHJcbiAgKTtcclxufTtcclxuXHJcbmV4cG9ydCBkZWZhdWx0IENoYXQ7Il0sInZlcnNpb24iOjN9
