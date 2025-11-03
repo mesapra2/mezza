@@ -1,432 +1,226 @@
-// src/App.jsx
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
-import { Helmet } from 'react-helmet';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { motion } from 'framer-motion';
+import { Send, Loader, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Button } from '@/features/shared/components/ui/button';
+import { Textarea } from '@/features/shared/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import EventStatusService from '@/services/EventStatusService';
+import ParticipationService from '@/services/ParticipationService';
+import NotificationService from '@/services/NotificationService';
+import { supabase } from '@/lib/supabaseClient';
 
-// Layout
-import Layout from '@/components/Layout';
+const EventApply = ({ event, onSuccess }) => {
+  const { user } = useAuth();
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
-// Autenticação
-import AuthCallbackPage from '@/features/shared/pages/AuthCallbackPage';
-import LoginPage from '@/features/shared/pages/LoginPage';
-import RegisterPage from '@/features/shared/pages/RegisterPage';
-import PartnerRegisterPage from '@/features/partner/pages/PartnerRegisterPage';
-import PhoneVerificationPage from '@/features/shared/pages/PhoneVerificationPage';
+  const isInstitucional = event.event_type === 'institucional';
+  const requiresMessage = ['padrao', 'particular', 'crusher'].includes(event.event_type);
 
-// === PÁGINAS DO USUÁRIO (features/user/pages) ===
-import Dashboard from '@/features/user/pages/Dashboard';
-import CreateEvent from '@/features/user/pages/CreateEvent';
-import CreateEventParticular from '@/features/user/pages/CreateEventParticular';
-import CreateEventCrusher from '@/features/user/pages/CreateEventCrusher';
-import EditEventPage from '@/features/user/pages/EditEventPage';
-import UserSettings from '@/features/user/pages/UserSettings';
-
-// === PÁGINAS DO PARCEIRO (features/partner/pages) ===
-import PartnerDashboard from '@/features/partner/pages/PartnerDashboard';
-import CreateEventPartner from '@/features/partner/pages/CreateEventPartner';
-import EditEventPagePartner from '@/features/partner/pages/EditEventPagePartner';
-import EventManagementPartner from '@/features/partner/pages/EventManagementPartner';
-import FeedPartnerEvent from '@/features/partner/pages/FeedPartnerEvent';
-import PartnerSettings from '@/features/partner/pages/PartnerSettings';
-
-// === PÁGINAS COMPARTILHADAS (features/shared/pages) ===
-import EventsPage from '@/features/shared/pages/EventsPage';
-import RestaurantsPage from '@/features/shared/pages/RestaurantsPage';
-import PeoplePage from '@/features/shared/pages/PeoplePage';
-import NotificationsPage from '@/features/shared/pages/NotificationsPage';
-import EventDetails from '@/features/shared/pages/EventDetails';
-import EventChatPage from '@/features/shared/pages/EventChatPage';
-import ChatHistoryPage from '@/features/shared/pages/ChatHistoryPage';
-import ProfilePage from '@/features/shared/pages/ProfilePage';
-import PartnerProfilePage from '@/features/shared/pages/PartnerProfilePage';
-import MyEventsPage from '@/features/shared/pages/MyEventsPage';
-
-const RequirePhoneVerification = ({ children }) => {
-  const { user, profile } = useAuth();
-  const location = useLocation();
-
-  // aguarda carregar o profile
-  if (user && !profile) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  // usuário antigo sem telefone → libera
-  if (profile && !profile.phone) {
-    return children;
-  }
-
-  // telefone já verificado → libera
-  if (profile && profile.phone_verified) {
-    return children;
-  }
-
-  // tem telefone mas não verificou → manda verificar
-  if (profile && profile.phone && !profile.phone_verified) {
-    return <Navigate to="/verify-phone" state={{ from: location }} replace />;
-  }
-
-  return children;
-};
-
-RequirePhoneVerification.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
-function App() {
-  const { user, profile, loading } = useAuth();
-
-  const isLoading = loading || (user && !profile);
-
-  useEffect(() => {
-    if (user) {
-      // inicia o job de atualização automática
-      EventStatusService.startAutoUpdate(30);
-
-      return () => {
-        EventStatusService.stopAutoUpdate();
-      };
+  const handleApply = async () => {
+    if (requiresMessage && message.trim().length < 10) {
+      setResult({
+        success: false,
+        error: 'Por favor, escreva uma mensagem (mínimo 10 caracteres)'
+      });
+      return;
     }
-    return undefined;
-  }, [user]);
 
-  if (isLoading) {
+    setLoading(true);
+    setResult(null);
+
+    try {
+      const response = await ParticipationService.applyToEvent(event.id, user.id, message);
+
+      if (response.success && !isInstitucional) {
+        const { data: applicantProfile } = await supabase
+          .from('profiles')
+          .select('username, full_name')
+          .eq('id', user.id)
+          .single();
+
+        const applicantName = applicantProfile?.username || applicantProfile?.full_name || 'Usuário';
+
+        console.log('📢 Enviando notificação ao criador:', {
+          creatorId: event.creator_id,
+          eventId: event.id,
+          participationId: response.participation.id,
+          applicantName,
+          eventTitle: event.title
+        });
+
+        const notifResult = await NotificationService.notifyNewParticipation(
+          event.creator_id,
+          event.id,
+          response.participation.id,
+          applicantName,
+          event.title
+        );
+
+        if (notifResult.success) {
+          console.log('✅ Notificação enviada com sucesso');
+        } else {
+          console.error('❌ Erro ao enviar notificação:', notifResult.error);
+        }
+      }
+
+      setResult(response);
+
+      if (response.success && onSuccess) {
+        setTimeout(() => onSuccess(), 2000);
+      }
+    } catch (error) {
+      setResult({ success: false, error: error.message || 'Erro ao enviar candidatura' });
+      console.error('Erro ao aplicar para o evento:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const isOpen = ['Aberto', 'Confirmado'].includes(event.status);
+
+  if (!isOpen) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+      <div className="glass-effect rounded-lg p-6 border border-yellow-500/30 bg-yellow-500/10">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="text-yellow-300 font-semibold mb-1">Candidaturas Encerradas</h4>
+            <p className="text-yellow-200/80 text-sm">Este evento não está mais aceitando novas candidaturas.</p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const isPartner = profile?.profile_type === 'partner' || profile?.partner_id != null;
+  if (event.vagas <= 0) {
+    return (
+      <div className="glass-effect rounded-lg p-6 border border-red-500/30 bg-red-500/10">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="text-red-300 font-semibold mb-1">Sem Vagas Disponíveis</h4>
+            <p className="text-red-200/80 text-sm">Este evento já atingiu o limite de participantes.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (result?.success) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="glass-effect rounded-lg p-6 border border-green-500/30 bg-green-500/10"
+      >
+        <div className="flex items-start gap-3">
+          {result.isAutoApproved ? (
+            <CheckCircle className="w-6 h-6 text-green-400 flex-shrink-0" />
+          ) : (
+            <Clock className="w-6 h-6 text-blue-400 flex-shrink-0" />
+          )}
+          <div>
+            <h4 className="text-white font-semibold mb-2">
+              {result.isAutoApproved ? '✅ Inscrição Confirmada!' : '🎉 Candidatura Enviada!'}
+            </h4>
+            <p className="text-white/80 text-sm">
+              {result.isAutoApproved
+                ? 'Você foi automaticamente aprovado para este evento institucional.'
+                : 'Sua candidatura foi enviada ao anfitrião. Você será notificado quando for aprovado.'}
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
-    <>
-      <Helmet>
-        <title>Mesapra2</title>
-        <meta
-          name="description"
-          content="Conectando pessoas através de eventos de social dining."
-        />
-      </Helmet>
+    <div className="space-y-4">
+      {isInstitucional ? (
+        <div className="glass-effect rounded-lg p-4 border border-blue-500/30 bg-blue-500/10">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-blue-300 font-semibold mb-1">Inscrição Direta</h4>
+              <p className="text-blue-200/80 text-sm">Este é um evento institucional. Sua inscrição será aprovada automaticamente.</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="glass-effect rounded-lg p-4 border border-purple-500/30 bg-purple-500/10">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="text-purple-300 font-semibold mb-1">Aprovação Manual</h4>
+              <p className="text-purple-200/80 text-sm">O anfitrião irá avaliar sua candidatura. Escreva uma mensagem explicando por que você gostaria de participar.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <Routes>
-        {/* callback de login */}
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      {requiresMessage && (
+        <div className="space-y-2">
+          <label className="text-white/80 text-sm font-medium block">
+            Mensagem para o Anfitrião <span className="text-red-400">*</span>
+          </label>
+          <Textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Conte um pouco sobre você e por que gostaria de participar deste evento..."
+            className="glass-effect border-white/10 text-white min-h-[100px]"
+            maxLength={500}
+          />
+          <p className="text-white/40 text-xs">{message.length}/500 caracteres {message.length < 10 && '(mínimo 10)'}</p>
+        </div>
+      )}
 
-        {!user ? (
-          // ROTAS PÚBLICAS
-          <Route path="/" element={<Layout isPublic />}>
-            <Route index element={<Navigate to="/login" replace />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<RegisterPage />} />
-            <Route path="partner/register" element={<PartnerRegisterPage />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </Route>
-        ) : (
-          // ROTAS AUTENTICADAS
+      {result?.error && (
+        <div className="glass-effect rounded-lg p-4 border border-red-500/30 bg-red-500/10">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+            <p className="text-red-300 text-sm">{result.error}</p>
+          </div>
+        </div>
+      )}
+
+      <Button
+        onClick={handleApply}
+        disabled={loading || (requiresMessage && message.trim().length < 10)}
+        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 text-base font-semibold"
+      >
+        {loading ? (
           <>
-            {/* verificação de telefone */}
-            <Route path="/verify-phone" element={<PhoneVerificationPage />} />
-
-            {isPartner ? (
-              // ================= PARCEIRO =================
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Navigate to="/partner/dashboard" replace />} />
-
-                <Route
-                  path="partner/dashboard"
-                  element={
-                    <RequirePhoneVerification>
-                      <PartnerDashboard />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="partner/settings"
-                  element={
-                    <RequirePhoneVerification>
-                      <PartnerSettings />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="events"
-                  element={
-                    <RequirePhoneVerification>
-                      <FeedPartnerEvent />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="meus-eventos"
-                  element={
-                    <RequirePhoneVerification>
-                      <EventManagementPartner />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="restaurants"
-                  element={
-                    <RequirePhoneVerification>
-                      <RestaurantsPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="people"
-                  element={
-                    <RequirePhoneVerification>
-                      <PeoplePage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="chats"
-                  element={
-                    <RequirePhoneVerification>
-                      <ChatHistoryPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="profile/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <ProfilePage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="partner/create-event"
-                  element={
-                    <RequirePhoneVerification>
-                      <CreateEventPartner />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="partner/edit-event/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <EditEventPagePartner />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="event/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <EventDetails />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="event/:id/chat"
-                  element={
-                    <RequirePhoneVerification>
-                      <EventChatPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="restaurant/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <PartnerProfilePage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="notifications"
-                  element={
-                    <RequirePhoneVerification>
-                      <NotificationsPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route path="*" element={<Navigate to="/partner/dashboard" replace />} />
-              </Route>
-            ) : (
-              // ================= USUÁRIO =================
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-
-                <Route
-                  path="dashboard"
-                  element={
-                    <RequirePhoneVerification>
-                      <Dashboard />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="events"
-                  element={
-                    <RequirePhoneVerification>
-                      <EventsPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="event/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <EventDetails />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="event/:id/chat"
-                  element={
-                    <RequirePhoneVerification>
-                      <EventChatPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="meus-eventos"
-                  element={
-                    <RequirePhoneVerification>
-                      <MyEventsPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                {/* rota antiga */}
-                <Route
-                  path="editar-evento/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <EditEventPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                {/* rota nova usada pelos cards */}
-                <Route
-                  path="event/:id/editar"
-                  element={
-                    <RequirePhoneVerification>
-                      <EditEventPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="criar-evento"
-                  element={
-                    <RequirePhoneVerification>
-                      <CreateEvent />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="criar-evento/particular"
-                  element={
-                    <RequirePhoneVerification>
-                      <CreateEventParticular />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="criar-evento/crusher"
-                  element={
-                    <RequirePhoneVerification>
-                      <CreateEventCrusher />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="restaurants"
-                  element={
-                    <RequirePhoneVerification>
-                      <RestaurantsPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="restaurant/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <PartnerProfilePage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="people"
-                  element={
-                    <RequirePhoneVerification>
-                      <PeoplePage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="profile/:id"
-                  element={
-                    <RequirePhoneVerification>
-                      <ProfilePage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="chats"
-                  element={
-                    <RequirePhoneVerification>
-                      <ChatHistoryPage />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route
-                  path="settings"
-                  element={
-                    <RequirePhoneVerification>
-                      <UserSettings />
-                    </RequirePhoneVerification>
-                  }
-                />
-
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-              </Route>
-            )}
+            <Loader className="w-5 h-5 mr-2 animate-spin" />
+            {isInstitucional ? 'Inscrevendo...' : 'Enviando Candidatura...'}
+          </>
+        ) : (
+          <>
+            <Send className="w-5 h-5 mr-2" />
+            {isInstitucional ? 'Inscrever-se Agora' : 'Enviar Candidatura'}
           </>
         )}
-      </Routes>
-    </>
-  );
-}
+      </Button>
 
-export default App;
+      <p className="text-white/40 text-xs text-center">
+        Ao se candidatar, você concorda com as{' '}
+        <a href="#" className="text-purple-400 hover:underline">políticas de cancelamento</a> do evento.
+      </p>
+    </div>
+  );
+};
+
+EventApply.propTypes = {
+  event: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    title: PropTypes.string.isRequired,
+    event_type: PropTypes.string.isRequired,
+    status: PropTypes.string.isRequired,
+    vagas: PropTypes.number.isRequired,
+    creator_id: PropTypes.string.isRequired
+  }).isRequired,
+  onSuccess: PropTypes.func
+};
+
+export default EventApply;
