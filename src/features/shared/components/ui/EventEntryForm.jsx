@@ -71,9 +71,9 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
     setError('');
 
     try {
-      console.log(`🔓 Validando senha: ${password}`);
+      console.log(`🔐 Validando senha: ${password}`);
 
-      // ✅ CORREÇÃO: Usar EventSecurityService.validateEntryPassword()
+      // ✅ CORRIGIDO: Chamada correta do EventSecurityService
       const result = await EventSecurityService.validateEntryPassword({
         eventId: parseInt(eventId),
         participantId: user.id,
@@ -133,13 +133,13 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
     <div className="w-full max-w-sm mx-auto p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-2xl">
       {/* 🎯 Título */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">🔒 Digite a Senha</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">🔐 Digite a Senha</h2>
         <p className="text-sm text-slate-400">
           Digite os 4 dígitos para entrar no evento
         </p>
       </div>
 
-      {/* 🔐 Formulário */}
+      {/* 📝 Formulário */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 🔢 Inputs de Dígitos */}
         <div className="flex justify-center gap-3">
