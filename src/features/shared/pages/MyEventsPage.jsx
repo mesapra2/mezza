@@ -27,7 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import EventStatusService from '@/services/EventStatusService';
 import EventPhotosService from '@/services/EventPhotosService';
-import EventSecurityService from '@/services/EventSecurityService';
+import EventEntryForm from '@/components/EventEntryForm';
 
 const MyEventsPage = () => {
   const { user } = useAuth();
@@ -45,9 +45,8 @@ const MyEventsPage = () => {
   // ✅ NOVO: Armazena eventos onde sou participante
   const [participatingEvents, setParticipatingEvents] = useState([]);
 
-  // ✅ NOVO: Estados para input de senha do participante
-  const [passwordInputs, setPasswordInputs] = useState({});
-  const [validatingPassword, setValidatingPassword] = useState({});
+  // ✅ NOVO: Estado para mostrar/esconder formulário de senha
+  const [showPasswordForm, setShowPasswordForm] = useState({});
 
   // --------------------------------------------------
   // ✅ CARREGAR EVENTOS ONDE SOU CRIADOR
@@ -218,58 +217,6 @@ const MyEventsPage = () => {
   useEffect(() => {
     filterEvents();
   }, [filterEvents]);
-
-  // --------------------------------------------------
-  // ✅ VALIDAR SENHA DO PARTICIPANTE
-  // --------------------------------------------------
-  const handleValidatePassword = async (eventId) => {
-    const password = passwordInputs[eventId];
-    
-    if (!password || password.length !== 4) {
-      toast({
-        variant: 'destructive',
-        title: 'Senha inválida',
-        description: 'Digite uma senha de 4 dígitos',
-      });
-      return;
-    }
-
-    setValidatingPassword(prev => ({ ...prev, [eventId]: true }));
-
-    try {
-      const result = await EventSecurityService.validateEntryPassword({
-        eventId: Number(eventId),
-        participantId: user.id,
-        password: password,
-      });
-
-      if (result.success) {
-        toast({
-          title: 'Acesso liberado!',
-          description: result.message,
-        });
-        
-        // Limpar input e recarregar eventos
-        setPasswordInputs(prev => ({ ...prev, [eventId]: '' }));
-        await loadEvents();
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Acesso negado',
-          description: result.message,
-        });
-      }
-    } catch (err) {
-      console.error('Erro ao validar senha:', err);
-      toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Erro ao validar senha',
-      });
-    } finally {
-      setValidatingPassword(prev => ({ ...prev, [eventId]: false }));
-    }
-  };
 
   // --------------------------------------------------
   // OCULTAR EVENTO
@@ -520,40 +467,36 @@ const MyEventsPage = () => {
                     </div>
                   )}
 
-                  {/* 🔐 INPUT DE SENHA PARA PARTICIPANTE */}
+                  {/* 🔐 FORMULÁRIO DE SENHA PARA PARTICIPANTE - USANDO EventEntryForm */}
                   {showPasswordInput && (
-                    <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-2 border-blue-400/40">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Lock className="w-5 h-5 text-blue-300" />
-                        <h4 className="text-sm font-bold text-blue-200">Digite a Senha de Entrada</h4>
-                      </div>
-                      <p className="text-xs text-blue-200/80 mb-3">
-                        O anfitrião compartilhará a senha para você acessar o evento
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          maxLength={4}
-                          placeholder="0000"
-                          value={passwordInputs[event.id] || ''}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, '');
-                            setPasswordInputs(prev => ({ ...prev, [event.id]: value }));
+                    <div className="mb-4">
+                      {showPasswordForm[event.id] ? (
+                        <EventEntryForm
+                          eventId={String(event.id)}
+                          onSuccess={() => {
+                            setShowPasswordForm(prev => ({ ...prev, [event.id]: false }));
+                            loadEvents();
                           }}
-                          className="flex-1 bg-black/30 border border-white/20 rounded-lg px-4 py-2 text-white text-center text-2xl font-mono font-bold tracking-widest focus:outline-none focus:border-blue-400"
+                          isDisabled={false}
                         />
-                        <Button
-                          onClick={() => handleValidatePassword(event.id)}
-                          disabled={validatingPassword[event.id] || !passwordInputs[event.id] || passwordInputs[event.id].length !== 4}
-                          className="bg-blue-500 hover:bg-blue-600 text-white"
-                        >
-                          {validatingPassword[event.id] ? (
-                            <Loader className="w-4 h-4 animate-spin" />
-                          ) : (
-                            'Entrar'
-                          )}
-                        </Button>
-                      </div>
+                      ) : (
+                        <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-2 border-blue-400/40">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Lock className="w-5 h-5 text-blue-300" />
+                            <h4 className="text-sm font-bold text-blue-200">Digite a Senha de Entrada</h4>
+                          </div>
+                          <p className="text-xs text-blue-200/80 mb-3">
+                            O anfitrião compartilhará a senha para você acessar o evento
+                          </p>
+                          <Button
+                            onClick={() => setShowPasswordForm(prev => ({ ...prev, [event.id]: true }))}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Lock className="w-4 h-4 mr-2" />
+                            Digitar Senha
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
 

@@ -226,34 +226,31 @@ class EventSecurityService {
 
     console.log(`✅ Senha CORRETA! Registrando acesso...`);
 
-    // PASSO CRÍTICO: Registra acesso do participante
-    const { data: updateData, error: updateError } = await supabase
+    // ✅ UPDATE SIMPLIFICADO - sem .select()
+    const { error: updateError } = await supabase
       .from('event_participants')
       .update({
         com_acesso: true,
         updated_at: new Date().toISOString()
       })
       .eq('event_id', eventId)
-      .eq('user_id', participantId)
-      .select();
+      .eq('user_id', participantId);
 
     if (updateError) {
-      console.error('❌ ERRO NO UPDATE:', updateError);
+      console.error('❌ ERRO NO UPDATE:', JSON.stringify(updateError, null, 2));
+      console.error('Detalhes:', {
+        code: updateError.code,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint
+      });
       return {
         success: false,
-        message: `Erro ao registrar acesso: ${updateError.message || 'Verifique as permissões'}`
+        message: `Erro ao registrar acesso: ${updateError.message || updateError.details || 'Verifique as permissões'}`
       };
     }
 
-    if (!updateData || updateData.length === 0) {
-      console.error('❌ UPDATE retornou vazio');
-      return {
-        success: false,
-        message: 'Participante não encontrado neste evento'
-      };
-    }
-
-    console.log(`✅ Acesso registrado com sucesso:`, updateData);
+    console.log(`✅ Acesso registrado com sucesso!`);
 
     return {
       success: true,

@@ -9,7 +9,7 @@ type NotificationType =
   | 'event_reminder'
   | 'crusher_invite'
   | 'new_event_matching_hashtag'
-  // Adicionando os tipos em Português que o banco de dados espera
+  // Tipos em Português que o banco de dados espera
   | 'Candidatura Recebida'
   | 'Candidatura Aprovada'
   | 'Candidatura Rejeitada'
@@ -20,7 +20,7 @@ interface Notification {
   id?: number;
   user_id: string;
   event_id?: number;
-  notification_type: NotificationType |string;
+  notification_type: NotificationType | string;
   sent?: boolean;
   created_at?: string;
   title?: string;
@@ -71,12 +71,14 @@ class NotificationService {
   static async createForUser(params: {
     target_user_id: string;
     target_event_id: number;
-    notification_type: NotificationType |string;
+    notification_type: NotificationType | string;
     title: string;
     message: string;
     target_participation_id?: string;
   }): Promise<ServiceResult> {
     try {
+      console.log(`📢 Criando notificação via RPC para ${params.target_user_id}:`, params);
+      
       // Ajuste para lidar com participation_id nulo
       const rpcParams = {
         ...params,
@@ -85,7 +87,10 @@ class NotificationService {
       
       const { error } = await supabase.rpc('create_notification_for_user', rpcParams);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ ERRO RPC:', error);
+        throw error;
+      }
 
       console.log(`✅ Notificação RPC criada para ${params.target_user_id}`);
       return { success: true };
@@ -102,7 +107,7 @@ class NotificationService {
     participantName: string,
     eventTitle: string
   ): Promise<ServiceResult> {
-    // ✨ CORREÇÃO: Usar RPC para notificar o criador
+    // ✨ Usar RPC para notificar o criador
     return this.createForUser({
       target_user_id: creatorId,
       target_event_id: eventId,
@@ -118,7 +123,7 @@ class NotificationService {
     eventId: number,
     eventTitle: string
   ): Promise<ServiceResult> {
-    // ✨ CORREÇÃO: Usar RPC para notificar o participante
+    // ✨ Usar RPC para notificar o participante
     return this.createForUser({
       target_user_id: userId,
       target_event_id: eventId,
@@ -134,7 +139,7 @@ class NotificationService {
     eventTitle: string,
     reason?: string
   ): Promise<ServiceResult> {
-    // ✨ CORREÇÃO: Usar RPC para notificar o participante
+    // ✨ Usar RPC para notificar o participante
     return this.createForUser({
       target_user_id: userId,
       target_event_id: eventId,
@@ -144,24 +149,27 @@ class NotificationService {
     });
   }
 
+  /**
+   * ✅ CORRIGIDO: Notificar convidado de evento Crusher
+   */
   static async notifyCrusherInvite(
     userId: string,
     eventId: number,
     inviterName: string,
     eventTitle: string
   ): Promise<ServiceResult> {
-    // ✨ CORREÇÃO: Usar RPC para notificar o convidado
+    console.log(`💘 Enviando notificação Crusher para ${userId}`);
+    
+    // ✨ Usar RPC para notificar o convidado
     return this.createForUser({
       target_user_id: userId,
       target_event_id: eventId,
-      notification_type: 'convite_crusher',
+      notification_type: 'Convite Crusher',  // ✅ CORRIGIDO: Consistente com o tipo
       title: '💘 Convite Crusher Especial',
       message: `${inviterName} te convidou para um evento exclusivo: "${eventTitle}"`,
     });
   }
 
-  // (O resto do arquivo permanece o mesmo)
-  
   static async notifyUsersWithMatchingHashtags(
     eventId: number,
     eventData: {
@@ -172,7 +180,7 @@ class NotificationService {
     }
   ): Promise<ServiceResult> {
     try {
-      console.log('🔔 Iniciando notificação por hashtags para evento:', eventId);
+      console.log('📝 Iniciando notificação por hashtags para evento:', eventId);
       
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
@@ -228,12 +236,9 @@ class NotificationService {
         };
       });
 
-      // ✨ CORREÇÃO: Usar RPC para inserir em lote (mais complexo)
-      // Por simplicidade, vamos usar o .insert() que já estava aqui,
-      // pois esta função é chamada de um local seguro (backend/trigger)
-      // ONDE AS REGRAS DE RLS SÃO IGNORADAS.
-      // Se for chamada do CLIENTE, isso VAI FALHAR.
-      // Assumindo que é chamada de um local seguro:
+      // ✨ Usar RPC para inserir em lote
+      // Se for chamada do CLIENTE, isso VAI FALHAR (RLS).
+      // Assumindo que é chamada de um local seguro (backend/trigger):
       const { error: insertError } = await supabase
         .from('notifications')
         .insert(notifications);
@@ -291,16 +296,14 @@ class NotificationService {
     }
   }
 
-  static async getUserNotifications(userId: string, unreadOnly: boolean = false): Promise<ServiceResult> {
+  static async getUserNotifications(userId: string): Promise<ServiceResult> {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
-
-      const { data, error } = await query;
 
       if (error) throw error;
 

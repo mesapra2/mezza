@@ -128,6 +128,8 @@ const CreateEventCrusher = () => {
         throw new Error('Selecione 1 hashtag premium');
       }
 
+      console.log('🎯 Criando evento Crusher...');
+
       // Cria evento Crusher
       const eventData = {
         creator_id: user.id,
@@ -157,6 +159,8 @@ const CreateEventCrusher = () => {
 
       if (eventError) throw eventError;
 
+      console.log('✅ Evento Crusher criado:', event.id);
+
       // Cria participação automática com status "pendente" (aguardando aceite)
       const { error: participationError } = await supabase
         .from('event_participants')
@@ -171,13 +175,24 @@ const CreateEventCrusher = () => {
 
       if (participationError) throw participationError;
 
-      // Notifica a pessoa convidada
-      await NotificationService.notifyCrusherInvite(
+      console.log('✅ Participação criada');
+
+      // ✅ CORRIGIDO: Notifica a pessoa convidada COM tratamento de erro
+      console.log('📢 Enviando notificação Crusher para:', invitedUserId);
+      
+      const notificationResult = await NotificationService.notifyCrusherInvite(
         invitedUserId,
         event.id,
         invitedUser.username || invitedUser.full_name || 'Usuário',
         formData.title
       );
+
+      if (!notificationResult.success) {
+        console.warn('⚠️ Aviso: Notificação Crusher pode não ter sido enviada:', notificationResult.error);
+        // Continua mesmo que falhe a notificação, pois o evento foi criado
+      } else {
+        console.log('✅ Notificação Crusher enviada com sucesso');
+      }
 
       toast({
         title: "💘 Convite Crusher Enviado!",
