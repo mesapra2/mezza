@@ -158,18 +158,20 @@ class EventSecurityService {
   }
 
   /**
-   * Valida a senha de entrada do participante
-   * ✅ CORRIGIDO: Normaliza strings para comparação correta
+   * ✅ Valida a senha de entrada do participante
+   * FOCADO APENAS EM: Validar senha e registrar acesso
    */
   static async validateEntryPassword(
     params: ValidatePasswordParams
   ): Promise<ValidatePasswordResult> {
     const { eventId, participantId, password } = params;
 
-    // ✅ Normaliza a senha de entrada: remove espaços e converte para string
+    console.log(`🔓 Iniciando validação - EventID: ${eventId}, User: ${participantId}, Senha: ${password}`);
+
+    // Normaliza a senha de entrada
     const normalizedInputPassword = String(password).trim();
 
-    // Valida formato da senha de entrada
+    // Valida formato
     if (!/^\d{4}$/.test(normalizedInputPassword)) {
       return {
         success: false,
@@ -194,17 +196,16 @@ class EventSecurityService {
       .single();
 
     if (eventError || !event) {
-      console.error('Erro ao buscar evento:', eventError);
+      console.error('❌ Erro ao buscar evento:', eventError);
       return {
         success: false,
         message: 'Evento não encontrado'
       };
     }
 
-    // ✅ CORREÇÃO PRINCIPAL: Normaliza a senha do banco também
+    // Normaliza a senha armazenada
     const storedPassword = String(event.event_entry_password || '').trim();
 
-    // Verifica se a senha está vazia
     if (!storedPassword) {
       return {
         success: false,
@@ -212,31 +213,47 @@ class EventSecurityService {
       };
     }
 
-    // ✅ Comparação corrigida com ambas normalizadas
+    console.log(`🔐 Comparando senhas: ${normalizedInputPassword} vs ${storedPassword}`);
+
+    // Valida senha
     if (storedPassword !== normalizedInputPassword) {
+      console.warn(`❌ Senha incorreta!`);
       return {
         success: false,
         message: 'Senha incorreta. Tente novamente.'
       };
     }
 
-    // Registra acesso do participante
-    const { error: updateError } = await supabase
+    console.log(`✅ Senha CORRETA! Registrando acesso...`);
+
+    // PASSO CRÍTICO: Registra acesso do participante
+    const { data: updateData, error: updateError } = await supabase
       .from('event_participants')
       .update({
         com_acesso: true,
         updated_at: new Date().toISOString()
       })
       .eq('event_id', eventId)
-      .eq('user_id', participantId);
+      .eq('user_id', participantId)
+      .select();
 
     if (updateError) {
-      console.error('Erro ao registrar acesso:', updateError);
+      console.error('❌ ERRO NO UPDATE:', updateError);
       return {
         success: false,
-        message: 'Erro ao registrar acesso. Tente novamente.'
+        message: `Erro ao registrar acesso: ${updateError.message || 'Verifique as permissões'}`
       };
     }
+
+    if (!updateData || updateData.length === 0) {
+      console.error('❌ UPDATE retornou vazio');
+      return {
+        success: false,
+        message: 'Participante não encontrado neste evento'
+      };
+    }
+
+    console.log(`✅ Acesso registrado com sucesso:`, updateData);
 
     return {
       success: true,
