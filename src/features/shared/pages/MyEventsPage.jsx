@@ -27,7 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import EventStatusService from '@/services/EventStatusService';
 import EventPhotosService from '@/services/EventPhotosService';
-import EventEntryForm from '@/features/shared/components/EventEntryForm.jsx';
+import EventEntryForm from '@/features/shared/components/ui/EventEntryForm';
 
 const MyEventsPage = () => {
   const { user } = useAuth();
@@ -663,5 +663,7 @@ const MyEventsPage = () => {
     </>
   );
 };
+
+
 
 export default MyEventsPage;

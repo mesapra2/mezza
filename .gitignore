@@ -24,3 +24,7 @@ git commit -m "chore: update gitignore"
 node_modules
 nul
 NUL
+# Jest cache
+.jest-cache/
+node_modules/
+.cache/
