@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '/src/features/shared/components/ui/button';
 import { Input } from '/src/features/shared/components/ui/input';
 import { useToast } from '@/features/shared/components/ui/use-toast';
-import ParticipationService from '@/services/ParticipationService';
+import EventSecurityService from '@/services/EventSecurityService';
 import { useAuth } from '@/contexts/AuthContext';
 import PropTypes from 'prop-types';
 
@@ -71,15 +71,16 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
     setError('');
 
     try {
-      console.log(`🔐 Validando senha: ${password}`);
+      console.log(`🔓 Validando senha: ${password}`);
 
-      const result = await ParticipationService.validateEventEntry(
-        eventId,
-        user.id,
-        password
-      );
+      // ✅ CORREÇÃO: Usar EventSecurityService.validateEntryPassword()
+      const result = await EventSecurityService.validateEntryPassword({
+        eventId: parseInt(eventId),
+        participantId: user.id,
+        password: password
+      });
 
-      if (result.success && result.canEnter) {
+      if (result.success) {
         console.log(`✅ Entrada validada!`);
 
         toast({
@@ -132,13 +133,13 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
     <div className="w-full max-w-sm mx-auto p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-2xl">
       {/* 🎯 Título */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">🔐 Digite a Senha</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">🔒 Digite a Senha</h2>
         <p className="text-sm text-slate-400">
           Digite os 4 dígitos para entrar no evento
         </p>
       </div>
 
-      {/* 📝 Formulário */}
+      {/* 🔐 Formulário */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 🔢 Inputs de Dígitos */}
         <div className="flex justify-center gap-3">
