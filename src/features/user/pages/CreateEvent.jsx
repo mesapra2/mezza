@@ -1,4 +1,4 @@
-// src/features/user/pages/CreateEvent.jsx (Corrigido)
+// src/features/user/pages/CreateEvent.jsx - ✅ CORRIGIDO
 
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -16,7 +16,7 @@ import HashtagSelector from '@/features/shared/components/events/HashtagSelector
 import RestaurantSelector from '@/features/shared/components/ui/RestaurantSelector';
 
 const CreateEvent = () => {
-  const { user, profile } = useAuth(); // 1. MUDANÇA AQUI: Pegar 'profile'
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,12 +32,13 @@ const CreateEvent = () => {
     acceptedTerms: false,
   });
 
-  // Lógica de redirecionamento (está correta)
+  // ✅ CORREÇÃO: Redirecionamento com rotas corretas
   useEffect(() => {
     if (formData.event_type === 'particular') {
       navigate('/criar-evento/particular');
     } else if (formData.event_type === 'crusher') {
-      navigate('/src/features/user/pages/CreateEventCrusher');
+      // ✅ ROTA CORRIGIDA AQUI:
+      navigate('/criar-evento/crusher');
     }
   }, [formData.event_type, navigate]);
 
@@ -46,17 +47,14 @@ const CreateEvent = () => {
     setLoading(true);
 
     try {
-      // Lógica de submissão só para 'padrao' (está correta)
       if (formData.event_type !== 'padrao') {
         throw new Error('Tipo de evento inválido para este formulário.');
       }
 
-      // Validação dos termos
       if (!formData.acceptedTerms) {
         throw new Error('Você precisa concordar com os Termos de Uso e Políticas para criar um evento');
       }
 
-      // Validações
       if (new Date(formData.start_time) >= new Date(formData.end_time)) {
         throw new Error('A data de término deve ser depois da data de início');
       }
@@ -65,20 +63,17 @@ const CreateEvent = () => {
         throw new Error('O número de vagas deve estar entre 1 e 3');
       }
 
-      // Valida hashtags
       if (formData.hashtags.length === 0) {
         throw new Error('Selecione pelo menos uma hashtag');
       }
 
-      // Valida restaurante para eventos padrão
       if (formData.event_type === 'padrao' && !formData.partner_id) {
         throw new Error('Selecione um restaurante credenciado para eventos padrão');
       }
 
-      // Prepara dados para inserção
       const eventData = {
         creator_id: user.id,
-        event_type: formData.event_type, // Será 'padrao'
+        event_type: formData.event_type,
         title: formData.title,
         description: formData.description,
         start_time: formData.start_time,
@@ -92,7 +87,6 @@ const CreateEvent = () => {
         hashtags: formData.hashtags,
       };
 
-      // Insere evento no Supabase
       const { error } = await supabase
         .from('events')
         .insert([eventData])
@@ -106,7 +100,6 @@ const CreateEvent = () => {
         description: "Seu evento foi publicado e está aberto para candidaturas.",
       });
 
-      // Redireciona para a página de gerenciamento
       navigate('/meus-eventos');
 
     } catch (error) {
@@ -129,7 +122,6 @@ const CreateEvent = () => {
     });
   };
 
-  // Lista de tipos de evento (sem 'Institucional')
   const eventTypes = [
     { 
       value: 'padrao', 
@@ -140,14 +132,14 @@ const CreateEvent = () => {
     { 
       value: 'particular', 
       label: 'Particular', 
-      available: !!profile?.is_premium, // 2. MUDANÇA AQUI: 'profile'
-      description: 'Evento privado em local de sua escolha (formulário próprio)'
+      available: !!profile?.is_premium,
+      description: 'Evento privado em local de sua escolha (requer Premium)'
     },
     { 
       value: 'crusher', 
       label: 'Crusher', 
-      available: !!profile?.is_premium, // 3. MUDANÇA AQUI: 'profile'
-      description: 'Evento especial com recursos extras (formulário próprio)'
+      available: !!profile?.is_premium,
+      description: 'Convite especial exclusivo para uma pessoa (requer Premium)'
     },
   ];
 
