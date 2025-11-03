@@ -261,30 +261,28 @@ class ParticipationService {
         }
       }
 
-      // 5. insere participação
+      // 5. ✅ UPSERT - insere ou atualiza se já existir (previne duplicação)
       const { data: newParticipation, error: participationError } = await supabase
         .from('event_participants')
-        .insert({
-          event_id: eventId,
-          user_id: userId,
-          status: initialStatus,
-          mensagem_candidatura: message ?? null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+        .upsert(
+          {
+            event_id: eventId,
+            user_id: userId,
+            status: initialStatus,
+            mensagem_candidatura: message ?? null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'event_id,user_id',
+            ignoreDuplicates: false,
+          }
+        )
         .select()
         .single();
 
       if (participationError) {
-        // ✅ CORREÇÃO: Tratamento específico para erro de duplicação
-        if (participationError.code === '23505') {
-          console.error('❌ Erro de duplicação detectado (23505):', participationError);
-          return {
-            success: false,
-            error: 'Você já está inscrito neste evento. Atualize a página e tente novamente.',
-            isDuplicate: true,
-          };
-        }
+        console.error('❌ Erro ao inserir/atualizar participação:', participationError);
         throw participationError;
       }
 
