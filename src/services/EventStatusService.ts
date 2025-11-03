@@ -1,5 +1,5 @@
 // src/services/EventStatusService.ts
-// ✅ VERSÃO CORRIGIDA - Geração de senha 1 minuto antes
+// ✅ VERSÃO CORRIGIDA - Geração de senha 1 minuto antes + FIX 406
 // @ts-nocheck
 import { supabase } from '../lib/supabaseClient';
 import EventSecurityService from './EventSecurityService';
@@ -358,7 +358,7 @@ class EventStatusService {
 
   /**
    * 📊 Obtém estatísticas do evento
-   * (corrigido para usar event_id e já trazer o perfil do participante)
+   * ✅ CORRIGIDO: Removido .single() que causava erro 406
    */
   static async getEventStats(eventId: number): Promise<{
     success: boolean;
@@ -374,6 +374,7 @@ class EventStatusService {
 
       if (eventError) throw eventError;
 
+      // ✅ FIX: Usar .eq('event_id', ...) ao invés de .eq('id', ...)
       const { data: participations, error: partError } = await supabase
         .from('event_participants')
         .select(`
@@ -384,15 +385,14 @@ class EventStatusService {
           presenca_confirmada,
           com_acesso,
           avaliacao_feita,
-          profiles:profiles!event_participants_user_id_fkey (
+          profiles!event_participants_user_id_fkey (
             id,
             username,
             avatar_url,
             full_name
           )
         `)
-        // 👇 aqui estava dando 406 no frontend quando vinham UUIDs
-        .eq('event_id', eventId);
+        .eq('event_id', eventId); // ✅ Buscar por event_id, não por id
 
       if (partError) throw partError;
 
