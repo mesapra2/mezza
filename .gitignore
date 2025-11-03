@@ -21,3 +21,6 @@ git commit -m "chore: update gitignore"
 /src/App.test.jsx
 *.test.jsx
 *.test.ts
+node_modules
+nul
+NUL
