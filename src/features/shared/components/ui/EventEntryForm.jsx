@@ -1,7 +1,7 @@
-// src/components/EventEntryForm.jsx
+// src/features/shared/components/EventEntryForm.jsx
 import React, { useState, useRef } from 'react';
-import { Button } from '/src/features/shared/components/ui/button';
-import { Input } from '/src/features/shared/components/ui/input';
+import { Button } from '@/features/shared/components/ui/button';
+import { Input } from '@/features/shared/components/ui/input';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import EventSecurityService from '@/services/EventSecurityService';
 import { useAuth } from '@/contexts/AuthContext';
