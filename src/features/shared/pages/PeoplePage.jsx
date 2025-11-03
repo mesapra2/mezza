@@ -15,6 +15,7 @@ const PeoplePage = () => {
   const [pokingStates, setPokingStates] = useState({});
 
   const isPartner = profile?.profile_type === 'partner';
+  const isPremium = profile?.is_premium === true;
 
   // ✅ FUNÇÃO ADICIONADA: Helper para construir URL do avatar corretamente
   const getAvatarUrl = (person) => {
@@ -140,6 +141,16 @@ const PeoplePage = () => {
   };
 
   const createCrusher = (targetUserId) => {
+    // ✅ Verificar se é Premium
+    if (!isPremium) {
+      toast({
+        variant: "destructive",
+        title: "Premium Necessário",
+        description: "Eventos Crusher são exclusivos para membros Premium",
+      });
+      return;
+    }
+
     navigate(`/criar-evento/crusher?invite=${targetUserId}`);
   };
 
@@ -217,8 +228,8 @@ const PeoplePage = () => {
             <div>
               <h3 className="font-semibold text-white mb-1">Sobre as Interações</h3>
               <p className="text-white/70 text-sm">
-                <strong>Tok 👇:</strong> Demonstre interesse de forma leve (1x por dia).<br/>
-                <strong>Crusher 💘:</strong> Envie um convite especial direto para um evento exclusivo.
+                <strong>Tok 👇:</strong> Demonstre interesse de forma leve (1x por dia). Disponível para quem aceita Toks.<br/>
+                <strong>Crusher 💘:</strong> Envie um convite especial direto para um evento exclusivo. Disponível para quem não aceita Toks (requer Premium).
               </p>
             </div>
           </div>
@@ -236,9 +247,10 @@ const PeoplePage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {people.map((person) => {
-            const allowsPokes = person.allow_pokes !== false;
+            // ✅ CORREÇÃO: Lógica invertida
+            const allowsPokes = person.allow_pokes === true;
             const isPoking = pokingStates[person.id];
-            const avatarUrl = getAvatarUrl(person); // ✅ MUDANÇA AQUI
+            const avatarUrl = getAvatarUrl(person);
 
             return (
               <div
@@ -248,9 +260,9 @@ const PeoplePage = () => {
                 <div>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="relative">
-                      {avatarUrl ? ( // ✅ MUDANÇA AQUI
+                      {avatarUrl ? (
                         <img
-                          src={avatarUrl} // ✅ MUDANÇA AQUI
+                          src={avatarUrl}
                           alt={person.username || 'Usuário'}
                           className="w-16 h-16 rounded-full object-cover border-2 border-purple-500/30"
                           onError={(e) => {
@@ -261,7 +273,7 @@ const PeoplePage = () => {
                       ) : null}
                       <div
                         className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold"
-                        style={{ display: avatarUrl ? 'none' : 'flex' }} // ✅ MUDANÇA AQUI
+                        style={{ display: avatarUrl ? 'none' : 'flex' }}
                       >
                         {(person.username || person.full_name || 'U')[0].toUpperCase()}
                       </div>
@@ -307,11 +319,11 @@ const PeoplePage = () => {
                     
                     {!isPartner && (
                       <>
-                        {/* Botão Tok - só aparece se a pessoa aceita Toks */}
-                        {allowsPokes && (
+                        {/* ✅ CORREÇÃO: Botão Tok - aparece se ACEITA pokes */}
+                        {allowsPokes ? (
                           <button
                             onClick={() => sendPoke(person.id, person.username || person.full_name)}
-                            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                            className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
                             title="Enviar Tok"
                             disabled={isPoking}
                           >
@@ -321,17 +333,22 @@ const PeoplePage = () => {
                               'Tok 👇'
                             )}
                           </button>
+                        ) : (
+                          /* ✅ CORREÇÃO: Botão Crusher - aparece se NÃO aceita pokes */
+                          <button
+                            onClick={() => createCrusher(person.id)}
+                            className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                              isPremium
+                                ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
+                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            }`}
+                            title={isPremium ? "Criar Evento Crusher" : "Requer Premium"}
+                            disabled={!isPremium}
+                          >
+                            <Heart className="w-4 h-4" />
+                            Mesapra2 {!isPremium && '🔒'}
+                          </button>
                         )}
-                        
-                        {/* Botão Crusher - SEMPRE aparece para todos */}
-                        <button
-                          onClick={() => createCrusher(person.id)}
-                          className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                          title="Criar Evento Crusher"
-                        >
-                          <Heart className="w-4 h-4" />
-                          Mesapra2
-                        </button>
                       </>
                     )}
 
@@ -344,11 +361,18 @@ const PeoplePage = () => {
                     </button>
                   </div>
 
-                  {!isPartner && !allowsPokes && (
+                  {/* ✅ Indicador visual atualizado */}
+                  {!isPartner && (
                     <div className="mt-3 text-center">
-                      <span className="text-xs text-pink-400/80">
-                        💘 Não aceita Toks
-                      </span>
+                      {allowsPokes ? (
+                        <span className="text-xs text-purple-400/80">
+                          👇 Aceita Toks
+                        </span>
+                      ) : (
+                        <span className="text-xs text-pink-400/80">
+                          💘 Apenas Mesapra2 {!isPremium && '(Premium)'}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -381,9 +405,9 @@ const PeoplePage = () => {
             <div className="p-4 sm:p-6 overflow-y-auto">
               <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6">
                  <div className="relative flex-shrink-0">
-                  {getAvatarUrl(selectedProfile) ? ( // ✅ MUDANÇA AQUI
+                  {getAvatarUrl(selectedProfile) ? (
                     <img
-                      src={getAvatarUrl(selectedProfile)} // ✅ MUDANÇA AQUI
+                      src={getAvatarUrl(selectedProfile)}
                       alt={selectedProfile.username}
                       className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-purple-500/50"
                     />
@@ -452,7 +476,6 @@ const PeoplePage = () => {
                   <h4 className="text-sm font-semibold text-white/60 mb-3">Fotos</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {selectedProfile.photos.map((photoPath, index) => {
-                      // ✅ Constrói URL das fotos corretamente
                       const photoUrl = photoPath?.startsWith('http') 
                         ? photoPath 
                         : supabase.storage.from('photos').getPublicUrl(photoPath).data.publicUrl;
@@ -471,32 +494,39 @@ const PeoplePage = () => {
                 </div>
               )}
 
+              {/* ✅ BOTÕES DO MODAL CORRIGIDOS */}
               {!isPartner && (
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-white/10">
-                  <button
-                    onClick={() => {
-                      sendPoke(selectedProfile.id, selectedProfile.username || selectedProfile.full_name);
-                    }}
-                    className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
-                      selectedProfile.allow_pokes === false
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                        : 'bg-purple-600 hover:bg-purple-700 text-white'
-                    }`}
-                    disabled={selectedProfile.allow_pokes === false || pokingStates[selectedProfile.id]}
-                  >
-                    {pokingStates[selectedProfile.id] ? <Loader2 className="w-5 h-5 animate-spin"/> : '👇'}
-                    {selectedProfile.allow_pokes === false ? 'Não aceita Toks' : 'Enviar Tok'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      createCrusher(selectedProfile.id);
-                      closeProfileModal();
-                    }}
-                    className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
-                  >
-                    <Heart className="w-4 h-4" />
-                    Criar Mesapra2
-                  </button>
+                  {selectedProfile.allow_pokes === true ? (
+                    /* Se aceita pokes, mostra botão Tok */
+                    <button
+                      onClick={() => {
+                        sendPoke(selectedProfile.id, selectedProfile.username || selectedProfile.full_name);
+                      }}
+                      className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
+                      disabled={pokingStates[selectedProfile.id]}
+                    >
+                      {pokingStates[selectedProfile.id] ? <Loader2 className="w-5 h-5 animate-spin"/> : '👇'}
+                      Enviar Tok
+                    </button>
+                  ) : (
+                    /* Se NÃO aceita pokes, mostra botão Crusher */
+                    <button
+                      onClick={() => {
+                        createCrusher(selectedProfile.id);
+                        closeProfileModal();
+                      }}
+                      className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
+                        isPremium
+                          ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
+                          : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      }`}
+                      disabled={!isPremium}
+                    >
+                      <Heart className="w-4 h-4" />
+                      Criar Mesapra2 {!isPremium && '(Requer Premium)'}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
