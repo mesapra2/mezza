@@ -40,13 +40,14 @@ const MyEventsPage = () => {
   const [eventStats, setEventStats] = useState({});
   const [uploading, setUploading] = useState({});
 
+  // ✅ NOVO: Armazena eventos onde sou participante
+  const [participatingEvents, setParticipatingEvents] = useState([]);
+
   // --------------------------------------------------
-  // CARREGAR EVENTOS DO USUÁRIO LOGADO
+  // ✅ CARREGAR EVENTOS ONDE SOU CRIADOR
   // --------------------------------------------------
-  const loadEvents = useCallback(async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    setError(null);
+  const loadCreatedEvents = useCallback(async () => {
+    if (!user?.id) return [];
     try {
       const { data, error: fetchError } = await supabase
         .from('events')
@@ -64,19 +65,87 @@ const MyEventsPage = () => {
         .order('start_time', { ascending: false });
 
       if (fetchError) throw fetchError;
+      return data || [];
+    } catch (err) {
+      console.error('Erro ao carregar eventos criados:', err);
+      return [];
+    }
+  }, [user?.id]);
 
-      const eventsData = data || [];
-      setEvents(eventsData);
-      await loadEventStats(eventsData);
+  // --------------------------------------------------
+  // ✅ CARREGAR EVENTOS ONDE SOU PARTICIPANTE
+  // --------------------------------------------------
+  const loadParticipatingEvents = useCallback(async () => {
+    if (!user?.id) return [];
+    try {
+      // 1. Buscar minhas participações aprovadas
+      const { data: participations, error: partError } = await supabase
+        .from('event_participants')
+        .select('event_id')
+        .eq('user_id', user.id)
+        .eq('status', 'aprovado');
+
+      if (partError) throw partError;
+      if (!participations || participations.length === 0) return [];
+
+      const eventIds = participations.map(p => p.event_id);
+
+      // 2. Buscar os eventos completos
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select(
+          `
+          *,
+          partner:partners(id, name, address),
+          creator:profiles!events_creator_id_fkey(
+            id, username, avatar_url, full_name, public_profile
+          )
+        `,
+        )
+        .in('id', eventIds)
+        .eq('hidden', false)
+        .order('start_time', { ascending: false });
+
+      if (eventsError) throw eventsError;
+      return eventsData || [];
+    } catch (err) {
+      console.error('Erro ao carregar eventos participando:', err);
+      return [];
+    }
+  }, [user?.id]);
+
+  // --------------------------------------------------
+  // ✅ CARREGAR TODOS OS EVENTOS (CRIADOS + PARTICIPANDO)
+  // --------------------------------------------------
+  const loadEvents = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const [createdEvents, participatingEventsData] = await Promise.all([
+        loadCreatedEvents(),
+        loadParticipatingEvents(),
+      ]);
+
+      // Combinar sem duplicatas (prioriza eventos criados)
+      const createdIds = new Set(createdEvents.map(e => e.id));
+      const uniqueParticipating = participatingEventsData.filter(e => !createdIds.has(e.id));
+      
+      const allEvents = [...createdEvents, ...uniqueParticipating];
+      
+      setEvents(createdEvents);
+      setParticipatingEvents(uniqueParticipating);
+      
+      await loadEventStats(allEvents);
     } catch (err) {
       console.error('Erro ao carregar eventos:', err);
       setError('Erro ao carregar seus eventos. Tente novamente.');
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, loadCreatedEvents, loadParticipatingEvents]);
 
-  // carrega assim que tiver user e quando loadEvents mudar
   useEffect(() => {
     if (user?.id) {
       loadEvents();
@@ -98,31 +167,32 @@ const MyEventsPage = () => {
   };
 
   // --------------------------------------------------
-  // FILTRAR EVENTOS
+  // ✅ FILTRAR EVENTOS (CRIADOS + PARTICIPANDO)
   // --------------------------------------------------
   const filterEvents = useCallback(() => {
     const now = new Date();
-    let filtered = events;
+    const allEvents = [...events, ...participatingEvents];
+    let filtered = allEvents;
 
     switch (filter) {
       case 'futuros':
-        filtered = events.filter((e) => new Date(e.end_time) >= now);
+        filtered = allEvents.filter((e) => new Date(e.end_time) >= now);
         break;
       case 'passados':
-        filtered = events.filter((e) => new Date(e.end_time) < now);
+        filtered = allEvents.filter((e) => new Date(e.end_time) < now);
         break;
       case 'finalizados':
-        filtered = events.filter((e) => e.status === 'Finalizado');
+        filtered = allEvents.filter((e) => e.status === 'Finalizado');
         break;
       case 'concluidos':
-        filtered = events.filter((e) => e.status === 'Concluído');
+        filtered = allEvents.filter((e) => e.status === 'Concluído');
         break;
       default:
-        filtered = events;
+        filtered = allEvents;
     }
 
     setFilteredEvents(filtered);
-  }, [events, filter]);
+  }, [events, participatingEvents, filter]);
 
   useEffect(() => {
     filterEvents();
@@ -199,9 +269,18 @@ const MyEventsPage = () => {
   };
 
   // --------------------------------------------------
-  // DEVE MOSTRAR SENHA? (1 min antes de começar até 1 min antes de acabar)
+  // ✅ VERIFICAR SE SOU CRIADOR DO EVENTO
+  // --------------------------------------------------
+  const isEventCreator = (event) => {
+    return event.creator_id === user?.id;
+  };
+
+  // --------------------------------------------------
+  // ✅ DEVE MOSTRAR SENHA? (1 min antes de começar até 2 min antes de acabar)
   // --------------------------------------------------
   const shouldShowPassword = (event) => {
+    // Só mostra senha se for o criador
+    if (!isEventCreator(event)) return false;
     if (!event.event_entry_password) return false;
     
     const now = new Date();
@@ -211,11 +290,11 @@ const MyEventsPage = () => {
     // 1 minuto antes de começar
     const oneMinuteBeforeStart = new Date(startTime.getTime() - 60 * 1000);
     
-    // 1 minuto antes de acabar
-    const oneMinuteBeforeEnd = new Date(endTime.getTime() - 60 * 1000);
+    // ✅ CORREÇÃO: 2 minutos antes de acabar (não 1)
+    const twoMinutesBeforeEnd = new Date(endTime.getTime() - 2 * 60 * 1000);
     
     // Está no período correto?
-    return now >= oneMinuteBeforeStart && now < oneMinuteBeforeEnd;
+    return now >= oneMinuteBeforeStart && now < twoMinutesBeforeEnd;
   };
 
   // --------------------------------------------------
@@ -293,6 +372,7 @@ const MyEventsPage = () => {
               const canUpload = canUploadPhoto(event);
               const isUploading = uploading[event.id];
               const showPassword = shouldShowPassword(event);
+              const isCreator = isEventCreator(event);
 
               return (
                 <motion.div
@@ -302,8 +382,8 @@ const MyEventsPage = () => {
                   transition={{ delay: index * 0.05 }}
                   className="glass-effect rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all h-full flex flex-col justify-between"
                 >
-                  {/* Status */}
-                  <div className="mb-4">
+                  {/* Status + Badge de Participante */}
+                  <div className="mb-4 flex items-center gap-2">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         isConcluded
@@ -315,9 +395,16 @@ const MyEventsPage = () => {
                     >
                       {event.status}
                     </span>
+                    
+                    {/* ✅ Badge de Participante */}
+                    {!isCreator && (
+                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        Participante
+                      </span>
+                    )}
                   </div>
 
-                  {/* 🔑 SENHA DO EVENTO (mostra 1 min antes de começar até 1 min antes de acabar) */}
+                  {/* 🔑 SENHA DO EVENTO (só para criadores) */}
                   {showPassword && (
                     <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-400/40 animate-pulse">
                       <div className="flex items-center gap-2 mb-2">
@@ -363,7 +450,7 @@ const MyEventsPage = () => {
                   </div>
 
                   {/* Avaliações (Finalizado) */}
-                  {isFinalized && participants.length > 0 && (
+                  {isFinalized && participants.length > 0 && isCreator && (
                     <div className="my-4 p-3 rounded-lg bg-white/5 border border-white/10">
                       <p className="text-xs text-white/60 mb-2">Avaliações:</p>
                       <div className="flex items-center gap-2">
@@ -391,11 +478,13 @@ const MyEventsPage = () => {
                     {/* Primeira linha: Editar + Ver Detalhes (não concluído) */}
                     {!isConcluded && (
                       <div className="flex gap-2">
-                        <Link to={`/event/${event.id}/editar`} className="flex-1">
-                          <Button variant="outline" className="w-full border-white/20">
-                            <Edit className="w-4 h-4 mr-2" /> Editar
-                          </Button>
-                        </Link>
+                        {isCreator && (
+                          <Link to={`/editar-evento/${event.id}`} className="flex-1">
+                            <Button variant="outline" className="w-full border-white/20">
+                              <Edit className="w-4 h-4 mr-2" /> Editar
+                            </Button>
+                          </Link>
+                        )}
                         <Link to={`/event/${event.id}`} className="flex-1">
                           <Button variant="outline" className="w-full border-white/20">
                             Ver Detalhes
@@ -404,7 +493,7 @@ const MyEventsPage = () => {
                       </div>
                     )}
 
-                    {/* Concluído: Ver + Ocultar */}
+                    {/* Concluído: Ver + Ocultar (só criador) */}
                     {isConcluded && (
                       <div className="flex gap-2">
                         <Link to={`/event/${event.id}`} className="flex-1">
@@ -412,13 +501,15 @@ const MyEventsPage = () => {
                             Ver Detalhes
                           </Button>
                         </Link>
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleHideEvent(event.id)}
-                          className="flex-1 text-purple-400 hover:bg-purple-500/10"
-                        >
-                          <EyeOff className="w-4 h-4 mr-1" /> Ocultar
-                        </Button>
+                        {isCreator && (
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleHideEvent(event.id)}
+                            className="flex-1 text-purple-400 hover:bg-purple-500/10"
+                          >
+                            <EyeOff className="w-4 h-4 mr-1" /> Ocultar
+                          </Button>
+                        )}
                       </div>
                     )}
 
@@ -471,7 +562,7 @@ const MyEventsPage = () => {
           <div className="glass-effect rounded-2xl p-12 border border-white/10 text-center">
             <AlertCircle className="w-16 h-16 text-white/20 mx-auto mb-4" />
             <p className="text-white/60 text-lg mb-4">
-              {events.length === 0
+              {events.length === 0 && participatingEvents.length === 0
                 ? 'Você não criou eventos ainda'
                 : `Nenhum evento ${
                     filter === 'futuros'

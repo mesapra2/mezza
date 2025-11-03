@@ -228,8 +228,8 @@ const PeoplePage = () => {
             <div>
               <h3 className="font-semibold text-white mb-1">Sobre as Interações</h3>
               <p className="text-white/70 text-sm">
-                <strong>Tok 👇:</strong> Demonstre interesse de forma leve (1x por dia). Disponível para quem aceita Toks.<br/>
-                <strong>Crusher 💘:</strong> Envie um convite especial direto para um evento exclusivo. Disponível para quem não aceita Toks (requer Premium).
+                <strong>Tok 👇:</strong> Demonstre interesse de forma leve (1x por dia).<br/>
+                <strong>Mesapra2 💘:</strong> Envie um convite especial direto para um evento exclusivo (requer Premium).
               </p>
             </div>
           </div>
@@ -247,7 +247,6 @@ const PeoplePage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {people.map((person) => {
-            // ✅ CORREÇÃO: Lógica invertida
             const allowsPokes = person.allow_pokes === true;
             const isPoking = pokingStates[person.id];
             const avatarUrl = getAvatarUrl(person);
@@ -319,36 +318,38 @@ const PeoplePage = () => {
                     
                     {!isPartner && (
                       <>
-                        {/* ✅ CORREÇÃO: Botão Tok - aparece se ACEITA pokes */}
-                        {allowsPokes ? (
-                          <button
-                            onClick={() => sendPoke(person.id, person.username || person.full_name)}
-                            className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                            title="Enviar Tok"
-                            disabled={isPoking}
-                          >
-                            {isPoking ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              'Tok 👇'
-                            )}
-                          </button>
-                        ) : (
-                          /* ✅ CORREÇÃO: Botão Crusher - aparece se NÃO aceita pokes */
-                          <button
-                            onClick={() => createCrusher(person.id)}
-                            className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                              isPremium
-                                ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
-                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                            }`}
-                            title={isPremium ? "Criar Evento Crusher" : "Requer Premium"}
-                            disabled={!isPremium}
-                          >
-                            <Heart className="w-4 h-4" />
-                            Mesapra2 {!isPremium && '🔒'}
-                          </button>
-                        )}
+                        {/* ✅ Botão Tok - sempre visível, desabilitado se não aceita */}
+                        <button
+                          onClick={() => sendPoke(person.id, person.username || person.full_name)}
+                          className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+                            allowsPokes
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                              : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          }`}
+                          title={allowsPokes ? "Enviar Tok" : "Não aceita Toks"}
+                          disabled={isPoking || !allowsPokes}
+                        >
+                          {isPoking ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'Tok 👇'
+                          )}
+                        </button>
+
+                        {/* ✅ Botão Mesapra2 - sempre visível, requer Premium */}
+                        <button
+                          onClick={() => createCrusher(person.id)}
+                          className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                            isPremium
+                              ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
+                              : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          }`}
+                          title={isPremium ? "Criar Evento Mesapra2" : "Requer Premium"}
+                          disabled={!isPremium}
+                        >
+                          <Heart className="w-4 h-4" />
+                          Mesapra2 {!isPremium && '🔒'}
+                        </button>
                       </>
                     )}
 
@@ -361,18 +362,12 @@ const PeoplePage = () => {
                     </button>
                   </div>
 
-                  {/* ✅ Indicador visual atualizado */}
-                  {!isPartner && (
+                  {/* ✅ Indicador visual - mostra se não aceita Toks */}
+                  {!isPartner && !allowsPokes && (
                     <div className="mt-3 text-center">
-                      {allowsPokes ? (
-                        <span className="text-xs text-purple-400/80">
-                          👇 Aceita Toks
-                        </span>
-                      ) : (
-                        <span className="text-xs text-pink-400/80">
-                          💘 Apenas Mesapra2 {!isPremium && '(Premium)'}
-                        </span>
-                      )}
+                      <span className="text-xs text-red-400/80">
+                        🚫 Não aceita Toks
+                      </span>
                     </div>
                   )}
                 </div>
@@ -497,36 +492,49 @@ const PeoplePage = () => {
               {/* ✅ BOTÕES DO MODAL CORRIGIDOS */}
               {!isPartner && (
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-white/10">
-                  {selectedProfile.allow_pokes === true ? (
-                    /* Se aceita pokes, mostra botão Tok */
-                    <button
-                      onClick={() => {
-                        sendPoke(selectedProfile.id, selectedProfile.username || selectedProfile.full_name);
-                      }}
-                      className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
-                      disabled={pokingStates[selectedProfile.id]}
-                    >
-                      {pokingStates[selectedProfile.id] ? <Loader2 className="w-5 h-5 animate-spin"/> : '👇'}
-                      Enviar Tok
-                    </button>
-                  ) : (
-                    /* Se NÃO aceita pokes, mostra botão Crusher */
-                    <button
-                      onClick={() => {
-                        createCrusher(selectedProfile.id);
-                        closeProfileModal();
-                      }}
-                      className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
-                        isPremium
-                          ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
-                          : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                      }`}
-                      disabled={!isPremium}
-                    >
-                      <Heart className="w-4 h-4" />
-                      Criar Mesapra2 {!isPremium && '(Requer Premium)'}
-                    </button>
-                  )}
+                  {/* ✅ Botão Tok - sempre visível, desabilitado se não aceita */}
+                  <button
+                    onClick={() => {
+                      sendPoke(selectedProfile.id, selectedProfile.username || selectedProfile.full_name);
+                    }}
+                    className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
+                      selectedProfile.allow_pokes === true
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    }`}
+                    disabled={pokingStates[selectedProfile.id] || selectedProfile.allow_pokes !== true}
+                    title={selectedProfile.allow_pokes === true ? "Enviar Tok" : "Não aceita Toks"}
+                  >
+                    {pokingStates[selectedProfile.id] ? <Loader2 className="w-5 h-5 animate-spin"/> : '👇'}
+                    Enviar Tok
+                  </button>
+
+                  {/* ✅ Botão Mesapra2 - sempre visível, requer Premium */}
+                  <button
+                    onClick={() => {
+                      createCrusher(selectedProfile.id);
+                      closeProfileModal();
+                    }}
+                    className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
+                      isPremium
+                        ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
+                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    }`}
+                    disabled={!isPremium}
+                    title={isPremium ? "Criar Mesapra2" : "Requer Premium"}
+                  >
+                    <Heart className="w-4 h-4" />
+                    Criar Mesapra2 {!isPremium && '(Requer Premium)'}
+                  </button>
+                </div>
+              )}
+
+              {/* ✅ Indicador se não aceita Toks */}
+              {!isPartner && selectedProfile.allow_pokes !== true && (
+                <div className="text-center mt-3">
+                  <span className="text-xs text-red-400/80">
+                    🚫 Não aceita Toks
+                  </span>
                 </div>
               )}
             </div>
