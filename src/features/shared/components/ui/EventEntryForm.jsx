@@ -228,4 +228,5 @@ EventEntryForm.propTypes = {
 EventEntryForm.defaultProps = {
   isDisabled: false,
 };
+
 export default EventEntryForm;
