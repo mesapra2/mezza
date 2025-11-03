@@ -225,7 +225,7 @@ class EventSecurityService {
       .from('event_participants')
       .update({
         com_acesso: true,
-        entry_time: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq('event_id', eventId)
       .eq('user_id', participantId);
