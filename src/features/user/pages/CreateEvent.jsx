@@ -32,15 +32,26 @@ const CreateEvent = () => {
     acceptedTerms: false,
   });
 
-  // ✅ CORREÇÃO: Redirecionamento com rotas corretas
+  // ✅ CORREÇÃO: Usar useEffect separado com replace: true
   useEffect(() => {
     if (formData.event_type === 'particular') {
-      navigate('/criar-evento/particular');
+      console.log('🔀 Redirecionando para evento particular');
+      navigate('/criar-evento/particular', { replace: true });
     } else if (formData.event_type === 'crusher') {
-      // ✅ ROTA CORRIGIDA AQUI:
-      navigate('/criar-evento/crusher');
+      console.log('🔀 Redirecionando para evento crusher');
+      // ✅ Verificar se é premium antes de redirecionar
+      if (!profile?.is_premium) {
+        toast({
+          title: "Premium Necessário",
+          description: "Eventos Crusher são exclusivos para membros Premium",
+          variant: "destructive",
+        });
+        setFormData(prev => ({ ...prev, event_type: 'padrao' }));
+        return;
+      }
+      navigate('/criar-evento/crusher', { replace: true });
     }
-  }, [formData.event_type, navigate]);
+  }, [formData.event_type, navigate, profile]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -116,6 +127,19 @@ const CreateEvent = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // ✅ Validação adicional para event_type
+    if (name === 'event_type') {
+      if ((value === 'particular' || value === 'crusher') && !profile?.is_premium) {
+        toast({
+          title: "Premium Necessário",
+          description: `Eventos ${value === 'particular' ? 'Particulares' : 'Crusher'} são exclusivos para membros Premium`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     setFormData({
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
