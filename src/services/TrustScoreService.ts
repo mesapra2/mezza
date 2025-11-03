@@ -7,12 +7,7 @@ interface TrustScoreResult {
   error?: any;
 }
 
-interface UserTrustStatus {
-  userId: string;
-  trustScore: number;
-  isBanned: boolean;
-  reason?: string;
-}
+// ✅ Interface 'UserTrustStatus' removida daqui (Correção TS6196)
 
 /**
  * ⭐ Serviço de Ranking de Confiabilidade
@@ -399,3 +394,4 @@ class TrustScoreService {
 }
 
 export default TrustScoreService;
+

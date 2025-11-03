@@ -46,22 +46,7 @@ interface Event {
   [key: string]: any;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface Participation {
-  id: string;
-  event_id: number | string;
-  user_id: string;
-  status: ParticipationStatus;
-  created_at?: string;
-  updated_at?: string;
-  events?: Event;
-  event?: Event;
-  mensagem_candidatura?: string;
-  com_acesso?: boolean;
-  avaliacao_feita?: boolean;
-  presenca_confirmada?: boolean;
-  [key: string]: any;
-}
+// ✅ CORREÇÃO: Interface 'Participation' removida pois não estava sendo usada (TS6196)
 
 interface ServiceResult<T = any> {
   success: boolean;
@@ -106,7 +91,7 @@ class ParticipationService {
       }
 
       if (data) {
-        console.log(`ℹ️ Usuário \${userId} já está inscrito no evento \${eventId} com status: \${data.status}`);
+        console.log(`ℹ️ Usuário ${userId} já está inscrito no evento ${eventId} com status: ${data.status}`);
       }
 
       return { exists: !!data, participation: data };
@@ -195,7 +180,7 @@ class ParticipationService {
     message?: string,
   ): Promise<ServiceResult> {
     try {
-      console.log(`📋 Iniciando inscrição: usuário \${userId} → evento \${eventId}`);
+      console.log(`📋 Iniciando inscrição: usuário ${userId} → evento ${eventId}`);
 
       // ✅ CORREÇÃO: Verificar se usuário já está inscrito
       const { exists, participation: existingParticipation } = await this.userAlreadyInEvent(eventId, userId);
@@ -208,8 +193,8 @@ class ParticipationService {
           'cancelado': 'Você cancelou sua participação anterior neste evento.',
         };
 
-        const msg = statusMessages[existingParticipation.status] || `Você já está inscrito neste evento (status: \${existingParticipation.status}).`;
-        console.warn(`⚠️ Tentativa de inscrição duplicada: \${msg}`);
+        const msg = statusMessages[existingParticipation.status] || `Você já está inscrito neste evento (status: ${existingParticipation.status}).`;
+        console.warn(`⚠️ Tentativa de inscrição duplicada: ${msg}`);
         
         return {
           success: false,
@@ -1193,3 +1178,4 @@ class ParticipationService {
 }
 
 export default ParticipationService;
+
