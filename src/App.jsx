@@ -360,6 +360,7 @@ function App() {
                   } 
                 />
                 
+                {/* ✅ ROTA CRUSHER CORRIGIDA - estava faltando esta rota! */}
                 <Route 
                   path="criar-evento/crusher" 
                   element={
