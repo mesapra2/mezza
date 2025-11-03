@@ -57,7 +57,19 @@
       "@/types/*": ["./src/types/*"],
       "@/assets/*": ["./src/assets/*"]
     },
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    
+    // --- CORREÇÃO (TENTATIVA 2) ---
+    // Se a outra correção falhou, vamos listar explicitamente
+    // TODOS os tipos que o TS está tentando carregar.
+    "types": [
+      "vite/client",
+      "node",
+      "aria-query",
+      "deep-eql",
+      "testing-library__jest-dom"
+    ]
+    // ---------------------------------
   },
   "include": [
     "src/**/*",
@@ -79,3 +91,4 @@
   ],
   "references": []
 }
+

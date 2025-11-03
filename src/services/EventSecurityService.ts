@@ -159,11 +159,23 @@ class EventSecurityService {
 
   /**
    * Valida a senha de entrada do participante
+   * ✅ CORRIGIDO: Normaliza strings para comparação correta
    */
   static async validateEntryPassword(
     params: ValidatePasswordParams
   ): Promise<ValidatePasswordResult> {
     const { eventId, participantId, password } = params;
+
+    // ✅ Normaliza a senha de entrada: remove espaços e converte para string
+    const normalizedInputPassword = String(password).trim();
+
+    // Valida formato da senha de entrada
+    if (!/^\d{4}$/.test(normalizedInputPassword)) {
+      return {
+        success: false,
+        message: 'Senha deve conter exatamente 4 dígitos'
+      };
+    }
 
     // Verifica timing
     const timingCheck = await this.isEntryTimeValid(eventId);
@@ -182,14 +194,26 @@ class EventSecurityService {
       .single();
 
     if (eventError || !event) {
+      console.error('Erro ao buscar evento:', eventError);
       return {
         success: false,
         message: 'Evento não encontrado'
       };
     }
 
-    // Verifica senha
-    if (event.event_entry_password !== password) {
+    // ✅ CORREÇÃO PRINCIPAL: Normaliza a senha do banco também
+    const storedPassword = String(event.event_entry_password || '').trim();
+
+    // Verifica se a senha está vazia
+    if (!storedPassword) {
+      return {
+        success: false,
+        message: 'Senha do evento não configurada'
+      };
+    }
+
+    // ✅ Comparação corrigida com ambas normalizadas
+    if (storedPassword !== normalizedInputPassword) {
       return {
         success: false,
         message: 'Senha incorreta. Tente novamente.'
@@ -207,9 +231,10 @@ class EventSecurityService {
       .eq('user_id', participantId);
 
     if (updateError) {
+      console.error('Erro ao registrar acesso:', updateError);
       return {
         success: false,
-        message: 'Erro ao registrar acesso'
+        message: 'Erro ao registrar acesso. Tente novamente.'
       };
     }
 

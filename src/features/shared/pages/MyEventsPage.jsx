@@ -17,6 +17,7 @@ import {
   Loader,
   Star,
   Key,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
@@ -26,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import EventStatusService from '@/services/EventStatusService';
 import EventPhotosService from '@/services/EventPhotosService';
+import EventSecurityService from '@/services/EventSecurityService';
 
 const MyEventsPage = () => {
   const { user } = useAuth();
@@ -42,6 +44,10 @@ const MyEventsPage = () => {
 
   // ✅ NOVO: Armazena eventos onde sou participante
   const [participatingEvents, setParticipatingEvents] = useState([]);
+
+  // ✅ NOVO: Estados para input de senha do participante
+  const [passwordInputs, setPasswordInputs] = useState({});
+  const [validatingPassword, setValidatingPassword] = useState({});
 
   // --------------------------------------------------
   // ✅ CARREGAR EVENTOS ONDE SOU CRIADOR
@@ -81,7 +87,7 @@ const MyEventsPage = () => {
       // 1. Buscar minhas participações aprovadas
       const { data: participations, error: partError } = await supabase
         .from('event_participants')
-        .select('event_id')
+        .select('event_id, presenca_confirmada, com_acesso')
         .eq('user_id', user.id)
         .eq('status', 'aprovado');
 
@@ -107,7 +113,17 @@ const MyEventsPage = () => {
         .order('start_time', { ascending: false });
 
       if (eventsError) throw eventsError;
-      return eventsData || [];
+
+      // 3. ✅ Adicionar dados de participação ao evento
+      const eventsWithParticipation = (eventsData || []).map(event => {
+        const participation = participations.find(p => p.event_id === event.id);
+        return {
+          ...event,
+          myParticipation: participation
+        };
+      });
+
+      return eventsWithParticipation;
     } catch (err) {
       console.error('Erro ao carregar eventos participando:', err);
       return [];
@@ -167,7 +183,7 @@ const MyEventsPage = () => {
   };
 
   // --------------------------------------------------
-  // ✅ FILTRAR EVENTOS (CRIADOS + PARTICIPANDO)
+  // ✅ FILTRAR EVENTOS (CRIADOS + PARTICIPANDO) - CORRIGIDO
   // --------------------------------------------------
   const filterEvents = useCallback(() => {
     const now = new Date();
@@ -176,10 +192,15 @@ const MyEventsPage = () => {
 
     switch (filter) {
       case 'futuros':
-        filtered = allEvents.filter((e) => new Date(e.end_time) >= now);
+        // ✅ CORREÇÃO: Incluir eventos "Em Andamento" no filtro futuros
+        filtered = allEvents.filter((e) => {
+          const endTime = new Date(e.end_time);
+          const isActive = e.status === 'Em Andamento';
+          return endTime >= now || isActive;
+        });
         break;
       case 'passados':
-        filtered = allEvents.filter((e) => new Date(e.end_time) < now);
+        filtered = allEvents.filter((e) => new Date(e.end_time) < now && e.status !== 'Em Andamento');
         break;
       case 'finalizados':
         filtered = allEvents.filter((e) => e.status === 'Finalizado');
@@ -197,6 +218,58 @@ const MyEventsPage = () => {
   useEffect(() => {
     filterEvents();
   }, [filterEvents]);
+
+  // --------------------------------------------------
+  // ✅ VALIDAR SENHA DO PARTICIPANTE
+  // --------------------------------------------------
+  const handleValidatePassword = async (eventId) => {
+    const password = passwordInputs[eventId];
+    
+    if (!password || password.length !== 4) {
+      toast({
+        variant: 'destructive',
+        title: 'Senha inválida',
+        description: 'Digite uma senha de 4 dígitos',
+      });
+      return;
+    }
+
+    setValidatingPassword(prev => ({ ...prev, [eventId]: true }));
+
+    try {
+      const result = await EventSecurityService.validateEntryPassword({
+        eventId: Number(eventId),
+        participantId: user.id,
+        password: password,
+      });
+
+      if (result.success) {
+        toast({
+          title: 'Acesso liberado!',
+          description: result.message,
+        });
+        
+        // Limpar input e recarregar eventos
+        setPasswordInputs(prev => ({ ...prev, [eventId]: '' }));
+        await loadEvents();
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Acesso negado',
+          description: result.message,
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao validar senha:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Erro',
+        description: 'Erro ao validar senha',
+      });
+    } finally {
+      setValidatingPassword(prev => ({ ...prev, [eventId]: false }));
+    }
+  };
 
   // --------------------------------------------------
   // OCULTAR EVENTO
@@ -276,7 +349,7 @@ const MyEventsPage = () => {
   };
 
   // --------------------------------------------------
-  // ✅ DEVE MOSTRAR SENHA? (1 min antes de começar até 2 min antes de acabar)
+  // ✅ DEVE MOSTRAR SENHA DO ANFITRIÃO? (1 min antes de começar até 2 min antes de acabar)
   // --------------------------------------------------
   const shouldShowPassword = (event) => {
     // Só mostra senha se for o criador
@@ -290,11 +363,33 @@ const MyEventsPage = () => {
     // 1 minuto antes de começar
     const oneMinuteBeforeStart = new Date(startTime.getTime() - 60 * 1000);
     
-    // ✅ CORREÇÃO: 2 minutos antes de acabar (não 1)
+    // 2 minutos antes de acabar
     const twoMinutesBeforeEnd = new Date(endTime.getTime() - 2 * 60 * 1000);
     
     // Está no período correto?
     return now >= oneMinuteBeforeStart && now < twoMinutesBeforeEnd;
+  };
+
+  // --------------------------------------------------
+  // ✅ NOVO: DEVE MOSTRAR INPUT DE SENHA PARA PARTICIPANTE?
+  // --------------------------------------------------
+  const shouldShowPasswordInput = (event) => {
+    // Não é o criador
+    if (isEventCreator(event)) return false;
+    
+    // Evento deve estar "Em Andamento"
+    if (event.status !== 'Em Andamento') return false;
+    
+    // Deve ter dados de participação
+    if (!event.myParticipation) return false;
+    
+    // Ainda não confirmou presença
+    if (event.myParticipation.presenca_confirmada) return false;
+    
+    // Ainda não tem acesso
+    if (event.myParticipation.com_acesso) return false;
+    
+    return true;
   };
 
   // --------------------------------------------------
@@ -372,6 +467,7 @@ const MyEventsPage = () => {
               const canUpload = canUploadPhoto(event);
               const isUploading = uploading[event.id];
               const showPassword = shouldShowPassword(event);
+              const showPasswordInput = shouldShowPasswordInput(event);
               const isCreator = isEventCreator(event);
 
               return (
@@ -390,6 +486,8 @@ const MyEventsPage = () => {
                           ? 'bg-green-500/20 text-green-300'
                           : isFinalized
                           ? 'bg-yellow-500/20 text-yellow-300'
+                          : event.status === 'Em Andamento'
+                          ? 'bg-purple-500/20 text-purple-300 animate-pulse'
                           : 'bg-blue-500/20 text-blue-300'
                       }`}
                     >
@@ -419,6 +517,43 @@ const MyEventsPage = () => {
                       <p className="text-xs text-purple-200/80 mt-2 text-center">
                         Compartilhe esta senha com os participantes para iniciar o evento
                       </p>
+                    </div>
+                  )}
+
+                  {/* 🔐 INPUT DE SENHA PARA PARTICIPANTE */}
+                  {showPasswordInput && (
+                    <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-2 border-blue-400/40">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Lock className="w-5 h-5 text-blue-300" />
+                        <h4 className="text-sm font-bold text-blue-200">Digite a Senha de Entrada</h4>
+                      </div>
+                      <p className="text-xs text-blue-200/80 mb-3">
+                        O anfitrião compartilhará a senha para você acessar o evento
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={4}
+                          placeholder="0000"
+                          value={passwordInputs[event.id] || ''}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            setPasswordInputs(prev => ({ ...prev, [event.id]: value }));
+                          }}
+                          className="flex-1 bg-black/30 border border-white/20 rounded-lg px-4 py-2 text-white text-center text-2xl font-mono font-bold tracking-widest focus:outline-none focus:border-blue-400"
+                        />
+                        <Button
+                          onClick={() => handleValidatePassword(event.id)}
+                          disabled={validatingPassword[event.id] || !passwordInputs[event.id] || passwordInputs[event.id].length !== 4}
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                        >
+                          {validatingPassword[event.id] ? (
+                            <Loader className="w-4 h-4 animate-spin" />
+                          ) : (
+                            'Entrar'
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   )}
 
