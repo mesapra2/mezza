@@ -52,7 +52,7 @@ const NotificationDropdown = ({ userId }) => {
                     )
                   `)
                   .eq('id', notif.participation_id)
-                  .single();
+.maybeSingle();
 
                 return {
                   ...notif,
