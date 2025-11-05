@@ -12,9 +12,13 @@ import Settings from '@/features/user/components/common/Settings';
 import EventApply from '@/features/shared/components/events/EventApply';
 import ParticipationService from '@/services/ParticipationService';
 import { toast } from '@/features/shared/components/ui/use-toast';
-import { Dialog,  DialogContent,  DialogHeader,  DialogTitle,  DialogDescription,} from '@/features/shared/components/ui/dialog';
-import BannerCarousel from '@/features/shared/components/BannerCarousel';
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/features/shared/components/ui/dialog';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -745,10 +749,6 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-{/* 🆕 Carrossel de Anúncios */}
-<BannerCarousel />
-
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
               <Calendar className="w-8 h-8 text-purple-500 mr-4" />
