@@ -1,5 +1,5 @@
-// src/features/shared/pages/EventChatPage.jsx
-import { useState, useEffect, useRef } from 'react';
+// src/features/shared/pages/EventChatPage.jsx - VERSÃO OTIMIZADA
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Send, ArrowLeft, Loader2, Trash2, MoreVertical, Lock } from 'lucide-react';
@@ -12,47 +12,70 @@ import { ptBR } from 'date-fns/locale';
 import { SimpleDropdown, SimpleDropdownItem } from '@/features/shared/components/ui/SimpleDropdown';
 import { isChatAvailable } from '@/utils/chatAvailability';
 
+const INITIAL_MESSAGE_LIMIT = 50; // Lazy load: apenas últimas 50 mensagens
+
 const EventChatPage = () => {
   const { id } = useParams();
   const eventId = parseInt(id, 10);
   const { user } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
+  const profileMapRef = useRef(new Map()); // ✅ FIX #1: Usar ref ao invés de state
 
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [profileMap, setProfileMap] = useState(new Map());
-  const [activeParticipantCount, setActiveParticipantCount] = useState(0);
-  const [eventName, setEventName] = useState('');
-  const [isCreator, setIsCreator] = useState(false);
-  const [eventStatus, setEventStatus] = useState('Aberto');
-  const [event, setEvent] = useState(null);
-  const [isApprovedParticipant, setIsApprovedParticipant] = useState(false);
 
-  const scrollToBottom = () => {
+  // ✅ FIX #6: Combinar estados relacionados em um único objeto
+  const [chatState, setChatState] = useState({
+    eventName: '',
+    eventStatus: 'Aberto',
+    event: null,
+    isCreator: false,
+    isApprovedParticipant: false,
+    activeParticipantCount: 0,
+  });
+
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
-  const getSenderProfile = (userId) => {
-    return profileMap.get(userId) || { username: 'Usuário', full_name: '', avatar_url: null };
-  };
+  const getSenderProfile = useCallback((userId) => {
+    return profileMapRef.current.get(userId) || { username: 'Usuário', full_name: '', avatar_url: null };
+  }, []);
 
-  const getAvatarUrl = (profile) => {
-    if (!profile || !profile.avatar_url) {
-      const name = profile?.username || profile?.full_name || 'U';
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=40`;
+  // ✅ FIX #4: Memoizar avatars URLs para evitar recalcular
+  const avatarCache = useRef(new Map());
+
+  const getAvatarUrl = useCallback((profile) => {
+    if (!profile) {
+      return `https://ui-avatars.com/api/?name=U&background=8b5cf6&color=fff&size=40`;
     }
 
-    try {
-      const { data } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_url);
-      return data.publicUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
-    } catch {
-      return `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
+    const cacheKey = profile.id || profile.username;
+    if (avatarCache.current.has(cacheKey)) {
+      return avatarCache.current.get(cacheKey);
     }
-  };
 
+    let url;
+    if (!profile.avatar_url) {
+      const name = profile.username || profile.full_name || 'U';
+      url = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=40`;
+    } else {
+      try {
+        const { data } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_url);
+        url = data.publicUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
+      } catch {
+        url = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
+      }
+    }
+
+    avatarCache.current.set(cacheKey, url);
+    return url;
+  }, []);
+
+  // ✅ FIX #1 & #2: Remover profileMap das dependências + paralelizar queries
   useEffect(() => {
     if (!eventId || !user) {
       if (!eventId) setError('ID do evento inválido.');
@@ -65,102 +88,145 @@ const EventChatPage = () => {
       setError(null);
 
       try {
-        const { data: eventData, error: eventError } = await supabase
-          .from('events')
-          .select('id, title, creator_id, status, event_type, vagas')
-          .eq('id', eventId)
-          .single();
+        // ✅ FIX #2: PARALELIZAR queries independentes
+        const [
+          eventResult,
+          approvedCountResult,
+          participationResult,
+        ] = await Promise.all([
+          // Query 1: Buscar evento
+          supabase
+            .from('events')
+            .select('id, title, creator_id, status, event_type, vagas')
+            .eq('id', eventId)
+            .single(),
 
-        if (eventError) throw eventError;
+          // Query 2: Contar participantes aprovados
+          supabase
+            .from('event_participants')
+            .select('*', { count: 'exact', head: true })
+            .eq('event_id', eventId)
+            .eq('status', 'aprovado'),
 
-        const { count: approvedCount, error: countError } = await supabase
-          .from('event_participants')
-          .select('*', { count: 'exact', head: true })
-          .eq('event_id', eventId)
-          .eq('status', 'aprovado');
-
-        if (countError) throw countError;
-
-        const eventWithCount = { ...eventData, approvedCount: approvedCount || 0 };
-        setEvent(eventWithCount);
-        setEventName(eventData.title);
-        setEventStatus(eventData.status);
-
-        const userIsCreator = eventData.creator_id === user.id;
-        setIsCreator(userIsCreator);
-
-        let userIsApproved = false;
-        if (!userIsCreator) {
-          const { data: participation } = await supabase
+          // Query 3: Verificar participação do usuário
+          supabase
             .from('event_participants')
             .select('status')
             .eq('event_id', eventId)
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle(), // ✅ maybeSingle() não dá erro se não encontrar
+        ]);
 
-          userIsApproved = participation?.status === 'aprovado';
-        }
-        setIsApprovedParticipant(userIsApproved);
+        if (eventResult.error) throw eventResult.error;
+        if (approvedCountResult.error) throw approvedCountResult.error;
 
+        const eventData = eventResult.data;
+        const approvedCount = approvedCountResult.count || 0;
+        const userIsCreator = eventData.creator_id === user.id;
+        const userIsApproved = participationResult.data?.status === 'aprovado';
+
+        const eventWithCount = { ...eventData, approvedCount };
+
+        // Verificar disponibilidade do chat
         const availability = isChatAvailable(eventWithCount, userIsCreator, userIsApproved);
         if (!availability.available) {
           setError(availability.reason);
+
+          // ✅ FIX #6: Atualizar estados em batch
+          setChatState({
+            eventName: eventData.title,
+            eventStatus: eventData.status,
+            event: eventWithCount,
+            isCreator: userIsCreator,
+            isApprovedParticipant: userIsApproved,
+            activeParticipantCount: approvedCount,
+          });
+
           setLoading(false);
           return;
         }
 
-        const { data: messagesData, error: messagesError } = await supabase
-          .from('event_messages')
-          .select('*')
-          .eq('event_id', eventId)
-          .order('created_at', { ascending: true });
+        // ✅ FIX #2: PARALELIZAR queries de dados do chat
+        const [
+          messagesResult,
+          participantsResult,
+          creatorProfileResult,
+        ] = await Promise.all([
+          // Query 4: Buscar mensagens (com limite para lazy load)
+          supabase
+            .from('event_messages')
+            .select('*')
+            .eq('event_id', eventId)
+            .order('created_at', { ascending: false })
+            .limit(INITIAL_MESSAGE_LIMIT),
 
-        if (messagesError) throw messagesError;
+          // Query 5: Buscar participantes aprovados com perfis
+          supabase
+            .from('event_participants')
+            .select('profile:profiles(id, username, avatar_url, full_name)')
+            .eq('event_id', eventId)
+            .eq('status', 'aprovado'),
+
+          // Query 6: Buscar perfil do criador (sempre, para simplificar)
+          userIsCreator
+            ? supabase
+                .from('profiles')
+                .select('id, username, avatar_url, full_name')
+                .eq('id', user.id)
+                .single()
+            : Promise.resolve({ data: null }),
+        ]);
+
+        if (messagesResult.error) throw messagesResult.error;
+        if (participantsResult.error) throw participantsResult.error;
+
+        // ✅ Reverter mensagens (pegamos em DESC, mas queremos ASC no display)
+        const messagesData = messagesResult.data.reverse();
         setMessages(messagesData);
 
-        const senderIds = [...new Set(messagesData.map(msg => msg.user_id))];
-        const { data: approvedParticipants, error: participantsError } = await supabase
-          .from('event_participants')
-          .select('profile:profiles(id, username, avatar_url, full_name)')
-          .eq('event_id', eventId)
-          .eq('status', 'aprovado');
-
-        if (participantsError) throw participantsError;
-
+        // ✅ Processar profiles em batch
         const newProfileMap = new Map();
         const approvedIds = [];
 
-        approvedParticipants.forEach(p => {
+        participantsResult.data.forEach(p => {
           if (p.profile) {
             newProfileMap.set(p.profile.id, p.profile);
             approvedIds.push(p.profile.id);
           }
         });
 
-        if (userIsCreator && !newProfileMap.has(user.id)) {
-          const { data: creatorProfile } = await supabase
-            .from('profiles')
-            .select('id, username, avatar_url, full_name')
-            .eq('id', user.id)
-            .single();
-          if (creatorProfile) newProfileMap.set(creatorProfile.id, creatorProfile);
+        if (creatorProfileResult.data) {
+          newProfileMap.set(creatorProfileResult.data.id, creatorProfileResult.data);
         }
 
+        // ✅ Query 7: Buscar perfis faltantes (se houver)
+        const senderIds = [...new Set(messagesData.map(msg => msg.user_id))];
         const missingIds = senderIds.filter(id => !newProfileMap.has(id));
+
         if (missingIds.length > 0) {
-          const { data: _ } = await supabase
+          const { data: missingProfiles } = await supabase
             .from('profiles')
             .select('id, username, avatar_url, full_name')
             .in('id', missingIds);
 
-          _?.forEach(p => newProfileMap.set(p.id, p));
+          missingProfiles?.forEach(p => newProfileMap.set(p.id, p));
         }
 
-        setProfileMap(newProfileMap);
+        // ✅ FIX #1: Usar ref ao invés de state
+        profileMapRef.current = newProfileMap;
 
         let activeCount = approvedIds.length;
         if (userIsCreator && !approvedIds.includes(user.id)) activeCount++;
-        setActiveParticipantCount(activeCount);
+
+        // ✅ FIX #6: Atualizar todos os estados de uma vez
+        setChatState({
+          eventName: eventData.title,
+          eventStatus: eventData.status,
+          event: eventWithCount,
+          isCreator: userIsCreator,
+          isApprovedParticipant: userIsApproved,
+          activeParticipantCount: activeCount,
+        });
 
       } catch (err) {
         console.error('Erro ao carregar chat:', err);
@@ -172,6 +238,7 @@ const EventChatPage = () => {
 
     loadChatData();
 
+    // ✅ Realtime subscription
     const channel = supabase
       .channel(`chat_room:${eventId}`)
       .on(
@@ -187,7 +254,7 @@ const EventChatPage = () => {
           setMessages(prev => [...prev, newMsg]);
 
           const newSenderId = newMsg.user_id;
-          if (!profileMap.has(newSenderId)) {
+          if (!profileMapRef.current.has(newSenderId)) {
             const { data: newProfile } = await supabase
               .from('profiles')
               .select('id, username, avatar_url, full_name')
@@ -195,7 +262,8 @@ const EventChatPage = () => {
               .single();
 
             if (newProfile) {
-              setProfileMap(prev => new Map(prev).set(newProfile.id, newProfile));
+              // ✅ FIX #1: Mutar ref diretamente (não causa re-render)
+              profileMapRef.current.set(newProfile.id, newProfile);
             }
           }
 
@@ -207,15 +275,15 @@ const EventChatPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventId, user, profileMap]);
+  }, [eventId, user, scrollToBottom]); // ✅ FIX #1: profileMap removido!
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || eventStatus === 'Concluído') return;
+    if (!newMessage.trim() || chatState.eventStatus === 'Concluído') return;
 
     try {
       const { error } = await supabase
@@ -251,16 +319,31 @@ const EventChatPage = () => {
     }
   };
 
+  // ✅ FIX #3: Loading skeleton melhorado
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-12 h-12 animate-spin text-purple-500" />
+      <div className="flex flex-col h-[calc(100vh-8rem)] bg-gray-900/50 rounded-2xl border border-white/10 overflow-hidden">
+        <header className="flex items-center p-4 border-b border-white/10 bg-background/80 backdrop-blur-sm">
+          <div className="w-10 h-10 rounded-lg bg-gray-800 animate-pulse mr-4"></div>
+          <div className="flex-1">
+            <div className="w-32 h-5 bg-gray-800 rounded animate-pulse mb-2"></div>
+            <div className="w-24 h-3 bg-gray-800 rounded animate-pulse"></div>
+          </div>
+        </header>
+        <div className="flex-1 p-4 space-y-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className={`flex items-end gap-3 ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+              <div className="w-8 h-8 rounded-full bg-gray-800 animate-pulse"></div>
+              <div className={`w-${i % 2 === 0 ? '48' : '64'} h-16 rounded-lg bg-gray-800 animate-pulse`}></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   if (error) {
-    const isInstitutional = event?.event_type === 'institucional';
+    const isInstitutional = chatState.event?.event_type === 'institucional';
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="text-center glass-effect rounded-2xl p-8 border border-white/10 max-w-md">
@@ -268,7 +351,7 @@ const EventChatPage = () => {
           <h2 className="text-2xl font-semibold text-white mb-3">Chat não disponível</h2>
           <p className="text-white/70 mb-6">{error}</p>
 
-          {isInstitutional && !isCreator && isApprovedParticipant && (
+          {isInstitutional && !chatState.isCreator && chatState.isApprovedParticipant && (
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
               <p className="text-blue-300 text-sm">
                 Evento Institucional: O chat será liberado automaticamente assim que o primeiro participante for aprovado.
@@ -276,14 +359,14 @@ const EventChatPage = () => {
             </div>
           )}
 
-          {!isInstitutional && !isCreator && isApprovedParticipant && event && (
+          {!isInstitutional && !chatState.isCreator && chatState.isApprovedParticipant && chatState.event && (
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 mb-6">
               <p className="text-purple-300 text-sm mb-2">Progresso do evento:</p>
               <p className="text-white text-lg font-semibold">
-                {event.approvedCount} / {event.vagas} vagas preenchidas
+                {chatState.event.approvedCount} / {chatState.event.vagas} vagas preenchidas
               </p>
               <p className="text-white/60 text-xs mt-2">
-                O chat será liberado quando todas as vagas forem preenchidas ou o evento for confirmado.
+                O chat será liberado quando houver pelo menos 1 participante aprovado ou o evento for confirmado.
               </p>
             </div>
           )}
@@ -300,7 +383,7 @@ const EventChatPage = () => {
   return (
     <>
       <Helmet>
-        <title>Chat: {eventName || 'Evento'} | Mesapra2</title>
+        <title>Chat: {chatState.eventName || 'Evento'} | Mesapra2</title>
       </Helmet>
 
       <div className="flex flex-col h-[calc(100vh-8rem)] bg-gray-900/50 rounded-2xl border border-white/10 overflow-hidden">
@@ -311,16 +394,16 @@ const EventChatPage = () => {
             </Button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-lg font-semibold text-white truncate">{eventName}</h1>
+            <h1 className="text-lg font-semibold text-white truncate">{chatState.eventName}</h1>
             <p className="text-xs text-white/50">
-              {activeParticipantCount} participantes
-              {event?.event_type === 'institucional' && <span className="ml-2 text-purple-400">• Institucional</span>}
+              {chatState.activeParticipantCount} participantes
+              {chatState.event?.event_type === 'institucional' && <span className="ml-2 text-purple-400">• Institucional</span>}
             </p>
           </div>
         </header>
 
         <div className="flex-1 p-4 overflow-y-auto space-y-4">
-          {event?.event_type === 'institucional' && messages.length === 0 && (
+          {chatState.event?.event_type === 'institucional' && messages.length === 0 && (
             <div className="text-center py-8">
               <div className="inline-block p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
                 <p className="text-purple-300 text-sm">
@@ -334,12 +417,13 @@ const EventChatPage = () => {
           {messages.map((msg) => {
             const senderProfile = getSenderProfile(msg.user_id);
             const isMe = msg.user_id === user.id;
+            const avatarUrl = getAvatarUrl(senderProfile); // ✅ FIX #4: Agora está memoizado
 
             return (
               <div key={msg.id} className={`flex items-end gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}>
                 {!isMe && (
                   <img
-                    src={getAvatarUrl(senderProfile)}
+                    src={avatarUrl}
                     alt={senderProfile.username || 'Usuário'}
                     className="w-8 h-8 rounded-full border border-white/10 flex-shrink-0 object-cover"
                     onError={(e) => {
@@ -364,11 +448,11 @@ const EventChatPage = () => {
                     </span>
                   </div>
 
-                  {(isMe || isCreator) && (
+                  {(isMe || chatState.isCreator) && (
                     <SimpleDropdown
                       trigger={
                         <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 hover:opacity-100 transition-opacity">
-                          <MoreVertical className="h-4 h-4" />
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
                       }
                     >
@@ -381,7 +465,7 @@ const EventChatPage = () => {
                 </div>
                 {isMe && (
                   <img
-                    src={getAvatarUrl(senderProfile)}
+                    src={avatarUrl}
                     alt="Você"
                     className="w-8 h-8 rounded-full border border-white/10 flex-shrink-0 object-cover"
                     onError={(e) => {
@@ -396,7 +480,7 @@ const EventChatPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 bg-background/80 backdrop-blur-sm">
-          {eventStatus === 'Concluído' && (
+          {chatState.eventStatus === 'Concluído' && (
             <div className="mb-3 p-2 rounded-lg bg-gray-700/50 border border-gray-600/50">
               <p className="text-gray-300 text-xs text-center">
                 Evento concluído - Chat em modo leitura
@@ -408,16 +492,16 @@ const EventChatPage = () => {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={eventStatus === 'Concluído' ? 'Chat encerrado...' : 'Digite sua mensagem...'}
+              placeholder={chatState.eventStatus === 'Concluído' ? 'Chat encerrado...' : 'Digite sua mensagem...'}
               className="flex-1 bg-gray-800 border-gray-700"
               autoComplete="off"
-              disabled={eventStatus === 'Concluído'}
+              disabled={chatState.eventStatus === 'Concluído'}
             />
             <Button
               type="submit"
               size="icon"
               className="flex-shrink-0"
-              disabled={!newMessage.trim() || eventStatus === 'Concluído'}
+              disabled={!newMessage.trim() || chatState.eventStatus === 'Concluído'}
             >
               <Send className="w-5 h-5" />
             </Button>
