@@ -32,7 +32,21 @@ interface EntryStatusResult {
     openedAt: string | null;
     totalWithAccess: number;
     totalParticipants: number;
+    hostValidated?: boolean;
+    hostValidatedAt?: string | null;
   };
+  error?: string;
+}
+
+interface ValidateHostParams {
+  eventId: number;
+  hostId: string;
+  partnerPassword: string;
+}
+
+interface PartnerPasswordResult {
+  success: boolean;
+  password?: string;
   error?: string;
 }
 
@@ -364,6 +378,242 @@ class EventSecurityService {
       return {
         success: false,
         error: 'Erro ao buscar status'
+      };
+    }
+  }
+
+  /**
+   * 🏪 Busca a senha do restaurante (partner)
+   */
+  static async getPartnerPassword(partnerId: number): Promise<PartnerPasswordResult> {
+    try {
+      const { data: partner, error } = await supabase
+        .from('partners')
+        .select('partner_entry_password')
+        .eq('id', partnerId)
+        .single();
+
+      if (error || !partner) {
+        return {
+          success: false,
+          error: 'Restaurante não encontrado'
+        };
+      }
+
+      if (!partner.partner_entry_password) {
+        return {
+          success: false,
+          error: 'Restaurante ainda não configurou senha de entrada'
+        };
+      }
+
+      return {
+        success: true,
+        password: partner.partner_entry_password
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Erro ao buscar senha do restaurante'
+      };
+    }
+  }
+
+  /**
+   * ✅ Valida o anfitrião com a senha do restaurante
+   * Usado em eventos PADRÃO - anfitrião precisa validar presença no restaurante
+   */
+  static async validateHostWithRestaurant(
+    params: ValidateHostParams
+  ): Promise<ValidatePasswordResult> {
+    const { eventId, hostId, partnerPassword } = params;
+
+    console.log(`🏪 Validando anfitrião - EventID: ${eventId}, Host: ${hostId}`);
+
+    try {
+      // 1. Buscar evento e verificar se é o criador
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('creator_id, partner_id, event_type, host_validated, status')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError || !event) {
+        return {
+          success: false,
+          message: 'Evento não encontrado'
+        };
+      }
+
+      // 2. Verificar se é o criador
+      if (event.creator_id !== hostId) {
+        return {
+          success: false,
+          message: 'Apenas o anfitrião pode validar com o restaurante'
+        };
+      }
+
+      // 3. Verificar tipo de evento
+      if (event.event_type !== 'padrao') {
+        return {
+          success: false,
+          message: 'Este tipo de evento não requer validação do anfitrião'
+        };
+      }
+
+      // 4. Verificar se tem restaurante
+      if (!event.partner_id) {
+        return {
+          success: false,
+          message: 'Evento sem restaurante associado'
+        };
+      }
+
+      // 5. Verificar se já validou
+      if (event.host_validated) {
+        return {
+          success: true,
+          message: '✅ Você já validou sua presença anteriormente'
+        };
+      }
+
+      // 6. Buscar senha do restaurante
+      const partnerResult = await this.getPartnerPassword(event.partner_id);
+      if (!partnerResult.success || !partnerResult.password) {
+        return {
+          success: false,
+          message: partnerResult.error || 'Erro ao buscar senha do restaurante'
+        };
+      }
+
+      // 7. Validar senha
+      const normalizedInput = String(partnerPassword).trim();
+      const normalizedStored = String(partnerResult.password).trim();
+
+      if (normalizedInput !== normalizedStored) {
+        console.warn(`❌ Senha do restaurante incorreta!`);
+        return {
+          success: false,
+          message: 'Senha do restaurante incorreta. Peça a senha ao atendente.'
+        };
+      }
+
+      console.log(`✅ Senha do restaurante CORRETA! Marcando host como validado...`);
+
+      // 8. Marcar anfitrião como validado
+      const { error: updateError } = await supabase
+        .from('events')
+        .update({
+          host_validated: true,
+          host_validated_at: new Date().toISOString()
+        })
+        .eq('id', eventId);
+
+      if (updateError) {
+        console.error('❌ ERRO AO MARCAR HOST VALIDADO:', updateError);
+        return {
+          success: false,
+          message: 'Erro ao registrar validação'
+        };
+      }
+
+      console.log(`✅ Anfitrião validado com sucesso!`);
+
+      return {
+        success: true,
+        message: '✅ Presença validada com o restaurante! Agora compartilhe a senha com seus convidados.'
+      };
+    } catch (error) {
+      console.error('❌ Erro na validação do anfitrião:', error);
+      return {
+        success: false,
+        message: 'Erro ao validar presença com restaurante'
+      };
+    }
+  }
+
+  /**
+   * 🔐 Determina qual tipo de validação o usuário precisa fazer
+   */
+  static async getUserValidationType(
+    eventId: number,
+    userId: string
+  ): Promise<{
+    type: 'host' | 'guest' | 'institutional' | 'none';
+    message: string;
+    requiresPassword: boolean;
+  }> {
+    try {
+      const { data: event, error } = await supabase
+        .from('events')
+        .select('creator_id, event_type, partner_id, host_validated')
+        .eq('id', eventId)
+        .single();
+
+      if (error || !event) {
+        return {
+          type: 'none',
+          message: 'Evento não encontrado',
+          requiresPassword: false
+        };
+      }
+
+      const isHost = event.creator_id === userId;
+
+      // EVENTO PADRÃO
+      if (event.event_type === 'padrao') {
+        if (isHost && !event.host_validated) {
+          return {
+            type: 'host',
+            message: 'Você precisa validar sua presença com o restaurante',
+            requiresPassword: true
+          };
+        }
+        if (!isHost) {
+          return {
+            type: 'guest',
+            message: 'Digite a senha compartilhada pelo anfitrião',
+            requiresPassword: true
+          };
+        }
+        if (isHost && event.host_validated) {
+          return {
+            type: 'none',
+            message: 'Você já validou sua presença',
+            requiresPassword: false
+          };
+        }
+      }
+
+      // EVENTO INSTITUCIONAL
+      if (event.event_type === 'institucional') {
+        return {
+          type: 'institutional',
+          message: 'Digite a senha compartilhada pelo restaurante',
+          requiresPassword: true
+        };
+      }
+
+      // CRUSHER E PARTICULAR (funcionam normalmente)
+      if (event.event_type === 'crusher' || event.event_type === 'particular') {
+        return {
+          type: 'guest',
+          message: 'Digite a senha compartilhada pelo anfitrião',
+          requiresPassword: true
+        };
+      }
+
+      return {
+        type: 'none',
+        message: 'Este evento não requer validação de senha',
+        requiresPassword: false
+      };
+    } catch (error) {
+      console.error('Erro ao determinar tipo de validação:', error);
+      return {
+        type: 'none',
+        message: 'Erro ao verificar tipo de validação',
+        requiresPassword: false
       };
     }
   }

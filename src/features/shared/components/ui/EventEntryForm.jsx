@@ -12,15 +12,49 @@ import PropTypes from 'prop-types';
  * - Input de 4 dígitos (1 dígito por input)
  * - Validação em tempo real
  * - Feedback visual
+ * - Suporta modos: host, guest, institutional
  */
-const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
+const EventEntryForm = ({ eventId, onSuccess, isDisabled = false, validationType = null }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
   const [digits, setDigits] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
+  const [loadingValidationType, setLoadingValidationType] = useState(true);
   const [error, setError] = useState('');
+  const [detectedValidationType, setDetectedValidationType] = useState(null);
   const inputRefs = useRef([]);
+
+  // 🔍 Detectar tipo de validação necessária
+  useEffect(() => {
+    if (validationType) {
+      setDetectedValidationType(validationType);
+      setLoadingValidationType(false);
+      return;
+    }
+
+    const detectValidationType = async () => {
+      try {
+        const result = await EventSecurityService.getUserValidationType(
+          parseInt(eventId),
+          user.id
+        );
+
+        setDetectedValidationType(result);
+      } catch (error) {
+        console.error('Erro ao detectar tipo de validação:', error);
+        setDetectedValidationType({
+          type: 'guest',
+          message: 'Digite a senha do evento',
+          requiresPassword: true
+        });
+      } finally {
+        setLoadingValidationType(false);
+      }
+    };
+
+    detectValidationType();
+  }, [eventId, user.id, validationType]);
 
   /**
    * 🎯 Muda dígito e auto-move para próximo
@@ -71,21 +105,46 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
     setError('');
 
     try {
-      console.log(`🔐 Validando senha: ${password}`);
+      console.log(`🔐 Validando senha (modo: ${detectedValidationType?.type}): ${password}`);
 
-      // ✅ CORRIGIDO: Chamada correta do EventSecurityService
-      const result = await EventSecurityService.validateEntryPassword({
-        eventId: parseInt(eventId),
-        participantId: user.id,
-        password: password
-      });
+      let result;
+
+      // Determinar qual método de validação usar baseado no tipo
+      if (detectedValidationType?.type === 'host') {
+        // ANFITRIÃO validando com RESTAURANTE
+        result = await EventSecurityService.validateHostWithRestaurant({
+          eventId: parseInt(eventId),
+          hostId: user.id,
+          partnerPassword: password
+        });
+      } else if (detectedValidationType?.type === 'institutional') {
+        // INSCRITO em evento INSTITUCIONAL validando com RESTAURANTE
+        result = await EventSecurityService.validateEntryPassword({
+          eventId: parseInt(eventId),
+          participantId: user.id,
+          password: password
+        });
+      } else {
+        // GUEST (convidado) validando com ANFITRIÃO (padrão, crusher, particular)
+        result = await EventSecurityService.validateEntryPassword({
+          eventId: parseInt(eventId),
+          participantId: user.id,
+          password: password
+        });
+      }
 
       if (result.success) {
         console.log(`✅ Entrada validada!`);
 
+        const successMessages = {
+          host: 'Presença validada! Agora compartilhe a senha com seus convidados.',
+          institutional: 'Bem-vindo ao evento!',
+          guest: 'Bem-vindo ao evento!'
+        };
+
         toast({
           title: '✅ Acesso Liberado!',
-          description: 'Bem-vindo ao evento! Você pode entrar agora.',
+          description: successMessages[detectedValidationType?.type] || 'Bem-vindo ao evento!',
           duration: 3000
         });
 
@@ -129,13 +188,56 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
     inputRefs.current[0]?.focus();
   };
 
+  // Loading state
+  if (loadingValidationType) {
+    return (
+      <div className="w-full max-w-sm mx-auto p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-2xl">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Não precisa validar
+  if (detectedValidationType?.type === 'none') {
+    return (
+      <div className="w-full max-w-sm mx-auto p-6 bg-gradient-to-br from-green-900/20 to-green-800/20 rounded-xl border border-green-700/50 shadow-2xl">
+        <div className="text-center">
+          <p className="text-green-300 text-sm">{detectedValidationType.message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Determine o título e descrição baseado no tipo
+  const titles = {
+    host: '🏪 Valide sua Presença',
+    institutional: '🔐 Digite a Senha',
+    guest: '🔐 Digite a Senha'
+  };
+
+  const descriptions = {
+    host: 'Digite a senha do restaurante para validar sua presença',
+    institutional: 'Digite a senha compartilhada pelo restaurante',
+    guest: 'Digite a senha compartilhada pelo anfitrião'
+  };
+
+  const helpTexts = {
+    host: 'Peça a senha ao atendente do restaurante ao chegar',
+    institutional: 'Veja a senha no cardápio ou pergunte ao atendente',
+    guest: 'Peça a senha ao anfitrião do evento'
+  };
+
+  const currentType = detectedValidationType?.type || 'guest';
+
   return (
     <div className="w-full max-w-sm mx-auto p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border border-slate-700 shadow-2xl">
       {/* 🎯 Título */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">🔐 Digite a Senha</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{titles[currentType]}</h2>
         <p className="text-sm text-slate-400">
-          Digite os 4 dígitos para entrar no evento
+          {descriptions[currentType]}
         </p>
       </div>
 
@@ -213,16 +315,22 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false }) => {
 
         {/* ℹ️ Info */}
         <p className="text-xs text-slate-500 text-center">
-          Digite a senha compartilhada pelo anfitrião
+          {helpTexts[currentType]}
         </p>
       </form>
     </div>
   );
 };
+
 EventEntryForm.propTypes = {
   eventId: PropTypes.string.isRequired,
   onSuccess: PropTypes.func,
   isDisabled: PropTypes.bool,
+  validationType: PropTypes.shape({
+    type: PropTypes.oneOf(['host', 'guest', 'institutional', 'none']),
+    message: PropTypes.string,
+    requiresPassword: PropTypes.bool
+  }),
 };
 
 EventEntryForm.defaultProps = {
