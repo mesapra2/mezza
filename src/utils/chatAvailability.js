@@ -38,14 +38,15 @@ export const isChatAvailable = (event, isCreator, isApprovedParticipant) => {
     };
   }
 
-  // Verifica se todas as vagas foram preenchidas ou se o evento foi confirmado
-  const allVacasPreenchidas = event.approvedCount >= event.vagas;
+  // ✅ NOVA LÓGICA: Chat liberado se houver pelo menos 1 participante aprovado
+  // Isso permite que criador e participantes comecem a conversar mais cedo
+  const temParticipantes = event.approvedCount >= 1;
   const eventConfirmado = event.status === 'Confirmado' || event.status === 'Em andamento';
 
-  if (!allVacasPreenchidas && !eventConfirmado) {
+  if (!temParticipantes && !eventConfirmado) {
     return {
       available: false,
-      reason: `Aguardando ${event.vagas - event.approvedCount} participante(s) ou confirmação do evento para liberar o chat.`
+      reason: 'Chat será liberado após o primeiro participante ser aprovado.'
     };
   }
 
