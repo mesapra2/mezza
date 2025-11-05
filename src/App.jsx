@@ -1,6 +1,6 @@
 // src/App.jsx
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Helmet } from 'react-helmet';
 import PropTypes from 'prop-types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,14 +90,20 @@ function App() {
 
   const isLoading = loading || (user && !profile);
 
+  // ✅ FIX: useRef para prevenir múltiplas inicializações
+  const hasStartedAutoUpdate = useRef(false);
+
   // 🔄 Iniciar monitoramento automático de status de eventos
   useEffect(() => {
-    if (user) {
+    // ✅ FIX: Só inicia uma vez, mesmo se useEffect disparar múltiplas vezes
+    if (user && !hasStartedAutoUpdate.current && !EventStatusService.isAutoUpdateRunning()) {
+      hasStartedAutoUpdate.current = true;
       console.log('✅ Iniciando monitoramento automático de status de eventos');
-      EventStatusService.startAutoUpdate(30); // Atualiza a cada 30 segundos
+      EventStatusService.startAutoUpdate(); // ✅ FIX: Sem parâmetro = usa default adaptativo
 
       return () => {
         console.log('ℹ️ Parando monitoramento de status de eventos');
+        hasStartedAutoUpdate.current = false;
         EventStatusService.stopAutoUpdate();
       };
     }

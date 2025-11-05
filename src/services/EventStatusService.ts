@@ -32,15 +32,30 @@ class EventStatusService {
   private static updateInterval: ReturnType<typeof setInterval> | null = null;
 
   /**
+   * 🔍 Detecta se está em mobile
+   */
+  private static isMobile(): boolean {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      window.navigator.userAgent
+    );
+  }
+
+  /**
    * 🎯 Atualiza status de TODOS os eventos
+   * ✅ OTIMIZADO: Select específico + limit em mobile
    */
   static async updateAllEventStatuses(): Promise<void> {
     try {
+      // ✅ FIX: Limit menor em mobile para não sobrecarregar
+      const limit = this.isMobile() ? 50 : 100;
+
       const { data: events, error } = await supabase
         .from('events')
-        .select('*')
+        .select('id, status, start_time, end_time, creator_id, title, event_entry_password, entry_locked') // ✅ FIX: Campos específicos
         .neq('status', 'Cancelado')
-        .neq('status', 'Concluído');
+        .neq('status', 'Concluído')
+        .limit(limit); // ✅ FIX: Limit
 
       if (error) {
         console.error('❌ Erro ao buscar eventos:', error);
@@ -52,13 +67,29 @@ class EventStatusService {
         return;
       }
 
-      console.log(`🔄 Atualizando ${events.length} eventos...`);
+      console.log(`🔄 Atualizando ${events.length} eventos (${this.isMobile() ? 'mobile' : 'desktop'})...`);
 
-      for (const event of events) {
-        try {
-          await this.calculateEventStatus(event as Event);
-        } catch (eventError) {
-          console.error(`❌ Erro ao processar evento ${event.id}:`, eventError);
+      // ✅ FIX: Processar em batch em mobile
+      if (this.isMobile()) {
+        // Processar em chunks de 10 para não travar
+        for (let i = 0; i < events.length; i += 10) {
+          const chunk = events.slice(i, i + 10);
+          await Promise.all(
+            chunk.map(event =>
+              this.calculateEventStatus(event as Event).catch(err =>
+                console.error(`❌ Erro ao processar evento ${event.id}:`, err)
+              )
+            )
+          );
+        }
+      } else {
+        // Desktop: processar sequencialmente (comportamento original)
+        for (const event of events) {
+          try {
+            await this.calculateEventStatus(event as Event);
+          } catch (eventError) {
+            console.error(`❌ Erro ao processar evento ${event.id}:`, eventError);
+          }
         }
       }
     } catch (error) {
@@ -415,14 +446,19 @@ class EventStatusService {
 
   /**
    * 🚀 Inicia atualização automática de eventos
-   * @param intervalSeconds - Intervalo em segundos (padrão: 30)
+   * @param intervalSeconds - Intervalo em segundos (padrão: adaptativo - 60s mobile, 30s desktop)
+   * ✅ OTIMIZADO: Polling adaptativo baseado em device
    */
-  static startAutoUpdate(intervalSeconds: number = 30): ReturnType<typeof setInterval> {
+  static startAutoUpdate(intervalSeconds?: number): ReturnType<typeof setInterval> {
     if (this.updateInterval) {
       this.stopAutoUpdate();
     }
 
-    console.log(`🔄 Iniciando auto-update de eventos a cada ${intervalSeconds}s`);
+    // ✅ FIX: Interval adaptativo - 60s mobile, 30s desktop
+    const defaultInterval = this.isMobile() ? 60 : 30;
+    const actualInterval = intervalSeconds || defaultInterval;
+
+    console.log(`🔄 Iniciando auto-update de eventos a cada ${actualInterval}s (${this.isMobile() ? 'mobile' : 'desktop'})`);
 
     // Executar imediatamente
     this.updateAllEventStatuses();
@@ -430,7 +466,7 @@ class EventStatusService {
     // Depois executar a cada X segundos
     this.updateInterval = setInterval(() => {
       this.updateAllEventStatuses();
-    }, intervalSeconds * 1000);
+    }, actualInterval * 1000);
 
     return this.updateInterval;
   }

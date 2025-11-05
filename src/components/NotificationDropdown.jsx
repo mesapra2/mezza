@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Check, X,  UserPlus,   Calendar,   AlertCircle,   Hand,  Key,  Copy,  CheckCircle} from 'lucide-react';
@@ -8,6 +8,7 @@ import NotificationService from '@/services/NotificationService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/features/shared/components/ui/use-toast';
+import { debounce } from '@/utils/debounce';
 
 const NotificationDropdown = ({ userId }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -172,18 +173,35 @@ const NotificationDropdown = ({ userId }) => {
     }
   }, [userId]);
 
+  // ✅ FIX: Detectar mobile para ajustar polling
+  const isMobile = useRef(
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  ).current;
+
+  // ✅ FIX: Debounced load function para evitar chamadas excessivas
+  const debouncedLoadRef = useRef(
+    debounce(() => {
+      loadNotifications();
+      loadPokes();
+      loadUnreadCount();
+    }, 500)
+  );
+
   useEffect(() => {
     if (!userId) return;
 
+    // Carregamento inicial
     loadNotifications();
     loadPokes();
     loadUnreadCount();
 
+    // ✅ FIX: Polling adaptativo - 60s mobile, 30s desktop
+    const pollingInterval = isMobile ? 60000 : 30000;
+    console.log(`🔔 Polling notificações a cada ${pollingInterval / 1000}s (${isMobile ? 'mobile' : 'desktop'})`);
+
     const interval = setInterval(() => {
-      loadNotifications();
-      loadPokes();
-      loadUnreadCount();
-    }, 30000);
+      debouncedLoadRef.current();
+    }, pollingInterval);
 
     let notifChannel = null;
     let pokesChannel = null;
@@ -202,8 +220,8 @@ const NotificationDropdown = ({ userId }) => {
             },
             (payload) => {
               console.log('🔔 Nova notificação recebida:', payload);
-              loadNotifications();
-              loadUnreadCount();
+              // ✅ FIX: Usar debounced load
+              debouncedLoadRef.current();
             }
           )
           .subscribe((status) => {
@@ -226,8 +244,8 @@ const NotificationDropdown = ({ userId }) => {
             },
             (payload) => {
               console.log('👋 Novo Tok recebido:', payload);
-              loadPokes();
-              loadUnreadCount();
+              // ✅ FIX: Usar debounced load
+              debouncedLoadRef.current();
             }
           )
           .subscribe((status) => {
@@ -246,6 +264,8 @@ const NotificationDropdown = ({ userId }) => {
 
     return () => {
       clearInterval(interval);
+      // ✅ FIX: Cancelar debounce pendente
+      debouncedLoadRef.current.cancel();
       if (notifChannel) {
         notifChannel.unsubscribe();
       }
@@ -253,7 +273,7 @@ const NotificationDropdown = ({ userId }) => {
         pokesChannel.unsubscribe();
       }
     };
-  }, [userId, loadNotifications, loadPokes, loadUnreadCount]);
+  }, [userId]); // ✅ FIX: Apenas userId nas dependências
 
   const handleMarkAsRead = async (notificationId) => {
     await NotificationService.markAsRead(notificationId);
