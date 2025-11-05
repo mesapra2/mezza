@@ -1,9 +1,9 @@
+// src/features/shared/components/BannerCarousel.jsx
 import React, { useState, useEffect, useRef } from "react";
-import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-// ✅ Importa as imagens corretamente (ajuste o caminho se necessário)
+// Import estático (assegure que os arquivos existam em src/assets/banners/)
 import b1 from "@/assets/banners/b1.png";
 import b2 from "@/assets/banners/b2.png";
 import b3 from "@/assets/banners/b3.png";
@@ -11,7 +11,7 @@ import b4 from "@/assets/banners/b4.png";
 
 const images = [b1, b2, b3, b4];
 
-const BannerCarousel = ({ interval }) => {
+const BannerCarousel = ({ interval = 5000 }) => {
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const timerRef = useRef(null);
@@ -27,6 +27,7 @@ const BannerCarousel = ({ interval }) => {
   }, [isPaused, interval]);
 
   useEffect(() => {
+    // limpa se o componente desmontar
     return () => clearInterval(timerRef.current);
   }, []);
 
@@ -63,54 +64,44 @@ const BannerCarousel = ({ interval }) => {
         />
       </AnimatePresence>
 
-      {/* Overlay sutil */}
+      {/* Overlay sutil para garantir legibilidade */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 pointer-events-none" />
 
-      {/* Botões de navegação */}
+      {/* Navegação (esquerda/direita) */}
       <button
-        type="button"
-        aria-label="Anterior"
         onClick={prev}
+        aria-label="Anterior"
         className="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm transition"
+        type="button"
       >
         <ChevronLeft className="w-5 h-5 text-white" />
       </button>
 
       <button
-        type="button"
-        aria-label="Próximo"
         onClick={next}
+        aria-label="Próximo"
         className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/30 hover:bg-black/50 backdrop-blur-sm transition"
+        type="button"
       >
         <ChevronRight className="w-5 h-5 text-white" />
       </button>
 
-      {/* Indicadores de posição */}
+      {/* Indicadores */}
       <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
         {images.map((_, i) => (
           <button
             key={i}
-            type="button"
-            aria-label={`Ir para banner ${i + 1}`}
             onClick={() => goTo(i)}
+            aria-label={`Ir para banner ${i + 1}`}
             className={`w-3 h-3 rounded-full transition-all ${
               i === index ? "bg-white scale-110" : "bg-white/40 hover:bg-white/70"
             }`}
+            type="button"
           />
         ))}
       </div>
     </div>
   );
-};
-
-// ✅ Validação ESLint (PropTypes)
-BannerCarousel.propTypes = {
-  interval: PropTypes.number,
-};
-
-// ✅ Valor padrão para prop interval
-BannerCarousel.defaultProps = {
-  interval: 5000,
 };
 
 export default BannerCarousel;
