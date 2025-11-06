@@ -5,7 +5,7 @@ import { useToast } from '@/features/shared/components/ui/use-toast.js';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { getUserType, PROFILE_TYPES } from '@/config/userTypes';
-import { useCurrentUserPresence } from '@/hooks/usePresence';
+import { useCurrentUserPresence } from '@/hooks/usePresence'; useCurrentUserPresence(user?.id);
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  useCurrentUserPresence(user?.id);
 
   // Função para buscar o perfil
   const getProfile = useCallback(async (currentUser) => {
