@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Users, Loader2, Heart, Eye, XCircle, Star } from 'lucide-react';
 import { toast } from '@/features/shared/components/ui/use-toast';
-import Avatar from '@/features/shared/components/profile/Avatar';
+
 const PeoplePage = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -18,7 +18,20 @@ const PeoplePage = () => {
   const isPremium = profile?.is_premium === true;
 
   // ✅ FUNÇÃO ADICIONADA: Helper para construir URL do avatar corretamente
-  
+  const getAvatarUrl = (person) => {
+    if (!person?.avatar_url) {
+      return null;
+    }
+
+    // Se já é URL completa (http/https), retorna direto
+    if (person.avatar_url.startsWith('http')) {
+      return person.avatar_url;
+    }
+
+    // ✅ Constrói a URL pública do Supabase
+    const { data } = supabase.storage.from('avatars').getPublicUrl(person.avatar_url);
+    return `${data.publicUrl}?t=${new Date().getTime()}`;
+  };
 
   const fetchPeople = useCallback(async () => {
     if (!user) {
@@ -236,30 +249,8 @@ const PeoplePage = () => {
           {people.map((person) => {
             const allowsPokes = person.allow_pokes === true;
             const isPoking = pokingStates[person.id];
-[{
-	"resource": "/C:/DEVMix/App.Mesapra2.com/src/features/shared/pages/PeoplePage.jsx",
-	"owner": "eslint5",
-	"code": {
-		"value": "no-unused-vars",
-		"target": {
-			"$mid": 1,
-			"path": "/docs/latest/rules/no-unused-vars",
-			"scheme": "https",
-			"authority": "eslint.org"
-		}
-	},
-	"severity": 4,
-	"message": "'avatarUrl' is assigned a value but never used. Allowed unused vars must match /^React$/u.",
-	"source": "eslint",
-	"startLineNumber": 252,
-	"startColumn": 19,
-	"endLineNumber": 252,
-	"endColumn": 28,
-	"tags": [
-		1
-	],
-	"origin": "extHost1"
-}]
+            const avatarUrl = getAvatarUrl(person);
+
             return (
               <div
                 key={person.id}
@@ -267,13 +258,26 @@ const PeoplePage = () => {
               >
                 <div>
                   <div className="flex items-center gap-4 mb-4">
-                    <Avatar
-  url={person.avatar_url}
-  name={person.username || person.full_name || 'U'}
-  userId={person.id}
-  size="lg"
-  showPresence={true}
-/>
+                    <div className="relative">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={person.username || 'Usuário'}
+                          className="w-16 h-16 rounded-full object-cover border-2 border-purple-500/30"
+                          onError={(e) => {
+                             e.target.style.display = 'none';
+                             e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold"
+                        style={{ display: avatarUrl ? 'none' : 'flex' }}
+                      >
+                        {(person.username || person.full_name || 'U')[0].toUpperCase()}
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background"></div>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg truncate">
                         {person.full_name || person.username || 'Usuário'}
@@ -395,13 +399,19 @@ const PeoplePage = () => {
 
             <div className="p-4 sm:p-6 overflow-y-auto">
               <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6">
-                 <Avatar
-  url={selectedProfile.avatar_url}
-  name={selectedProfile.username || selectedProfile.full_name || 'U'}
-  userId={selectedProfile.id}
-  size="xl"
-  showPresence={true}
-/>
+                 <div className="relative flex-shrink-0">
+                  {getAvatarUrl(selectedProfile) ? (
+                    <img
+                      src={getAvatarUrl(selectedProfile)}
+                      alt={selectedProfile.username}
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-purple-500/50"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-bold">
+                      {(selectedProfile.username || selectedProfile.full_name || 'U')[0].toUpperCase()}
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 text-center sm:text-left min-w-0">
                   <h3 className="text-xl sm:text-2xl font-bold mb-1 truncate">
                     {selectedProfile.full_name || selectedProfile.username}
