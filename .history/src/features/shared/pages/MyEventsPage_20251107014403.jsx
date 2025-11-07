@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import PropTypes from 'prop-types'; 
 import {
   Calendar,
   Users,
@@ -34,25 +33,21 @@ import { useEventThumbnails } from '@/hooks/useEventThumbnail';
 
 // Componente para renderizar thumbnail do carousel
 const EventThumbnail = ({ eventId, thumbnails }) => {
-  // ✅ CORREÇÃO 1 (Hooks): Chamada de hooks (useState/useEffect) sempre no topo.
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const thumbnail = thumbnails.get(eventId);
-  
-  // Desestruturação segura para evitar erros se 'thumbnail' for undefined/null
-  const { url, isLoading } = thumbnail || {}; 
-  
-  // Resetar estados quando URL muda (Hook é chamado no topo)
+
+  if (!thumbnail) return null;
+
+  const { url, isLoading } = thumbnail;
+  const showImage = url && !imageError;
+
+  // Resetar estados quando URL muda
   useEffect(() => {
     setImageError(false);
     setImageLoaded(false);
   }, [url]);
-
-  // ✅ RETORNO CONDICIONAL SÓ PODE VIR DEPOIS DOS HOOKS.
-  if (!thumbnail) return null;
-
-  const showImage = url && !imageError;
 
   return (
     <div className="relative w-full h-32 rounded-t-2xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 -mx-6 -mt-6 mb-4">
@@ -94,13 +89,6 @@ const EventThumbnail = ({ eventId, thumbnails }) => {
     </div>
   );
 };
-
-// ✅ CORREÇÃO 2 (PropTypes): Adicionar PropTypes para resolver avisos do ESLint
-EventThumbnail.propTypes = {
-    eventId: PropTypes.string.isRequired,
-    thumbnails: PropTypes.instanceOf(Map).isRequired, 
-};
-
 
 const MyEventsPage = () => {
   const { user } = useAuth();
@@ -204,6 +192,7 @@ const MyEventsPage = () => {
       return [];
     }
   }, [user?.id]);
+
   // --------------------------------------------------
   // ✅ CARREGAR TODOS OS EVENTOS (CRIADOS + PARTICIPANDO)
   // --------------------------------------------------
@@ -501,8 +490,7 @@ const MyEventsPage = () => {
                   className="glass-effect rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all h-full flex flex-col justify-between overflow-hidden"
                 >
                   {/* Thumbnail do Carousel */}
-                  {/* 🚨 CORREÇÃO APLICADA AQUI: Convertendo event.id para String */}
-                  <EventThumbnail eventId={String(event.id)} thumbnails={thumbnails} />
+                  <EventThumbnail eventId={event.id} thumbnails={thumbnails} />
 
                   {/* Status + Badge de Participante */}
                   <div className="mb-4 flex items-center gap-2">
