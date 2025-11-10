@@ -43,6 +43,7 @@ import ChatHistoryPage from '@/features/shared/pages/ChatHistoryPage';
 import ProfilePage from '@/features/shared/pages/ProfilePage';
 import PartnerProfilePage from '@/features/shared/pages/PartnerProfilePage';
 import MyEventsPage from '@/features/shared/pages/MyEventsPage';
+import UserProfilePage from '@/features/shared/pages/UserProfilePage';
 
 // 🛡️ Componente para verificar telefone verificado
 const RequirePhoneVerification = ({ children }) => {
@@ -219,6 +220,15 @@ function App() {
                   element={
                     <RequirePhoneVerification>
                       <ProfilePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
+                
+                <Route 
+                  path="user/:userId" 
+                  element={
+                    <RequirePhoneVerification>
+                      <UserProfilePage />
                     </RequirePhoneVerification>
                   } 
                 />
@@ -408,6 +418,15 @@ function App() {
                   element={
                     <RequirePhoneVerification>
                       <ProfilePage />
+                    </RequirePhoneVerification>
+                  } 
+                />
+                
+                <Route 
+                  path="user/:userId" 
+                  element={
+                    <RequirePhoneVerification>
+                      <UserProfilePage />
                     </RequirePhoneVerification>
                   } 
                 />

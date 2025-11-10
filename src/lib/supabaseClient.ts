@@ -15,10 +15,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
   },
-  // ✅ Removido o header 'Accept' fixo que causava erro 406
+  // ✅ Configurações para resolver ERR_CONNECTION_CLOSED
   global: {
     headers: {
       'Content-Type': 'application/json',
+      'Connection': 'keep-alive',
+    },
+    fetch: (url, options = {}) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      
+      return fetch(url, {
+        ...options,
+        signal: controller.signal,
+        keepalive: true,
+      }).finally(() => clearTimeout(timeoutId));
     },
   },
   db: {

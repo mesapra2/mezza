@@ -5,7 +5,8 @@ import { useToast } from '@/features/shared/components/ui/use-toast.js';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { getUserType, PROFILE_TYPES } from '@/config/userTypes';
-import { useCurrentUserPresence } from '@/hooks/usePresence';
+import PresenceService from '@/services/PresenceService';
+
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
@@ -36,12 +37,12 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  useCurrentUserPresence(user?.id);
 
-  // Função para buscar o perfil
+  // Função para buscar o perfil com controle simplificado
   const getProfile = useCallback(async (currentUser) => {
     if (!currentUser) return null;
     console.log(`📄 [getProfile] Buscando perfil para ${currentUser.id}`);
+    
     try {
       const { data: profileData, error } = await supabase
         .from('profiles')
@@ -108,6 +109,10 @@ export const AuthProvider = ({ children }) => {
   const createProfileIfNotExists = useCallback(async (currentUser) => {
     if (!currentUser) return null;
     console.log(`[createProfile] Verificando/Criando perfil para ${currentUser.id}`);
+    
+    // Adicionar delay para evitar requisições muito rápidas
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
     try {
       let profileData = await getProfile(currentUser);
       if (!profileData) {
@@ -125,6 +130,7 @@ export const AuthProvider = ({ children }) => {
 
         const { error: insertError } = await supabase.from('profiles').insert(newProfileData);
         if (insertError) throw insertError;
+        
         console.log(`✅ [createProfile] Perfil criado para ${currentUser.id}`);
         toast({ title: "Perfil criado!", description: "Bem-vindo!" });
         profileData = await getProfile(currentUser);
@@ -134,7 +140,10 @@ export const AuthProvider = ({ children }) => {
       return profileData;
     } catch (error) {
       console.error('❌ Erro em createProfileIfNotExists:', error);
-      toast({ variant: "destructive", title: "Erro ao criar/verificar perfil", description: error.message });
+      // Não exibir toast para erros de AbortError
+      if (!error.message.includes('AbortError') && !error.message.includes('aborted')) {
+        toast({ variant: "destructive", title: "Erro ao criar/verificar perfil", description: error.message });
+      }
       return null;
     }
   }, [getProfile, toast]);
@@ -142,23 +151,37 @@ export const AuthProvider = ({ children }) => {
   // Efeito principal para auth state change e inicialização
   useEffect(() => {
     let mounted = true;
+    let isInitializing = false;
+    
     console.log('[Auth Effect Init] Montando e buscando sessão inicial...');
     setLoading(true);
 
     const initializeAuth = async () => {
+        if (isInitializing) return;
+        isInitializing = true;
+        
         try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError) throw sessionError;
             if (!mounted) return;
+            
             console.log('[Auth Effect Init] Sessão inicial:', session ? `User ${session.user.id}` : 'Nenhuma');
 
             const initialUser = session?.user ?? null;
             setUser(initialUser);
 
-            if (initialUser) {
+            if (initialUser && mounted) {
                 const initialProfile = await createProfileIfNotExists(initialUser);
-                if (mounted) {
+                if (mounted && initialProfile) {
                     setProfile(initialProfile);
+                    
+                    // ✅ Inicializar sistema de presença
+                    try {
+                        await PresenceService.initialize(initialUser.id);
+                    } catch (presenceError) {
+                        console.warn('⚠️ Erro ao inicializar presença:', presenceError);
+                    }
+                    
                     const currentPath = window.location.pathname;
                     
                     // ✅ NÃO redireciona se estiver em /verify-phone ou se for usuário antigo sem telefone
@@ -170,6 +193,12 @@ export const AuthProvider = ({ children }) => {
                 }
             } else if (mounted) {
                 setProfile(null);
+                // ✅ Limpar presença quando não há usuário
+                try {
+                    await PresenceService.cleanup();
+                } catch (presenceError) {
+                    console.warn('⚠️ Erro ao limpar presença:', presenceError);
+                }
             }
         } catch (err) {
             console.error('❌ Erro na inicialização do Auth:', err);
@@ -182,6 +211,7 @@ export const AuthProvider = ({ children }) => {
                 console.log('[Auth Effect Init] Carregamento inicial concluído.');
                 setLoading(false);
             }
+            isInitializing = false;
         }
     };
 
@@ -203,10 +233,31 @@ export const AuthProvider = ({ children }) => {
 
             if (currentUser) {
                 console.log('[AuthStateChange] Usuário alterado/logado, buscando/criando perfil...');
-                createProfileIfNotExists(currentUser).then(p => mounted && setProfile(p));
+                
+                createProfileIfNotExists(currentUser).then(async (p) => {
+                    if (mounted && p) {
+                        setProfile(p);
+                        // ✅ Inicializar presença para novo usuário
+                        try {
+                            await PresenceService.initialize(currentUser.id);
+                        } catch (presenceError) {
+                            console.warn('⚠️ Erro ao inicializar presença no AuthStateChange:', presenceError);
+                        }
+                    }
+                }).catch(err => {
+                    if (!err.message.includes('AbortError') && !err.message.includes('aborted')) {
+                        console.error('❌ Erro no AuthStateChange:', err);
+                    }
+                });
             } else {
                 console.log('[AuthStateChange] Usuário deslogado, limpando perfil.');
                 setProfile(null);
+                // ✅ Limpar presença no logout
+                try {
+                    PresenceService.cleanup();
+                } catch (presenceError) {
+                    console.warn('⚠️ Erro ao limpar presença no logout:', presenceError);
+                }
                 console.log('[AuthStateChange] Navegando para /login após logout.');
                 navigate('/login', { replace: true });
             }
@@ -350,6 +401,9 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     console.log('[Logout] Iniciando logout...');
     try {
+      // ✅ Limpar presença antes do logout
+      await PresenceService.cleanup();
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       toast({ title: "Logout realizado!", description: "Até logo!" });

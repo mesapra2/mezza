@@ -108,27 +108,45 @@ const RatingModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="glass-effect rounded-2xl p-8 border border-white/10 max-w-sm w-full mx-4 space-y-6 animate-in fade-in zoom-in duration-300">
+      <div 
+        className="glass-effect rounded-2xl p-8 border border-white/10 max-w-sm w-full mx-4 space-y-6 animate-in fade-in zoom-in duration-300"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rating-modal-title"
+        aria-describedby="rating-modal-description"
+      >
         
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-bold text-white">Avaliar {typeLabel}</h2>
+          <h2 id="rating-modal-title" className="text-2xl font-bold text-white">Avaliar {typeLabel}</h2>
           <p className="text-lg text-purple-200 font-semibold">{ratedName}</p>
-          <p className="text-sm text-white/60">
+          <p id="rating-modal-description" className="text-sm text-white/60">
             {ratingType === 'host'
               ? 'Como foi sua experiência com o anfitrião?'
               : 'Como foi sua experiência com este participante?'}
           </p>
         </div>
 
-        <div className="flex justify-center gap-4">
+        <fieldset className="flex justify-center gap-4">
+          <legend className="sr-only">Avaliação de 1 a 5 estrelas</legend>
           {[1, 2, 3, 4, 5].map((score) => (
             <button
               key={score}
               onClick={() => handleStarClick(score)}
               onMouseEnter={() => setHoveredStar(score)}
               onMouseLeave={() => setHoveredStar(0)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleStarClick(score);
+                }
+              }}
               disabled={isLoading}
-              className="group relative transition-transform hover:scale-125 disabled:opacity-50"
+              aria-label={`Dar ${score} estrela${score > 1 ? 's' : ''} de 5`}
+              aria-pressed={selectedScore === score}
+              role="radio"
+              aria-checked={selectedScore === score}
+              tabIndex={0}
+              className="group relative transition-transform hover:scale-125 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-900"
             >
               <Star
                 size={48}
@@ -147,7 +165,7 @@ const RatingModal = ({
               </span>
             </button>
           ))}
-        </div>
+        </fieldset>
 
         {selectedScore > 0 && (
           <div className="text-center bg-white/5 rounded-lg p-3 border border-white/10">

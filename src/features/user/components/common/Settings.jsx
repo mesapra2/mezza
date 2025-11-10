@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Moon, Sun, Mail, Bell, Gift, MessageCircle, Check, Hand } from 'lucide-react';
+import { X, User, Moon, Sun, Mail, Bell, Gift, MessageCircle, Check, Hand, Lock, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/features/shared/components/ui/use-toast';
 import { Button } from '@/features/shared/components/ui/button';
 import { Label } from '@/features/shared/components/ui/label';
+import ChangePasswordModal from '../../../../components/ChangePasswordModal';
+import DeleteAccountModal from '../../../../components/DeleteAccountModal';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = ({ isOpen, onClose }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [settings, setSettings] = useState({
     public_profile: false,
     allow_pokes: true,
@@ -111,9 +117,30 @@ const Settings = ({ isOpen, onClose }) => {
     }
   };
 
+  // Handler para sucesso na alteração de senha
+  const handlePasswordChangeSuccess = (message) => {
+    toast({
+      title: "✅ Senha alterada",
+      description: message || "Sua senha foi alterada com sucesso.",
+    });
+    setShowPasswordModal(false);
+  };
+
+  // Handler para conta deletada
+  const handleAccountDeleted = () => {
+    toast({
+      title: "✅ Conta eliminada",
+      description: "Sua conta foi permanentemente removida.",
+    });
+    setShowDeleteModal(false);
+    onClose(); // Fechar modal de configurações
+    navigate('/'); // Navegar para home
+  };
+
   if (!isOpen) return null;
 
   return (
+    <>
     <AnimatePresence>
       {isOpen && (
         <>
@@ -355,6 +382,44 @@ const Settings = ({ isOpen, onClose }) => {
                 )}
               </div>
 
+              {/* ✅ NOVA SEÇÃO: Segurança da Conta */}
+              <div className="border-t border-white/10 pt-6 space-y-4">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Segurança da Conta
+                </h3>
+
+                {/* Alterar Senha */}
+                <div className="glass-effect rounded-xl p-4 border border-white/10 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-white font-medium">Alterar Senha</h4>
+                    <p className="text-white/60 text-sm">Atualize sua senha para manter sua conta segura</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowPasswordModal(true)}
+                    className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    <Lock className="w-4 h-4" />
+                    Alterar
+                  </Button>
+                </div>
+
+                {/* Eliminar Conta */}
+                <div className="glass-effect rounded-xl p-4 border border-red-500/20 bg-red-500/5 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-red-400 font-medium">Eliminar Conta</h4>
+                    <p className="text-red-300/60 text-sm">Remove permanentemente todos os seus dados</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="bg-red-600 hover:bg-red-700 flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar
+                  </Button>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between p-6 border-t border-white/10">
                 <p className="text-white/40 text-sm">
                   {saving ? 'Salvando...' : 'Alterações são salvas automaticamente'}
@@ -371,6 +436,21 @@ const Settings = ({ isOpen, onClose }) => {
         </>
       )}
     </AnimatePresence>
+
+    {/* ✅ NOVOS MODAIS */}
+    <ChangePasswordModal
+      isOpen={showPasswordModal}
+      onClose={() => setShowPasswordModal(false)}
+      onSuccess={handlePasswordChangeSuccess}
+    />
+
+    <DeleteAccountModal
+      isOpen={showDeleteModal}
+      onClose={() => setShowDeleteModal(false)}
+      onAccountDeleted={handleAccountDeleted}
+      userType="user"
+    />
+  </>
   );
 };
 

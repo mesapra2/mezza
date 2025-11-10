@@ -22,8 +22,8 @@ export const HASHTAGS = {
  * Componente para selecionar hashtags.
  * Usado no CreateEvent (Padrão) - exibe apenas hashtags COMUNS.
  */
-// 2. Removido 'eventType' das props (corrigindo erro de lint)
-const HashtagSelector = ({ selectedHashtags, onChange }) => {
+// 2. Removido 'eventType' das props e usando parâmetros padrão JS
+const HashtagSelector = ({ selectedHashtags = [], onChange }) => {
   
   // 3. Estado local e useEffect removidos para corrigir erro de ESLint.
   // Usamos a prop 'selectedHashtags' diretamente.
@@ -111,14 +111,10 @@ const HashtagSelector = ({ selectedHashtags, onChange }) => {
   );
 };
 
-// 7. Adicionada validação de PropTypes para corrigir erros de ESLint
+// 7. Validação de PropTypes (sem defaultProps para compatibilidade futura)
 HashtagSelector.propTypes = {
   selectedHashtags: PropTypes.arrayOf(PropTypes.string),
   onChange: PropTypes.func.isRequired,
-};
-
-HashtagSelector.defaultProps = {
-  selectedHashtags: [],
 };
 
 // 8. O nome do export foi corrigido para bater com o import do CreateEvent.jsx

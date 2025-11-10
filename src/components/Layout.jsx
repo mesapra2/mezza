@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/features/shared/components/ui/Navbar';
+import SkipLinks from './SkipLinks';
+import ErrorBoundary from './ErrorBoundary';
 
 // === NavLink Component ===
 const NavLink = ({ to, icon: Icon, label, onClick }) => {
@@ -53,7 +55,7 @@ const SidebarContent = ({ onLinkClick, navLinks, bottomLinks, isPremium, isPremi
     {/* Logo + Premium Badge */}
     <div className="flex items-center h-16 flex-shrink-0 px-4">
       <div>
-        <h1 className="text-2xl font-bold gradient-text">Mesapra2</h1>
+        <h1 className="text-2xl font-bold gradient-text" role="banner">Mesapra2</h1>
         {/* Mostra badge Premium Partner se for parceiro premium, senão mostra Premium normal */}
         {isPremiumPartner ? (
           <div className="flex items-center gap-1 mt-1">
@@ -71,7 +73,12 @@ const SidebarContent = ({ onLinkClick, navLinks, bottomLinks, isPremium, isPremi
 
     {/* Main Navigation */}
     <div className="flex-1 overflow-y-auto">
-      <nav className="flex-1 px-2 py-4 space-y-2">
+      <nav 
+        id="navigation"
+        className="flex-1 px-2 py-4 space-y-2"
+        aria-label="Menu principal"
+        role="navigation"
+      >
         {navLinks.map((link) => (
           <NavLink key={link.to} {...link} onClick={onLinkClick} />
         ))}
@@ -79,7 +86,11 @@ const SidebarContent = ({ onLinkClick, navLinks, bottomLinks, isPremium, isPremi
 
       {/* Bottom Links */}
       {bottomLinks.length > 0 && (
-        <nav className="px-2 py-4 space-y-1 border-t border-white/10">
+        <nav 
+          className="px-2 py-4 space-y-1 border-t border-white/10"
+          aria-label="Menu de configurações"
+          role="navigation"
+        >
           {bottomLinks.map((link) => (
             <NavLink key={link.to} {...link} onClick={onLinkClick} />
           ))}
@@ -91,9 +102,16 @@ const SidebarContent = ({ onLinkClick, navLinks, bottomLinks, isPremium, isPremi
 
 SidebarContent.propTypes = {
   onLinkClick: PropTypes.func,
-  navLinks: PropTypes.arrayOf(PropTypes.object).isRequired,
-  bottomLinks: PropTypes.arrayOf(PropTypes.object).isRequired,
-  isPartner: PropTypes.bool.isRequired,
+  navLinks: PropTypes.arrayOf(PropTypes.shape({
+    to: PropTypes.string.isRequired,
+    icon: PropTypes.elementType.isRequired,
+    label: PropTypes.string.isRequired
+  })).isRequired,
+  bottomLinks: PropTypes.arrayOf(PropTypes.shape({
+    to: PropTypes.string.isRequired,
+    icon: PropTypes.elementType.isRequired,
+    label: PropTypes.string.isRequired
+  })).isRequired,
   isPremium: PropTypes.bool.isRequired,
   isPremiumPartner: PropTypes.bool.isRequired,
 };
@@ -208,9 +226,15 @@ const Layout = () => {
 
   // === Authenticated Layout ===
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <>
+      <SkipLinks />
+      <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:flex-shrink-0 w-64 border-r border-white/10">
+      <aside 
+        className="hidden md:flex md:flex-shrink-0 w-64 border-r border-white/10"
+        aria-label="Navegação principal"
+        role="complementary"
+      >
         <SidebarContent
           navLinks={navLinks}
           bottomLinks={bottomLinks}
@@ -234,6 +258,10 @@ const Layout = () => {
         className={`fixed top-0 left-0 z-50 w-64 h-full bg-background border-r border-white/10 transform transition-transform duration-300 ease-in-out md:hidden ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        aria-hidden={!isSidebarOpen}
+        aria-label="Menu de navegação"
+        role="dialog"
+        aria-modal="true"
       >
         <SidebarContent
           onLinkClick={toggleSidebar}
@@ -251,13 +279,21 @@ const Layout = () => {
           <Navbar toggleSidebar={toggleSidebar} />
         </div>
         
-        <main className="flex-1 pt-4 pb-6 overflow-y-auto md:pt-6">
+        <main 
+          className="flex-1 pt-4 pb-6 overflow-y-auto md:pt-6"
+          id="main-content"
+          role="main"
+          aria-label="Conteúdo principal"
+        >
           <div className="container px-4 mx-auto sm:px-6 lg:px-8">
-            <Outlet />
+            <ErrorBoundary fallbackMessage="Ocorreu um erro ao carregar esta página. Tente novamente.">
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
       </div>
     </div>
+    </>
   );
 };
 

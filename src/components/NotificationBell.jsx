@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Check, X, UserPlus, Calendar, AlertCircle, Hand } from 'lucide-react';
@@ -251,7 +251,7 @@ const NotificationDropdown = ({ userId }) => {
         pokesChannel.unsubscribe();
       }
     };
-  }, [userId, loadNotifications, loadPokes, loadUnreadCount]);
+  }, [userId]); // ✅ Only userId dependency to prevent unnecessary re-renders
 
   const handleMarkAsRead = async (notificationId) => {
     await NotificationService.markAsRead(notificationId);
@@ -310,7 +310,8 @@ const NotificationDropdown = ({ userId }) => {
     setIsOpen(false);
   };
 
-  const getNotificationIcon = (type) => {
+  // ✅ Memoize icon and color functions to prevent unnecessary re-creation
+  const getNotificationIcon = useCallback((type) => {
     const icons = {
       'Candidatura Recebida': UserPlus,
       'Candidatura Aprovada': Check,
@@ -322,9 +323,9 @@ const NotificationDropdown = ({ userId }) => {
       poke: Hand,
     };
     return icons[type] || Bell;
-  };
+  }, []);
 
-  const getNotificationColor = (type) => {
+  const getNotificationColor = useCallback((type) => {
     const colors = {
       'Candidatura Recebida': 'text-purple-400',
       'Candidatura Aprovada': 'text-green-400',
@@ -336,7 +337,7 @@ const NotificationDropdown = ({ userId }) => {
       poke: 'text-pink-400',
     };
     return colors[type] || 'text-white';
-  };
+  }, []);
 
   const getUserAvatar = (notification) => {
     if (notification.participation?.user?.avatar_url) {
@@ -346,7 +347,8 @@ const NotificationDropdown = ({ userId }) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=8b5cf6&color=fff&size=48`;
   };
 
-  const allItems = [
+  // ✅ Memoize expensive computations to prevent unnecessary re-renders
+  const allItems = useMemo(() => [
     ...notifications.map((n) => ({ ...n, type: 'notification' })),
     ...pokes.map((p) => ({
       ...p,
@@ -356,7 +358,7 @@ const NotificationDropdown = ({ userId }) => {
       message: `${p.profiles?.full_name || p.profiles?.username || 'Alguém'} te enviou um Tok 👋`,
       sent: p.read,
     })),
-  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), [notifications, pokes]);
 
   return (
     <div className="relative">

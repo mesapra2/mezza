@@ -94,10 +94,6 @@ EventStatusBadge.propTypes = {
   showIcon: PropTypes.bool
 };
 
-// Valores padrão
-EventStatusBadge.defaultProps = {
-  size: 'md',
-  showIcon: true
-};
+// Valores padrão definidos como parâmetros JS (sem defaultProps)
 
 export default EventStatusBadge;

@@ -2,73 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from "react-helmet-async";
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Search, Calendar, Users, MapPin, Tag, Clock, Plus, Image as ImageIcon, Loader } from 'lucide-react';
+import { Search, Calendar, Users, MapPin, Tag, Clock, Plus } from 'lucide-react';
 import { Input } from '@/features/shared/components/ui/input';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Avatar from '@/features/shared/components/profile/Avatar';
-import { useEventThumbnails } from '@/hooks/useEventThumbnail';
-
-// Componente para renderizar thumbnail do carousel
-const EventThumbnail = ({ eventId, thumbnails }) => {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  const thumbnail = thumbnails.get(eventId);
-
-  if (!thumbnail) return null;
-
-  const { url, isLoading } = thumbnail;
-  const showImage = url && !imageError;
-
-  // Resetar estados quando URL muda
-  useEffect(() => {
-    setImageError(false);
-    setImageLoaded(false);
-  }, [url]);
-
-  return (
-    <div className="relative w-full h-40 rounded-t-2xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 -mx-6 -mt-6 mb-4">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/50">
-          <Loader className="w-6 h-6 text-white/60 animate-spin" />
-        </div>
-      )}
-
-      {showImage ? (
-        <>
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gray-800 animate-pulse" />
-          )}
-          <img
-            src={url}
-            alt="Thumbnail do evento"
-            loading="lazy"
-            className={`w-full h-full object-cover transition-opacity duration-300 ${
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            onLoad={() => setImageLoaded(true)}
-            onError={() => setImageError(true)}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          {imageLoaded && (
-            <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
-              <ImageIcon className="w-3 h-3 text-white" />
-              <span className="text-xs text-white">Carousel</span>
-            </div>
-          )}
-        </>
-      ) : !isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-          <ImageIcon className="w-8 h-8 text-white/30" />
-          <span className="text-xs text-white/40">Sem foto</span>
-        </div>
-      )}
-    </div>
-  );
-};
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -78,9 +18,6 @@ const EventsPage = () => {
   const [selectedType, setSelectedType] = useState('todos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // ✅ Buscar thumbnails dos eventos do carousel
-  const thumbnails = useEventThumbnails(filteredEvents);
 
   useEffect(() => {
     loadEvents();
@@ -388,10 +325,7 @@ const EventsPage = () => {
                 transition={{ delay: index * 0.05 }}
               >
                 <Link to={`/event/${event.id}`}>
-                  <div className="glass-effect rounded-2xl p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer h-full flex flex-col justify-between overflow-hidden">
-                    {/* Thumbnail do Carousel */}
-                    <EventThumbnail eventId={event.id} thumbnails={thumbnails} />
-
+                  <div className="glass-effect rounded-2xl p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer h-full flex flex-col justify-between">
                     <div>
                       {event.creator && (
                         <div className="flex items-center gap-2 mb-4">

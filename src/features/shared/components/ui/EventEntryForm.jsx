@@ -1,5 +1,5 @@
 // src/features/shared/components/EventEntryForm.jsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/features/shared/components/ui/button';
 import { Input } from '@/features/shared/components/ui/input';
 import { useToast } from '@/features/shared/components/ui/use-toast';
@@ -244,30 +244,50 @@ const EventEntryForm = ({ eventId, onSuccess, isDisabled = false, validationType
       {/* 📝 Formulário */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 🔢 Inputs de Dígitos */}
-        <div className="flex justify-center gap-3">
-          {[0, 1, 2, 3].map((index) => (
-            <Input
-              key={index}
-              ref={(el) => (inputRefs.current[index] = el)}
-              type="text"
-              inputMode="numeric"
-              maxLength="1"
-              value={digits[index]}
-              onChange={(e) => handleDigitChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              disabled={isDisabled || loading}
-              placeholder="•"
-              className={`w-14 h-14 text-center text-2xl font-bold rounded-lg border-2 transition-all ${
-                digits[index]
-                  ? 'border-blue-500 bg-blue-500/10 text-white'
-                  : 'border-slate-600 bg-slate-700 text-slate-400'
-              } ${error ? 'border-red-500' : ''} ${
-                isDisabled ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              autoFocus={index === 0}
-            />
-          ))}
-        </div>
+        <fieldset className="space-y-4">
+          <legend className="text-lg font-semibold text-center text-white">
+            Digite a senha de 4 dígitos
+          </legend>
+          <div 
+            className="flex justify-center gap-3"
+            role="group"
+            aria-labelledby="password-instructions"
+          >
+            {[0, 1, 2, 3].map((index) => (
+              <div key={index} className="relative">
+                <label htmlFor={`digit-${index}`} className="sr-only">
+                  Dígito {index + 1} de 4
+                </label>
+                <Input
+                  id={`digit-${index}`}
+                  ref={(el) => (inputRefs.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="1"
+                  value={digits[index]}
+                  onChange={(e) => handleDigitChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  disabled={isDisabled || loading}
+                  placeholder="•"
+                  aria-label={`Dígito ${index + 1} da senha`}
+                  aria-describedby="password-instructions"
+                  aria-invalid={error ? 'true' : 'false'}
+                  className={`w-14 h-14 text-center text-2xl font-bold rounded-lg border-2 transition-all ${
+                    digits[index]
+                      ? 'border-blue-500 bg-blue-500/10 text-white'
+                      : 'border-slate-600 bg-slate-700 text-slate-400'
+                  } ${error ? 'border-red-500' : ''} ${
+                    isDisabled ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  autoFocus={index === 0}
+                />
+              </div>
+            ))}
+          </div>
+          <div id="password-instructions" className="text-sm text-slate-400 text-center">
+            Digite os 4 dígitos da senha do evento
+          </div>
+        </fieldset>
 
         {/* ❌ Mensagem de Erro */}
         {error && (
@@ -333,8 +353,5 @@ EventEntryForm.propTypes = {
   }),
 };
 
-EventEntryForm.defaultProps = {
-  isDisabled: false,
-};
 
 export default EventEntryForm;

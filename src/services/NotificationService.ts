@@ -1,20 +1,11 @@
 import { supabase } from '@/lib/supabaseClient';
 
+// ✅ FIX: Usar APENAS os tipos que existem no ENUM do banco
 type NotificationType =
-  | 'participation_request'
-  | 'participation_approved'
-  | 'participation_rejected'
-  | 'event_cancelled'
-  | 'event_confirmed'
-  | 'event_reminder'
-  | 'crusher_invite'
-  | 'new_event_matching_hashtag'
-  // Tipos em Português que o banco de dados espera
   | 'Candidatura Recebida'
   | 'Candidatura Aprovada'
-  | 'Candidatura Rejeitada'
-  | 'Novo Evento'
-  | 'Convite Crusher';
+  | 'participation_request'
+  | 'event_application';
 
 interface Notification {
   id?: number;
@@ -376,6 +367,183 @@ class NotificationService {
       return { success: true };
     } catch (error: any) {
       console.error('❌ Erro ao deletar notificação:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 📝 NOVO: Notifica participantes para avaliar após evento finalizado
+   */
+  static async notifyEvaluationRequest(eventId: number, eventTitle: string): Promise<ServiceResult> {
+    try {
+      console.log(`📝 Enviando pedidos de avaliação para evento ${eventId}...`);
+
+      // Buscar participantes que confirmaram presença
+      const { data: participations, error: partError } = await supabase
+        .from('event_participants')
+        .select('user_id, profiles!event_participants_user_id_fkey(username)')
+        .eq('event_id', eventId)
+        .eq('status', 'aprovado')
+        .eq('presenca_confirmada', true)
+        .eq('avaliacao_feita', false);
+
+      if (partError) throw partError;
+
+      if (!participations || participations.length === 0) {
+        console.log('ℹ️ Nenhum participante para notificar sobre avaliações');
+        return { success: true };
+      }
+
+      // ✅ FIX: Usar tipo válido do ENUM
+      const notifications = participations.map(participation => ({
+        user_id: participation.user_id,
+        event_id: eventId,
+        notification_type: 'event_application' as NotificationType,
+        title: '⭐ Avalie sua experiência!',
+        message: `O evento "${eventTitle}" terminou. Compartilhe sua opinião sobre o anfitrião, participantes e restaurante.`,
+        sent: false,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(notifications);
+
+      if (insertError) throw insertError;
+
+      console.log(`✅ ${notifications.length} notificações de avaliação enviadas`);
+      return { success: true, data: { notified: notifications.length } };
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar pedidos de avaliação:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * ⏰ NOVO: Lembrete para quem não avaliou (24h depois)
+   */
+  static async sendEvaluationReminder(eventId: number, eventTitle: string): Promise<ServiceResult> {
+    try {
+      console.log(`⏰ Enviando lembretes de avaliação para evento ${eventId}...`);
+
+      // Buscar participantes que ainda não avaliaram
+      const { data: participations, error: partError } = await supabase
+        .from('event_participants')
+        .select('user_id')
+        .eq('event_id', eventId)
+        .eq('status', 'aprovado')
+        .eq('presenca_confirmada', true)
+        .eq('avaliacao_feita', false);
+
+      if (partError) throw partError;
+
+      if (!participations || participations.length === 0) {
+        console.log('✅ Todos já avaliaram ou nenhum participante encontrado');
+        return { success: true };
+      }
+
+      // ✅ FIX: Usar tipo válido do ENUM
+      const reminders = participations.map(participation => ({
+        user_id: participation.user_id,
+        event_id: eventId,
+        notification_type: 'participation_request' as NotificationType,
+        title: '⏰ Lembrete: Avalie o evento',
+        message: `Não se esqueça de avaliar "${eventTitle}". Sua opinião é importante!`,
+        sent: false,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(reminders);
+
+      if (insertError) throw insertError;
+
+      console.log(`✅ ${reminders.length} lembretes de avaliação enviados`);
+      return { success: true, data: { reminded: reminders.length } };
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar lembretes de avaliação:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 🏁 NOVO: Notifica sobre conclusão automática em 7 dias
+   */
+  static async notifyAutoCompletionWarning(eventId: number, eventTitle: string, daysLeft: number): Promise<ServiceResult> {
+    try {
+      console.log(`🏁 Enviando aviso de conclusão automática para evento ${eventId}...`);
+
+      // ✅ FIX: Verificar primeiro se já existe notificação para evitar duplicatas
+      const { data: existingWarnings, error: checkError } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('event_id', eventId)
+        .in('notification_type', ['Candidatura Aprovada'])
+        .limit(1);
+
+      if (checkError) {
+        console.warn(`⚠️ Erro ao verificar notificações existentes: ${checkError.message}`);
+      } else if (existingWarnings && existingWarnings.length > 0) {
+        console.log(`ℹ️ Aviso já enviado anteriormente para evento ${eventId}`);
+        return { success: true, data: { warned: 0 } };
+      }
+
+      // Buscar TODOS os participantes confirmados (avaliaram ou não)
+      const { data: participations, error: partError } = await supabase
+        .from('event_participants')
+        .select('user_id')
+        .eq('event_id', eventId)
+        .eq('status', 'aprovado')
+        .eq('presenca_confirmada', true);
+
+      if (partError) {
+        console.error(`❌ Erro ao buscar participações: ${partError.message}`);
+        throw partError;
+      }
+
+      if (!participations || participations.length === 0) {
+        console.log(`ℹ️ Nenhum participante confirmado para evento ${eventId}`);
+        return { success: true, data: { warned: 0 } };
+      }
+
+      // Buscar também o criador do evento
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('creator_id')
+        .eq('id', eventId)
+        .single();
+
+      if (eventError) {
+        console.error(`❌ Erro ao buscar evento: ${eventError.message}`);
+        throw eventError;
+      }
+
+      // Incluir criador na lista
+      const allUserIds = [...participations.map(p => p.user_id), event.creator_id];
+      const uniqueUserIds = [...new Set(allUserIds)];
+
+      // ✅ FIX: Usar tipo válido do ENUM
+      const warnings = uniqueUserIds.map(userId => ({
+        user_id: userId,
+        event_id: eventId,
+        notification_type: 'Candidatura Aprovada' as NotificationType,
+        title: `⏳ Evento será concluído em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}`,
+        message: `"${eventTitle}" será automaticamente marcado como concluído. Complete as avaliações pendentes.`,
+        sent: false,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert(warnings);
+
+      if (insertError) {
+        console.error(`❌ Erro ao inserir notificações: ${insertError.message}`);
+        throw insertError;
+      }
+
+      console.log(`✅ ${warnings.length} avisos de conclusão automática enviados`);
+      return { success: true, data: { warned: warnings.length } };
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar avisos de conclusão:', error);
       return { success: false, error: error.message };
     }
   }

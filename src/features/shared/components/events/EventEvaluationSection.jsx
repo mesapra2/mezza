@@ -32,14 +32,34 @@ const EventEvaluationSection = ({
       setLoading(true);
 
       // Verifica se já avaliou o anfitrião
-      const { data: hostRating } = await supabase
-        .from('ratings')
-        .select('id')
-        .eq('event_id', eventId)
-        .eq('from_user_id', userId)
-        .eq('to_user_id', creator?.id)
-        .eq('rating_type', 'host')
-        .maybeSingle();
+      let hostRating = null;
+      try {
+        const { data, error } = await supabase
+          .from('ratings')
+          .select('id')
+          .eq('event_id', eventId)
+          .eq('from_user_id', userId)
+          .eq('to_user_id', creator?.id)
+          .eq('rating_type', 'host')
+          .maybeSingle();
+        
+        if (error) {
+          // Se tabela não existir, assumir não avaliado silenciosamente
+          if (error.message.includes('does not exist') || error.code === '42703' || error.code === '42P01') {
+            hostRating = null;
+          } else {
+            throw error;
+          }
+        } else {
+          hostRating = data;
+        }
+      } catch (error) {
+        // Log apenas se não for erro de tabela inexistente
+        if (!error.message?.includes('does not exist') && error.code !== '42703' && error.code !== '42P01') {
+          console.warn('Erro ao verificar ratings do anfitrião:', error);
+        }
+        hostRating = null;
+      }
 
       // Verifica se já avaliou o restaurante
       let restaurantRatingExists = false;
@@ -112,7 +132,12 @@ const EventEvaluationSection = ({
                 {userRatings.photosUploaded && <span className="text-green-400 ml-2">✅</span>}
               </h3>
             </div>
-            <EventPhotoUpload eventId={eventId} />
+            <EventPhotoUpload 
+              eventId={eventId}
+              userId={userId}
+              isParticipant={isParticipant}
+              eventStatus={event?.status || 'Finalizado'}
+            />
           </div>
 
           {/* Rating do Anfitrião */}

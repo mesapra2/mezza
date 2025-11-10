@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, X,  UserPlus,   Calendar,   AlertCircle,   Hand,  Key,  Copy,  CheckCircle} from 'lucide-react';
+import { Bell, Check, X,  UserPlus,   Calendar,   AlertCircle,   Hand,  Key,  Copy,  CheckCircle, Star, Clock} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import NotificationService from '@/services/NotificationService';
@@ -273,7 +273,7 @@ const NotificationDropdown = ({ userId }) => {
         pokesChannel.unsubscribe();
       }
     };
-  }, [userId]); // ✅ FIX: Apenas userId nas dependências
+  }, [userId]); // ✅ Only userId dependency to prevent unnecessary re-renders
 
   const handleMarkAsRead = async (notificationId) => {
     await NotificationService.markAsRead(notificationId);
@@ -380,7 +380,8 @@ const NotificationDropdown = ({ userId }) => {
     );
   };
 
-  const getNotificationIcon = (type) => {
+  // ✅ Memoize icon and color functions to prevent unnecessary re-creation
+  const getNotificationIcon = useCallback((type) => {
     const icons = {
       'Candidatura Recebida': UserPlus,
       'Candidatura Aprovada': Check,
@@ -389,13 +390,15 @@ const NotificationDropdown = ({ userId }) => {
       'event_cancelled': AlertCircle,
       'event_confirmed': Check,
       'event_reminder': Calendar,
-      'event_password': Key, // 🆕
+      'event_password': Key,
+      'event_application': Star, // ✅ Avaliação de evento
+      'participation_request': Clock, // ✅ Lembrete
       'poke': Hand,
     };
     return icons[type] || Bell;
-  };
+  }, []);
 
-  const getNotificationColor = (type) => {
+  const getNotificationColor = useCallback((type) => {
     const colors = {
       'Candidatura Recebida': 'text-purple-400',
       'Candidatura Aprovada': 'text-green-400',
@@ -404,11 +407,13 @@ const NotificationDropdown = ({ userId }) => {
       'event_cancelled': 'text-yellow-400',
       'event_confirmed': 'text-blue-400',
       'event_reminder': 'text-orange-400',
-      'event_password': 'text-green-400', // 🆕
+      'event_password': 'text-green-400',
+      'event_application': 'text-yellow-400', // ✅ Avaliação de evento
+      'participation_request': 'text-orange-400', // ✅ Lembrete
       'poke': 'text-pink-400',
     };
     return colors[type] || 'text-white';
-  };
+  }, []);
 
   const getUserAvatar = (notification) => {
     if (notification.participation?.user?.avatar_url) {
@@ -418,7 +423,8 @@ const NotificationDropdown = ({ userId }) => {
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=8b5cf6&color=fff&size=48`;
   };
 
-  const allItems = [
+  // ✅ Memoize expensive computations to prevent unnecessary re-renders
+  const allItems = useMemo(() => [
     ...notifications.map((n) => ({ ...n, type: 'notification' })),
     ...pokes.map((p) => ({
       ...p,
@@ -428,14 +434,21 @@ const NotificationDropdown = ({ userId }) => {
       message: `${p.profiles?.full_name || p.profiles?.username || 'Alguém'} te enviou um Tok 👋`,
       sent: p.read,
     })),
-  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), [notifications, pokes]);
 
   return (
     <div className="relative">
+      {/* Live region para anúncios de novas notificações */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {unreadCount > 0 && `${unreadCount} nova${unreadCount > 1 ? 's' : ''} notificaç${unreadCount > 1 ? 'ões' : 'ão'}`}
+      </div>
+      
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-        aria-label="Notificações"
+        aria-label={`Notificações ${unreadCount > 0 ? `(${unreadCount} não lida${unreadCount > 1 ? 's' : ''})` : ''}`}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
       >
         <Bell className="w-6 h-6" />
         {unreadCount > 0 && (

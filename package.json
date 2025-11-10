@@ -25,7 +25,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-toast": "^1.1.5",
-    "@supabase/supabase-js": "^2.77.0",
+    "@supabase/supabase-js": "^2.80.0",
     "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.13.1",
     "class-variance-authority": "^0.7.1",

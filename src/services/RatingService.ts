@@ -286,11 +286,30 @@ class RatingService {
         .eq('rating_type', ratingType)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        // Ignorar erro de "não encontrado"
+        if (error.code === 'PGRST116') {
+          return false;
+        }
+        // Ignorar erro de tabela inexistente
+        if (error.message.includes('does not exist') || 
+            error.code === '42703' || 
+            error.code === '42P01' ||
+            error.code === 'PGRST204') {
+          return false;
+        }
+        throw error;
+      }
 
       return !!data;
     } catch (error) {
-      console.error('❌ Erro ao verificar avaliação:', error);
+      // Log apenas se não for erro de tabela inexistente
+      if (!error.message?.includes('does not exist') && 
+          error.code !== '42703' && 
+          error.code !== '42P01' && 
+          error.code !== 'PGRST204') {
+        console.error('❌ Erro ao verificar avaliação:', error);
+      }
       return false;
     }
   }

@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import PropTypes from 'prop-types'; 
 import {
   Calendar,
   Users,
@@ -19,7 +18,6 @@ import {
   Star,
   Key,
   Lock,
-  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
@@ -30,77 +28,6 @@ import { useToast } from '@/features/shared/components/ui/use-toast';
 import EventStatusService from '@/services/EventStatusService';
 import EventPhotosService from '@/services/EventPhotosService';
 import EventEntryForm from '@/features/shared/components/ui/EventEntryForm';
-import { useEventThumbnails } from '@/hooks/useEventThumbnail';
-
-// Componente para renderizar thumbnail do carousel
-const EventThumbnail = ({ eventId, thumbnails }) => {
-  // ✅ CORREÇÃO 1 (Hooks): Chamada de hooks (useState/useEffect) sempre no topo.
-  const [imageError, setImageError] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  const thumbnail = thumbnails.get(eventId);
-  
-  // Desestruturação segura para evitar erros se 'thumbnail' for undefined/null
-  const { url, isLoading } = thumbnail || {}; 
-  
-  // Resetar estados quando URL muda (Hook é chamado no topo)
-  useEffect(() => {
-    setImageError(false);
-    setImageLoaded(false);
-  }, [url]);
-
-  // ✅ RETORNO CONDICIONAL SÓ PODE VIR DEPOIS DOS HOOKS.
-  if (!thumbnail) return null;
-
-  const showImage = url && !imageError;
-
-  return (
-    <div className="relative w-full h-32 rounded-t-2xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 -mx-6 -mt-6 mb-4">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-800/50">
-          <Loader className="w-6 h-6 text-white/60 animate-spin" />
-        </div>
-      )}
-
-      {showImage ? (
-        <>
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gray-800 animate-pulse" />
-          )}
-          <img
-            src={url}
-            alt="Thumbnail do evento"
-            loading="lazy"
-            className={`w-full h-full object-cover transition-opacity duration-300 ${
-              imageLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            onLoad={() => setImageLoaded(true)}
-            onError={() => setImageError(true)}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          {imageLoaded && (
-            <div className="absolute top-2 right-2 bg-black/50 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1">
-              <ImageIcon className="w-3 h-3 text-white" />
-              <span className="text-xs text-white">Carousel</span>
-            </div>
-          )}
-        </>
-      ) : !isLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-          <ImageIcon className="w-8 h-8 text-white/30" />
-          <span className="text-xs text-white/40">Sem foto</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ✅ CORREÇÃO 2 (PropTypes): Adicionar PropTypes para resolver avisos do ESLint
-EventThumbnail.propTypes = {
-    eventId: PropTypes.string.isRequired,
-    thumbnails: PropTypes.instanceOf(Map).isRequired, 
-};
-
 
 const MyEventsPage = () => {
   const { user } = useAuth();
@@ -120,9 +47,6 @@ const MyEventsPage = () => {
 
   // ✅ NOVO: Estado para mostrar/esconder formulário de senha
   const [showPasswordForm, setShowPasswordForm] = useState({});
-
-  // ✅ Buscar thumbnails dos eventos do carousel
-  const thumbnails = useEventThumbnails(filteredEvents);
 
   // --------------------------------------------------
   // ✅ CARREGAR EVENTOS ONDE SOU CRIADOR
@@ -204,6 +128,7 @@ const MyEventsPage = () => {
       return [];
     }
   }, [user?.id]);
+
   // --------------------------------------------------
   // ✅ CARREGAR TODOS OS EVENTOS (CRIADOS + PARTICIPANDO)
   // --------------------------------------------------
@@ -498,12 +423,8 @@ const MyEventsPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="glass-effect rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all h-full flex flex-col justify-between overflow-hidden"
+                  className="glass-effect rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all h-full flex flex-col justify-between"
                 >
-                  {/* Thumbnail do Carousel */}
-                  {/* 🚨 CORREÇÃO APLICADA AQUI: Convertendo event.id para String */}
-                  <EventThumbnail eventId={String(event.id)} thumbnails={thumbnails} />
-
                   {/* Status + Badge de Participante */}
                   <div className="mb-4 flex items-center gap-2">
                     <span

@@ -1,16 +1,39 @@
 // src/features/user/pages/UserSettings.jsx (Refatorado)
-import React from 'react';
+import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { LogOut, Loader } from 'lucide-react'; // Ícones necessários
+import { LogOut, Loader, Lock, Trash2 } from 'lucide-react'; // Ícones necessários
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/features/shared/components/ui/button.jsx';
+import { toast } from '@/features/shared/components/ui/use-toast';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
+import DeleteAccountModal from '@/components/DeleteAccountModal';
+import { useNavigate } from 'react-router-dom';
 
 
 const UserSettings = () => {
+  const { user, logout, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-const { user, logout, loading: authLoading } = useAuth();
-  // Removido: saving, uploading, error, success, e os states dos campos removidos
+  // Handler para sucesso na alteração de senha
+  const handlePasswordChangeSuccess = (message) => {
+    toast({
+      title: "✅ Senha alterada",
+      description: message,
+    });
+  };
+
+  // Handler para conta deletada
+  const handleAccountDeleted = () => {
+    toast({
+      title: "✅ Conta eliminada",
+      description: "Sua conta foi permanentemente removida.",
+    });
+    logout();
+    navigate('/');
+  };
 
   
 
@@ -54,27 +77,55 @@ const { user, logout, loading: authLoading } = useAuth();
              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} // Delay ajustado
             className="glass-effect rounded-2xl p-6 border border-white/10 space-y-4"
         >
-            <h2 className="text-xl font-semibold text-white mb-4 border-b border-white/10 pb-3">Conta</h2>
-            <Button variant="outline" className="w-full justify-start glass-effect border-white/10 hover:bg-white/5 opacity-50 cursor-not-allowed">
-              {/* Ícone opcional: <Lock className="mr-2 h-4 w-4" /> */}
-              Alterar Senha (em breve)
+            <h2 className="text-xl font-semibold text-white mb-4 border-b border-white/10 pb-3">Segurança da Conta</h2>
+            
+            {/* Alterar Senha */}
+            <Button 
+              onClick={() => setShowPasswordModal(true)}
+              variant="outline" 
+              className="w-full justify-start glass-effect border-white/10 hover:bg-white/5"
+            >
+              <Lock className="mr-2 h-4 w-4" />
+              Alterar Senha
             </Button>
+
+            {/* Logout */}
             <Button
                 type="button"
                 onClick={async () => { await logout(); }}
-                variant="destructive" // Mantido como destructivo para logout? Ou mudar para outline?
-                className="w-full justify-start"
+                variant="outline"
+                className="w-full justify-start glass-effect border-white/10 hover:bg-white/5"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Deslogar
             </Button>
-             <Button variant="destructive" className="w-full justify-start opacity-50 cursor-not-allowed">
-               {/* Ícone opcional: <Trash2 className="mr-2 h-4 w-4" /> */}
-               Deletar Conta (em breve)
+
+            {/* Deletar Conta */}
+             <Button 
+               onClick={() => setShowDeleteModal(true)}
+               variant="destructive" 
+               className="w-full justify-start"
+             >
+               <Trash2 className="mr-2 h-4 w-4" />
+               Deletar Conta
              </Button>
         </motion.div>
 
       </div>
+
+      {/* Modais */}
+      <ChangePasswordModal
+        isOpen={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSuccess={handlePasswordChangeSuccess}
+      />
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onAccountDeleted={handleAccountDeleted}
+        userType="user"
+      />
     </>
   );
 };

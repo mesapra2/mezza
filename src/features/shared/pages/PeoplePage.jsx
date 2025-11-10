@@ -4,7 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Users, Loader2, Heart, Eye, XCircle, Star } from 'lucide-react';
 import { toast } from '@/features/shared/components/ui/use-toast';
-import Avatar from '@/features/shared/components/profile/Avatar';
+import PresenceService from '@/services/PresenceService';
+
 const PeoplePage = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -13,12 +14,61 @@ const PeoplePage = () => {
   const [error, setError] = useState(null);
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [pokingStates, setPokingStates] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
 
   const isPartner = profile?.profile_type === 'partner';
   const isPremium = profile?.is_premium === true;
 
+  // ✅ Função para obter status de presença
+  const getPresenceStatus = useCallback((userId, lastSeen) => {
+    // Se não temos lastSeen (migração não executada), usar apenas presence realtime
+    if (!lastSeen) {
+      return onlineUsers.has(userId) ? 'online' : 'offline';
+    }
+    return PresenceService.getUserPresenceStatus(userId, lastSeen);
+  }, [onlineUsers]);
+
+  // ✅ Função para obter cor do indicador de presença
+  const getPresenceColor = (status) => {
+    switch (status) {
+      case 'online':
+        return 'bg-green-500';
+      case 'recently-active':
+        return 'bg-yellow-500';
+      case 'offline':
+      default:
+        return 'bg-gray-500';
+    }
+  };
+
+  // ✅ Função para obter texto do status
+  const getPresenceText = (status) => {
+    switch (status) {
+      case 'online':
+        return 'Online';
+      case 'recently-active':
+        return 'Ativo recentemente';
+      case 'offline':
+      default:
+        return 'Offline';
+    }
+  };
+
   // ✅ FUNÇÃO ADICIONADA: Helper para construir URL do avatar corretamente
-  
+  const getAvatarUrl = (person) => {
+    if (!person?.avatar_url || typeof person.avatar_url !== 'string' || person.avatar_url.trim() === '') {
+      return null;
+    }
+
+    // Se já é URL completa (http/https), retorna direto
+    if (person.avatar_url.startsWith('http')) {
+      return person.avatar_url;
+    }
+
+    // ✅ Constrói a URL pública do Supabase
+    const { data } = supabase.storage.from('avatars').getPublicUrl(person.avatar_url);
+    return `${data.publicUrl}?t=${new Date().getTime()}`;
+  };
 
   const fetchPeople = useCallback(async () => {
     if (!user) {
@@ -30,7 +80,7 @@ const PeoplePage = () => {
       setLoading(true);
       setError(null);
 
-      // Busca os perfis públicos
+      // Busca os perfis públicos (last_seen será adicionado após migração)
       const { data: profilesData, error: fetchError } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, bio, public_profile, allow_pokes, reputation_stars')
@@ -78,6 +128,29 @@ const PeoplePage = () => {
   useEffect(() => {
     fetchPeople();
   }, [user, fetchPeople]);
+
+  // ✅ Configurar listener de presença
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('👥 Configurando listener de presença...');
+    
+    // Obter estado inicial de usuários online
+    const initialOnlineUsers = PresenceService.getOnlineUsers();
+    setOnlineUsers(new Set(initialOnlineUsers));
+
+    // Adicionar listener para mudanças de presença
+    const removeListener = PresenceService.addPresenceListener((updatedOnlineUsers) => {
+      console.log('👥 Presença atualizada:', updatedOnlineUsers);
+      setOnlineUsers(new Set(updatedOnlineUsers));
+    });
+
+    // Cleanup
+    return () => {
+      console.log('👥 Removendo listener de presença...');
+      removeListener();
+    };
+  }, [user]);
 
   const sendPoke = async (targetUserId, targetUsername) => {
     setPokingStates(prev => ({ ...prev, [targetUserId]: true }));
@@ -236,30 +309,11 @@ const PeoplePage = () => {
           {people.map((person) => {
             const allowsPokes = person.allow_pokes === true;
             const isPoking = pokingStates[person.id];
-[{
-	"resource": "/C:/DEVMix/App.Mesapra2.com/src/features/shared/pages/PeoplePage.jsx",
-	"owner": "eslint5",
-	"code": {
-		"value": "no-unused-vars",
-		"target": {
-			"$mid": 1,
-			"path": "/docs/latest/rules/no-unused-vars",
-			"scheme": "https",
-			"authority": "eslint.org"
-		}
-	},
-	"severity": 4,
-	"message": "'avatarUrl' is assigned a value but never used. Allowed unused vars must match /^React$/u.",
-	"source": "eslint",
-	"startLineNumber": 252,
-	"startColumn": 19,
-	"endLineNumber": 252,
-	"endColumn": 28,
-	"tags": [
-		1
-	],
-	"origin": "extHost1"
-}]
+            const avatarUrl = getAvatarUrl(person);
+            const presenceStatus = getPresenceStatus(person.id, person.last_seen);
+            const presenceColor = getPresenceColor(presenceStatus);
+            const presenceText = getPresenceText(presenceStatus);
+
             return (
               <div
                 key={person.id}
@@ -267,13 +321,30 @@ const PeoplePage = () => {
               >
                 <div>
                   <div className="flex items-center gap-4 mb-4">
-                    <Avatar
-  url={person.avatar_url}
-  name={person.username || person.full_name || 'U'}
-  userId={person.id}
-  size="lg"
-  showPresence={true}
-/>
+                    <div className="relative">
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={person.username || 'Usuário'}
+                          className="w-16 h-16 rounded-full object-cover border-2 border-purple-500/30"
+                          onError={(e) => {
+                             e.target.style.display = 'none';
+                             e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold"
+                        style={{ display: avatarUrl ? 'none' : 'flex' }}
+                      >
+                        {(person.username || person.full_name || 'U')[0].toUpperCase()}
+                      </div>
+                      {/* ✅ Indicador de presença real */}
+                      <div 
+                        className={`absolute -bottom-1 -right-1 w-4 h-4 ${presenceColor} rounded-full border-2 border-background`}
+                        title={presenceText}
+                      ></div>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-lg truncate">
                         {person.full_name || person.username || 'Usuário'}
@@ -395,13 +466,19 @@ const PeoplePage = () => {
 
             <div className="p-4 sm:p-6 overflow-y-auto">
               <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-6">
-                 <Avatar
-  url={selectedProfile.avatar_url}
-  name={selectedProfile.username || selectedProfile.full_name || 'U'}
-  userId={selectedProfile.id}
-  size="xl"
-  showPresence={true}
-/>
+                 <div className="relative flex-shrink-0">
+                  {getAvatarUrl(selectedProfile) ? (
+                    <img
+                      src={getAvatarUrl(selectedProfile)}
+                      alt={selectedProfile.username}
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-purple-500/50"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-bold">
+                      {(selectedProfile.username || selectedProfile.full_name || 'U')[0].toUpperCase()}
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1 text-center sm:text-left min-w-0">
                   <h3 className="text-xl sm:text-2xl font-bold mb-1 truncate">
                     {selectedProfile.full_name || selectedProfile.username}
@@ -460,8 +537,10 @@ const PeoplePage = () => {
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold text-white/60 mb-3">Fotos</h4>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {selectedProfile.photos.map((photoPath, index) => {
-                      const photoUrl = photoPath?.startsWith('http') 
+                    {selectedProfile.photos
+                      .filter(photo => photo && typeof photo === 'string' && photo.trim() !== '')
+                      .map((photoPath, index) => {
+                      const photoUrl = photoPath.startsWith('http') 
                         ? photoPath 
                         : supabase.storage.from('photos').getPublicUrl(photoPath).data.publicUrl;
                       
@@ -480,44 +559,58 @@ const PeoplePage = () => {
               )}
 
               {/* ✅ BOTÕES DO MODAL CORRIGIDOS */}
-              {!isPartner && (
-                <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-white/10">
-                  {/* ✅ Botão Tok - sempre visível, desabilitado se não aceita */}
-                  <button
-                    onClick={() => {
-                      sendPoke(selectedProfile.id, selectedProfile.username || selectedProfile.full_name);
-                    }}
-                    className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
-                      selectedProfile.allow_pokes === true
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    }`}
-                    disabled={pokingStates[selectedProfile.id] || selectedProfile.allow_pokes !== true}
-                    title={selectedProfile.allow_pokes === true ? "Enviar Tok" : "Não aceita Toks"}
-                  >
-                    {pokingStates[selectedProfile.id] ? <Loader2 className="w-5 h-5 animate-spin"/> : '👇'}
-                    Enviar Tok
-                  </button>
+              <div className="space-y-4 pt-6 border-t border-white/10">
+                {/* ✅ Botão Ver Perfil - sempre visível para todos */}
+                <button
+                  onClick={() => {
+                    navigate(`/user/${selectedProfile.id}`);
+                    closeProfileModal();
+                  }}
+                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold"
+                >
+                  <Eye className="w-4 h-4" />
+                  Ver Perfil Completo
+                </button>
+                
+                {!isPartner && (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    {/* ✅ Botão Tok - sempre visível, desabilitado se não aceita */}
+                    <button
+                      onClick={() => {
+                        sendPoke(selectedProfile.id, selectedProfile.username || selectedProfile.full_name);
+                      }}
+                      className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
+                        selectedProfile.allow_pokes === true
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                          : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      }`}
+                      disabled={pokingStates[selectedProfile.id] || selectedProfile.allow_pokes !== true}
+                      title={selectedProfile.allow_pokes === true ? "Enviar Tok" : "Não aceita Toks"}
+                    >
+                      {pokingStates[selectedProfile.id] ? <Loader2 className="w-5 h-5 animate-spin"/> : '👇'}
+                      Enviar Tok
+                    </button>
 
-                  {/* ✅ Botão Mesapra2 - sempre visível, requer Premium */}
-                  <button
-                    onClick={() => {
-                      createCrusher(selectedProfile.id);
-                      closeProfileModal();
-                    }}
-                    className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
-                      isPremium
-                        ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
-                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    }`}
-                    disabled={!isPremium}
-                    title={isPremium ? "Criar Mesapra2" : "Requer Premium"}
-                  >
-                    <Heart className="w-4 h-4" />
-                    Criar Mesapra2 {!isPremium && '(Requer Premium)'}
-                  </button>
-                </div>
-              )}
+                    {/* ✅ Botão Mesapra2 - sempre visível, requer Premium */}
+                    <button
+                      onClick={() => {
+                        createCrusher(selectedProfile.id);
+                        closeProfileModal();
+                      }}
+                      className={`flex-1 px-4 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 font-semibold ${
+                        isPremium
+                          ? 'bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white'
+                          : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                      }`}
+                      disabled={!isPremium}
+                      title={isPremium ? "Criar Mesapra2" : "Requer Premium"}
+                    >
+                      <Heart className="w-4 h-4" />
+                      Criar Mesapra2 {!isPremium && '(Requer Premium)'}
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* ✅ Indicador se não aceita Toks */}
               {!isPartner && selectedProfile.allow_pokes !== true && (

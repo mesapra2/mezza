@@ -8,7 +8,7 @@ import { Input } from '@/features/shared/components/ui/input';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import * as authService from '@/services/authService'; // <-- CORREÇÃO AQUI
 
-const PhoneVerification = ({ userId, phone, onVerified, onBack }) => {
+const PhoneVerification = ({ userId, phone, onVerified, onBack = () => window.history.back() }) => {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [canResend, setCanResend] = useState(false);
@@ -240,8 +240,6 @@ PhoneVerification.propTypes = {
   onBack: PropTypes.func, // ✅ Agora é opcional
 };
 
-PhoneVerification.defaultProps = {
-  onBack: () => window.history.back(), // ✅ Valor padrão
-};
+// ✅ Valores padrão definidos como parâmetros JS (sem defaultProps)
 
 export default PhoneVerification;

@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Calendar, Users, MapPin, Clock, CheckCircle, X, AlertTriangle, Loader, Camera, Star } from 'lucide-react';
+import { Calendar, Users, MapPin, Clock, CheckCircle, X, AlertTriangle, Loader, Camera, Star, StopCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import EventApply from '@/features/shared/components/events/EventApply';
 import Avatar from '@/features/shared/components/profile/Avatar';
@@ -19,9 +19,10 @@ import ParticipationService from '@/services/ParticipationService';
 import EventSecurityService from '@/services/EventSecurityService';
 import EventPhotosService from '@/services/EventPhotosService';
 import { useToast } from '@/features/shared/components/ui/use-toast';
+import EarlyEndEventModal from '@/components/EarlyEndEventModal';
 
 // ============================================
-// COMPONENTE: EventEntryStats
+// COMPONENTE: EventEntryStats 
 // ============================================
 const EventEntryStats = ({ eventId }) => {
   const [stats, setStats] = useState(null);
@@ -86,32 +87,30 @@ const EventDetails = () => {
   const { toast } = useToast();
   const fileInputRef = useRef(null);
 
-  // Estados originais
+  // Estados básicos - versão simplificada sem hooks customizados por enquanto
   const [event, setEvent] = useState(null);
   const [creator, setCreator] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [userParticipation, setUserParticipation] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [cancelLoading, setCancelLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // Novos estados para sistema de entrada
+  // Estados específicos do componente
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [entryIsBlocked, setEntryIsBlocked] = useState(false);
   const [entryStatus, setEntryStatus] = useState('');
   const [userHasAccess, setUserHasAccess] = useState(false);
-  
-  // Estado para inscrição direta
   const [isRegistering, setIsRegistering] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showEarlyEndModal, setShowEarlyEndModal] = useState(false);
 
+  // Função básica para carregar dados do evento
   const fetchEventData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
-      console.log('Carregando evento ID:', id);
 
       const { data: eventData, error: eventError } = await supabase
         .from('events')
@@ -125,55 +124,42 @@ const EventDetails = () => {
       setEvent(eventData);
 
       // Buscar creator
-      try {
+      if (eventData.creator_id) {
         const { data: creatorData } = await supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url, public_profile')
           .eq('id', eventData.creator_id)
           .maybeSingle();
-
         setCreator(creatorData);
-      } catch (err) {
-        console.warn('Erro ao buscar creator:', err);
       }
 
       // Buscar participação do usuário
       if (user) {
-        try {
-          const { data: userPartData } = await supabase
-            .from('event_participants')
-            .select('*')
-            .eq('event_id', id)
-            .eq('user_id', user.id)
-            .eq('status', 'aprovado')
-            .maybeSingle();
-
-          setUserParticipation(userPartData || null);
-        } catch (err) {
-          setUserParticipation(null);
-        }
+        const { data: userPartData } = await supabase
+          .from('event_participants')
+          .select('*')
+          .eq('event_id', id)
+          .eq('user_id', user.id)
+          .eq('status', 'aprovado')
+          .maybeSingle();
+        setUserParticipation(userPartData);
       }
 
       // Buscar participantes aprovados
-      try {
-        const { data: participationsData } = await supabase
-          .from('event_participants')
-          .select('user_id')
-          .eq('event_id', id)
-          .eq('status', 'aprovado');
+      const { data: participationsData } = await supabase
+        .from('event_participants')
+        .select('user_id')
+        .eq('event_id', id)
+        .eq('status', 'aprovado');
 
-        if (participationsData?.length > 0) {
-          const userIds = participationsData.map(p => p.user_id);
-          const { data: participantsData } = await supabase
-            .from('profiles')
-            .select('id, username, full_name, avatar_url, public_profile')
-            .in('id', userIds);
-
-          setParticipants(participantsData || []);
-        } else {
-          setParticipants([]);
-        }
-      } catch (err) {
+      if (participationsData?.length > 0) {
+        const userIds = participationsData.map(p => p.user_id);
+        const { data: participantsData } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, public_profile')
+          .in('id', userIds);
+        setParticipants(participantsData || []);
+      } else {
         setParticipants([]);
       }
 
@@ -183,10 +169,6 @@ const EventDetails = () => {
       setLoading(false);
     }
   }, [id, user]);
-
-  useEffect(() => {
-    fetchEventData();
-  }, [fetchEventData]);
 
   const getPartnerDisplay = () => {
     if (!event) return null;
@@ -206,6 +188,10 @@ const EventDetails = () => {
     }
     return 'Local a definir';
   };
+
+  useEffect(() => {
+    fetchEventData();
+  }, [fetchEventData]);
 
   // Monitorar timing de entrada
   useEffect(() => {
@@ -377,11 +363,24 @@ const EventDetails = () => {
   const cancelCheck = canCancelParticipation();
   const partnerName = event.partners ? event.partners.name : null;
 
-  // ✅ LÓGICA DE EXIBIÇÃO DE FOTO
+  // Debug para verificar as condições
+  console.log('Debug EventDetails:', {
+    isCreator,
+    isParticipant,
+    hasAttended,
+    isEventFinalized,
+    userId: user?.id,
+    creatorId: event.creator_id,
+    eventStatus: event.status,
+    showEvaluationSection: isEventFinalized && (isCreator || (isParticipant && hasAttended)),
+    userParticipation
+  });
+
+  // ✅ LÓGICA DE EXIBIÇÃO DE FOTO SIMPLIFICADA
   const canUploadPhoto = () => {
-    if (!isParticipant || !hasAttended) return false;
+    if (!isParticipant) return false;
     
-    // Em "Finalizado": só pode enviar se JÁ avaliou
+    // Em "Finalizado": pode enviar se JÁ avaliou (todos os participantes foram marcados como presentes)
     if (isEventFinalized) {
       return hasEvaluated;
     }
@@ -620,10 +619,77 @@ const EventDetails = () => {
           </div>
         )}
 
+
+        {/* Controles do Anfitrião */}
+        {isCreator && (event.status === 'Confirmado' || event.status === 'Em Andamento') && (
+          <div className="glass-effect rounded-2xl p-6 border border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">Controles do Anfitrião</h3>
+            <div className="space-y-3">
+              <p className="text-white/60 text-sm">
+                Como anfitrião, você pode encerrar o evento antecipadamente caso necessário.
+              </p>
+              <Button
+                onClick={() => setShowEarlyEndModal(true)}
+                variant="outline"
+                className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-400"
+              >
+                <StopCircle className="w-4 h-4 mr-2" />
+                Encerrar Evento Antecipadamente
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Controles do Participante */}
+        {!isCreator && isParticipant && userHasAccess && event.status === 'Em Andamento' && (
+          <div className="glass-effect rounded-2xl p-6 border border-white/10">
+            <h3 className="text-lg font-semibold text-white mb-4">Solicitações</h3>
+            <div className="space-y-3">
+              <p className="text-white/60 text-sm">
+                Se houver algum problema, você pode solicitar o encerramento antecipado do evento.
+              </p>
+              <Button
+                onClick={() => setShowEarlyEndModal(true)}
+                variant="outline"
+                className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:border-orange-400"
+              >
+                <StopCircle className="w-4 h-4 mr-2" />
+                Solicitar Encerramento Antecipado
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* ============================================ */}
-        {/* ✅ SEÇÃO DE AVALIAÇÃO + FOTO - FINALIZADO */}
+        {/* ✅ SEÇÃO DE AVALIAÇÃO PARA ANFITRIÃO */}
         {/* ============================================ */}
-        {isEventFinalized && isParticipant && hasAttended && (
+        {isEventFinalized && isCreator && (
+          <div className="glass-effect rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <Star className="w-6 h-6 text-yellow-400" />
+              <h3 className="text-2xl font-semibold text-white">Avalie o evento como anfitrião</h3>
+            </div>
+            <p className="text-white/60 mb-6">
+              Como anfitrião, avalie como foi organizar e conduzir este evento.
+            </p>
+            
+            <EventEvaluationSection
+              eventId={parseInt(id)}
+              isCreator={true}
+              isParticipant={false}
+              userId={user?.id}
+              creator={creator}
+              participants={participants}
+              event={event}
+              onRefresh={fetchEventData}
+            />
+          </div>
+        )}
+
+        {/* ============================================ */}
+        {/* ✅ SEÇÃO DE AVALIAÇÃO PARA PARTICIPANTES */}
+        {/* ============================================ */}
+        {isEventFinalized && !isCreator && isParticipant && (
           <div className="glass-effect rounded-2xl p-6 border border-white/10">
             <div className="space-y-6">
               {/* Seção de Avaliação */}
@@ -639,8 +705,8 @@ const EventDetails = () => {
                   
                   <EventEvaluationSection
                     eventId={parseInt(id)}
-                    isCreator={isCreator}
-                    isParticipant={isParticipant}
+                    isCreator={false}
+                    isParticipant={true}
                     userId={user?.id}
                     creator={creator}
                     participants={participants}
@@ -701,16 +767,21 @@ const EventDetails = () => {
         )}
 
         {/* ============================================ */}
-        {/* ✅ SEÇÃO DE FOTO - CONCLUÍDO */}
+        {/* ✅ SEÇÃO DE UPLOAD DE FOTO INDEPENDENTE */}
         {/* ============================================ */}
-        {isEventConcluded && isParticipant && hasAttended && canUploadPhoto() && (
+        {(isEventFinalized || isEventConcluded) && !isCreator && isParticipant && hasEvaluated && (
           <div className="glass-effect rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-4">
               <Camera className="w-6 h-6 text-purple-400" />
-              <h3 className="text-xl font-semibold text-white">Trocar foto do evento</h3>
+              <h3 className="text-xl font-semibold text-white">
+                {isEventFinalized ? 'Compartilhe uma foto do evento' : 'Trocar foto do evento'}
+              </h3>
             </div>
             <p className="text-white/60 mb-4">
-              Você pode trocar sua foto do evento por até 6 meses após a conclusão.
+              {isEventFinalized 
+                ? 'Envie uma foto do evento para o histórico e para o carousel do restaurante.'
+                : 'Você pode trocar sua foto do evento por até 6 meses após a conclusão.'
+              }
             </p>
             
             <input
@@ -731,12 +802,27 @@ const EventDetails = () => {
               ) : (
                 <Camera className="w-4 h-4 mr-2" />
               )}
-              {uploadingPhoto ? 'Enviando...' : 'Trocar Foto'}
+              {uploadingPhoto ? 'Enviando...' : (isEventFinalized ? 'Enviar Foto' : 'Trocar Foto')}
             </Button>
           </div>
         )}
 
       </motion.div>
+
+      {/* Modal de Encerramento Antecipado */}
+      <EarlyEndEventModal
+        isOpen={showEarlyEndModal}
+        onClose={() => setShowEarlyEndModal(false)}
+        event={event}
+        userRole={isCreator ? 'creator' : 'participant'}
+        onSuccess={() => {
+          fetchEventData();
+          toast({
+            title: "Evento encerrado com sucesso",
+            description: "O fluxo de avaliação foi aberto para todos os participantes."
+          });
+        }}
+      />
     </>
   );
 };

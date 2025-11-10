@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Search, MapPin, Phone, ExternalLink, ChevronRight, Utensils } from 'lucide-react';
+import { Search, MapPin, Phone, ExternalLink, ChevronRight, Utensils, Calendar } from 'lucide-react';
 import { Input } from '@/features/shared/components/ui/input';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
+import RestaurantStatsService from '@/services/RestaurantStatsService';
 
 const RestaurantsPage = () => {
   const [restaurants, setRestaurants] = useState([]);
@@ -13,6 +14,7 @@ const RestaurantsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [restaurantStats, setRestaurantStats] = useState({});
 
   useEffect(() => {
     loadRestaurants();
@@ -35,11 +37,31 @@ const RestaurantsPage = () => {
 
       console.log('✅ Restaurantes carregados:', data?.length || 0);
       setRestaurants(data || []);
+
+      // Carregar estatísticas de eventos para todos os restaurantes
+      if (data && data.length > 0) {
+        loadRestaurantStats(data);
+      }
     } catch (err) {
       console.error('❌ Erro ao carregar restaurantes:', err);
       setError('Erro ao carregar restaurantes. Tente novamente.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRestaurantStats = async (restaurantList) => {
+    try {
+      const partnerIds = restaurantList.map(r => r.id);
+      console.log('📊 Carregando estatísticas de eventos...');
+      
+      const stats = await RestaurantStatsService.getMultipleRestaurantStats(partnerIds);
+      setRestaurantStats(stats);
+      
+      console.log('✅ Estatísticas carregadas para', Object.keys(stats).length, 'restaurantes');
+    } catch (error) {
+      console.error('❌ Erro ao carregar estatísticas:', error);
+      // Não bloquear a interface se stats falharem
     }
   };
 
@@ -151,6 +173,7 @@ const RestaurantsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRestaurants.map((restaurant, index) => {
             const photo = getRestaurantPhoto(restaurant);
+            const stats = restaurantStats[restaurant.id] || { totalEvents: 0, recentEvents: 0 };
             
             return (
               <motion.div
@@ -237,6 +260,21 @@ const RestaurantsPage = () => {
                             <ExternalLink className="w-4 h-4 text-purple-400 flex-shrink-0" />
                             <span className="text-white/60 text-sm truncate">
                               Website disponível
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Contador de eventos */}
+                        {stats.totalEvents > 0 && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-green-400 flex-shrink-0" />
+                            <span className="text-green-300 text-sm font-medium">
+                              {stats.totalEvents} evento{stats.totalEvents !== 1 ? 's' : ''} realizados
+                              {stats.recentEvents > 0 && (
+                                <span className="text-green-400 ml-1">
+                                  • {stats.recentEvents} recente{stats.recentEvents !== 1 ? 's' : ''}
+                                </span>
+                              )}
                             </span>
                           </div>
                         )}

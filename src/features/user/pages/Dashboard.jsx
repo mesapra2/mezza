@@ -14,7 +14,7 @@ import ParticipationService from '@/services/ParticipationService';
 import { toast } from '@/features/shared/components/ui/use-toast';
 import { Dialog,  DialogContent,  DialogHeader,  DialogTitle,  DialogDescription,} from '@/features/shared/components/ui/dialog';
 import BannerCarousel from '@/features/shared/components/BannerCarousel';
-import Avatar from '@/features/shared/components/profile/Avatar';
+
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -438,46 +438,62 @@ const Dashboard = () => {
   };
 
   // ✅ FUNÇÃO CORRIGIDA: Avatar dos participantes
-const renderParticipantAvatars = (event) => {
-  const maxVagas = event.max_vagas || event.vagas;
-  const approvedParticipants = eventParticipants[event.id] || [];
-  const avatars = [];
+  const renderParticipantAvatars = (event) => {
+    const maxVagas = event.max_vagas || event.vagas;
+    const approvedParticipants = eventParticipants[event.id] || [];
+    const avatars = [];
 
-  // ✅ USAR O COMPONENTE AVATAR COM userId
-  approvedParticipants.forEach((participant) => {
-    avatars.push(
-      <div key={`participant-${participant.id}`}>
-        <Avatar
-          url={participant.user?.avatar_url}
-          name={participant.user?.username || 'Participante'}
-          userId={participant.user?.id}
-          size="sm"
-          showPresence={true}
+    approvedParticipants.forEach((participant) => {
+      // ✅ Constrói URL do avatar corretamente
+      const getParticipantAvatar = () => {
+        const avatarUrl = participant.user?.avatar_url;
+        if (!avatarUrl) {
+          return `https://ui-avatars.com/api/?name=${encodeURIComponent(participant.user?.username || 'User')}&background=8b5cf6&color=fff&size=40`;
+        }
+        // Se já é URL completa (http/https), retorna direto
+        if (avatarUrl.startsWith('http')) {
+          return avatarUrl;
+        }
+        // ✅ Constrói a URL pública do Supabase com timestamp para evitar cache
+        const { data } = supabase.storage.from('avatars').getPublicUrl(avatarUrl);
+        return `${data.publicUrl}?t=${new Date().getTime()}`;
+      };
+
+      avatars.push(
+        <img
+          key={`participant-${participant.id}`}
+          src={getParticipantAvatar()}
+          alt={participant.user?.username || 'Participante'}
+          className="w-10 h-10 rounded-full border-2 border-green-500/70 object-cover"
+          title={participant.user?.username || 'Participante'}
+          onError={(e) => {
+            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+              participant.user?.username || 'User'
+            )}&background=8b5cf6&color=fff&size=40`;
+          }}
         />
+      );
+    });
+
+    const remainingSlots = maxVagas - approvedParticipants.length;
+    for (let i = 0; i < remainingSlots; i++) {
+      avatars.push(
+        <div
+          key={`empty-${i}`}
+          className="w-10 h-10 rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center"
+          title="Vaga disponível"
+        >
+          <Users className="w-5 h-5 text-white/40" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        {avatars}
       </div>
     );
-  });
-
-  // Vagas vazias
-  const remainingSlots = maxVagas - approvedParticipants.length;
-  for (let i = 0; i < remainingSlots; i++) {
-    avatars.push(
-      <div
-        key={`empty-${i}`}
-        className="w-10 h-10 rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center"
-        title="Vaga disponível"
-      >
-        <Users className="w-5 h-5 text-white/40" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {avatars}
-    </div>
-  );
-};
+  };
 
   const getUserParticipationBadge = (eventId) => {
     const status = userParticipations[eventId];
@@ -802,13 +818,16 @@ const renderParticipantAvatars = (event) => {
 
                       <div className="relative z-10 p-6">
                         <div className="flex items-center gap-2 mb-4">
-                          <Avatar
-  url={event.creator?.avatar_url}
-  name={event.creator?.username || 'Anfitrião'}
-  userId={event.creator?.id}
-  size="sm"
-  showPresence={true}
-/>
+                          <img
+                            src={getCreatorAvatar(event.creator)}
+                            alt={event.creator?.username || 'Anfitrião'}
+                            className="w-10 h-10 rounded-full border-2 border-purple-500/70 object-cover"
+                            onError={(e) => {
+                              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                event.creator?.username || 'Anfitrião'
+                              )}&background=8b5cf6&color=fff&size=48`;
+                            }}
+                          />
                           <div className="flex-1 min-w-0">
                             <p className="text-white/90 text-sm font-medium truncate">
                               {event.creator?.username || 'Anfitrião'}

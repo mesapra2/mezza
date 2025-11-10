@@ -70,6 +70,15 @@ const CreateEvent = () => {
         throw new Error('A data de término deve ser depois da data de início');
       }
 
+      // Validação: evento deve ser criado com pelo menos 30 minutos de antecedência
+      const now = new Date();
+      const startTime = new Date(formData.start_time);
+      const minutesUntilEvent = Math.floor((startTime.getTime() - now.getTime()) / (1000 * 60));
+      
+      if (minutesUntilEvent < 30) {
+        throw new Error('O evento deve ser criado com pelo menos 30 minutos de antecedência');
+      }
+
       if (formData.vagas < 1 || formData.vagas > 3) {
         throw new Error('O número de vagas deve estar entre 1 e 3');
       }
@@ -280,10 +289,19 @@ const CreateEvent = () => {
                       type="datetime-local"
                       value={formData.start_time}
                       onChange={handleChange}
-                      min={new Date().toISOString().slice(0, 16)}
+                      min={(() => {
+                        // ✅ FIX: Corrigir timezone para datetime-local
+                        const now = new Date();
+                        const thirtyMinutesLater = new Date(now.getTime() + 30 * 60 * 1000);
+                        
+                        // Ajustar para timezone local
+                        const localDateTime = new Date(thirtyMinutesLater.getTime() - (thirtyMinutesLater.getTimezoneOffset() * 60000));
+                        return localDateTime.toISOString().slice(0, 16);
+                      })()}
                       className="glass-effect border-white/10"
                       required
                     />
+                    <p className="text-white/40 text-xs">Eventos devem ser criados com pelo menos 30 minutos de antecedência</p>
                   </div>
 
                   <div className="space-y-2">

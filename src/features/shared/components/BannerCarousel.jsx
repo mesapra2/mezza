@@ -11,7 +11,6 @@ import b4 from "@/assets/banners/b4.png";
 
 const images = [b1, b2, b3, b4];
 
-// CORREÇÃO: Usar parâmetro padrão do JavaScript para 'interval'
 const BannerCarousel = ({ interval = 5000 }) => {
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -48,7 +47,16 @@ const BannerCarousel = ({ interval = 5000 }) => {
       className="relative w-full h-56 md:h-72 lg:h-80 overflow-hidden rounded-2xl border border-white/10 shadow-lg bg-gray-800"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      aria-roledescription="carousel"
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowLeft') prev();
+        if (e.key === 'ArrowRight') next();
+        if (e.key >= '1' && e.key <= '4') goTo(parseInt(e.key) - 1);
+      }}
+      role="region"
+      aria-label="Carrossel de banners promocionais"
+      aria-live="polite"
+      aria-atomic="false"
+      tabIndex={0}
     >
       <AnimatePresence initial={false} mode="wait">
         <motion.img
@@ -63,6 +71,11 @@ const BannerCarousel = ({ interval = 5000 }) => {
           loading="eager"
         />
       </AnimatePresence>
+
+      {/* Status do carrossel para screen readers */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        Banner {index + 1} de {images.length}
+      </div>
 
       {/* Overlay sutil */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30 pointer-events-none" />
@@ -104,9 +117,11 @@ const BannerCarousel = ({ interval = 5000 }) => {
   );
 };
 
-// Remoção do BannerCarousel.defaultProps.
+// ✅ Validação ESLint (PropTypes)
 BannerCarousel.propTypes = {
   interval: PropTypes.number,
 };
+
+// ✅ Valores padrão definidos como parâmetros JS (sem defaultProps)
 
 export default BannerCarousel;

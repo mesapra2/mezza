@@ -38,19 +38,19 @@ const EventRating = ({ eventId, hostId, onAllRatingsComplete }) => {
         .from('event_participants')
         .select(`
           id,
-          participant_id,
+          user_id,
           status,
           presenca_confirmada,
           participant:profiles(id, username, avatar_url, reputation_stars)
         `)
         .eq('event_id', eventId)
         .eq('presenca_confirmada', true)
-        .not('participant_id', 'eq', user.id);
+        .not('user_id', 'eq', user.id);
 
       if (partError) throw partError;
 
       const validParticipants = (eventParticipants || []).filter(
-        p => p.participant && p.participant_id !== hostId
+        p => p.participant && p.user_id !== hostId
       );
 
       setParticipants(validParticipants);
@@ -91,10 +91,10 @@ const EventRating = ({ eventId, hostId, onAllRatingsComplete }) => {
         const hasParticipantRating = await RatingService.hasUserRated(
           eventId,
           user.id,
-          p.participant_id,
+          p.user_id,
           'participant'
         );
-        status[`participant-${p.participant_id}`] = hasParticipantRating;
+        status[`participant-${p.user_id}`] = hasParticipantRating;
       }
 
       setRatedStatus(status);
@@ -152,14 +152,14 @@ const EventRating = ({ eventId, hostId, onAllRatingsComplete }) => {
       status[`host-${hostId}`] = hasHostRating;
     }
     for (const p of participants) {
-      const hasParticipantRating = await RatingService.hasUserRated(eventId, user.id, p.participant_id, 'participant');
-      status[`participant-${p.participant_id}`] = hasParticipantRating;
+      const hasParticipantRating = await RatingService.hasUserRated(eventId, user.id, p.user_id, 'participant');
+      status[`participant-${p.user_id}`] = hasParticipantRating;
     }
     setRatedStatus(status); // Atualiza o estado para a UI
 
     // Verifica com o status recém-buscado
     const allRated = participants.every(p =>
-      status[`participant-${p.participant_id}`]
+      status[`participant-${p.user_id}`]
     ) && status[`host-${hostId}`];
 
     if (allRated && onAllRatingsComplete) {
@@ -187,7 +187,7 @@ const EventRating = ({ eventId, hostId, onAllRatingsComplete }) => {
 
   const hostRated = ratedStatus[`host-${hostId}`];
   const participantsRated = participants.filter(p =>
-    ratedStatus[`participant-${p.participant_id}`]
+    ratedStatus[`participant-${p.user_id}`]
   );
   const allRated = hostRated && participantsRated.length === participants.length;
   

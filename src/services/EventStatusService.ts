@@ -5,12 +5,13 @@ import { supabase } from '../lib/supabaseClient';
 import EventSecurityService from './EventSecurityService';
 import PushNotificationService from './PushNotificationService';
 import TrustScoreService from './TrustScoreService';
+import NotificationService from './NotificationService';
 
 interface Event {
   id: number;
   status: string;
   start_time: string;
-  end_time: string;
+  end_time?: string;
   creator_id: string;
   title: string;
   event_entry_password?: string;
@@ -42,58 +43,89 @@ class EventStatusService {
   }
 
   /**
-   * 🎯 Atualiza status de TODOS os eventos
-   * ✅ OTIMIZADO: Select específico + limit em mobile
+   * 🎯 Atualiza status de eventos com throttling extremo
+   * ✅ SUPER OTIMIZADO: Limit muito baixo + delay entre requests
    */
   static async updateAllEventStatuses(): Promise<void> {
     try {
-      // ✅ FIX: Limit menor em mobile para não sobrecarregar
-      const limit = this.isMobile() ? 50 : 100;
+      // ✅ FIX: Limits MUITO menores para evitar sobrecarga
+      const limit = this.isMobile() ? 15 : 25;
 
-      const { data: events, error } = await supabase
-        .from('events')
-        .select('id, status, start_time, end_time, creator_id, title, event_entry_password, entry_locked') // ✅ FIX: Campos específicos
-        .neq('status', 'Cancelado')
-        .neq('status', 'Concluído')
-        .limit(limit); // ✅ FIX: Limit
+      // ✅ FIX: Delay antes da requisição para spread de carga
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
+
+      // ✅ FIX: Retry logic melhorado com backoff exponencial
+      let events = null;
+      let error = null;
+      let retries = 2; // Menos tentativas
+      let backoffMs = 1000;
+      
+      while (retries > 0) {
+        try {
+          const response = await supabase
+            .from('events')
+            .select('id, status, start_time, end_time, creator_id, title, event_entry_password, entry_locked')
+            .neq('status', 'Cancelado')
+            .neq('status', 'Concluído')
+            .limit(limit);
+          
+          events = response.data;
+          error = response.error;
+          break; // Sucesso - sair do loop
+        } catch (fetchError) {
+          retries--;
+          error = fetchError;
+          
+          if (retries > 0) {
+            console.log(`⚠️ Conexão falhou, aguardando ${backoffMs}ms antes de tentar novamente...`);
+            await new Promise(resolve => setTimeout(resolve, backoffMs));
+            backoffMs *= 2; // Backoff exponencial
+          }
+        }
+      }
 
       if (error) {
-        console.error('❌ Erro ao buscar eventos:', error);
+        // Log silencioso para não spam console
+        if (error.message?.includes('Failed to fetch')) {
+          console.warn('⚠️ Conexão temporariamente indisponível');
+        } else {
+          console.error('❌ Erro ao buscar eventos:', error);
+        }
         return;
       }
 
       if (!events || events.length === 0) {
-        console.log('✅ Nenhum evento para atualizar');
+        console.log('✅ Nenhum evento ativo para atualizar');
         return;
       }
 
-      console.log(`🔄 Atualizando ${events.length} eventos (${this.isMobile() ? 'mobile' : 'desktop'})...`);
+      console.log(`🔄 Processando ${events.length} eventos (${this.isMobile() ? 'mobile' : 'desktop'})...`);
 
-      // ✅ FIX: Processar em batch em mobile
-      if (this.isMobile()) {
-        // Processar em chunks de 10 para não travar
-        for (let i = 0; i < events.length; i += 10) {
-          const chunk = events.slice(i, i + 10);
-          await Promise.all(
-            chunk.map(event =>
-              this.calculateEventStatus(event as Event).catch(err =>
-                console.error(`❌ Erro ao processar evento ${event.id}:`, err)
-              )
-            )
-          );
-        }
-      } else {
-        // Desktop: processar sequencialmente (comportamento original)
-        for (const event of events) {
-          try {
-            await this.calculateEventStatus(event as Event);
-          } catch (eventError) {
-            console.error(`❌ Erro ao processar evento ${event.id}:`, eventError);
-          }
+      // ✅ FIX: Processar com delays para não sobrecarregar
+      const chunkSize = this.isMobile() ? 5 : 8;
+      for (let i = 0; i < events.length; i += chunkSize) {
+        const chunk = events.slice(i, i + chunkSize);
+        
+        // Processar chunk
+        await Promise.all(
+          chunk.map(async (event, index) => {
+            try {
+              // Delay pequeno entre requests dentro do chunk
+              await new Promise(resolve => setTimeout(resolve, index * 100));
+              await this.calculateEventStatus(event as Event);
+            } catch (err) {
+              console.error(`❌ Erro no evento ${event.id}:`, err);
+            }
+          })
+        );
+        
+        // Delay entre chunks
+        if (i + chunkSize < events.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
     } catch (error) {
-      console.error('❌ Erro ao atualizar todos os eventos:', error);
+      console.error('❌ Erro geral no update de eventos:', error);
     }
   }
 
@@ -102,8 +134,23 @@ class EventStatusService {
    */
   private static async calculateEventStatus(event: Event): Promise<void> {
     const now = new Date();
-    const startTime = new Date(event.start_time);
-    const endTime = new Date(event.end_time);
+    
+    // ✅ FIX: Usar date como fallback se start_time/end_time não existirem
+    let startTime: Date;
+    let endTime: Date;
+    
+    if (event.start_time && event.end_time) {
+      startTime = new Date(event.start_time);
+      endTime = new Date(event.end_time);
+    } else if (event.date) {
+      // Usar date como base e assumir duração padrão de 3 horas
+      startTime = new Date(event.date);
+      endTime = new Date(startTime.getTime() + (3 * 60 * 60 * 1000)); // +3 horas
+    } else {
+      console.warn(`⚠️ Evento ${event.id} sem dados de data válidos`);
+      return;
+    }
+    
     const currentStatus = event.status;
 
     // ============================================
@@ -140,10 +187,19 @@ class EventStatusService {
       // 📊 Penalizar não-presenças
       await TrustScoreService.penalizeNoShowsForEvent(event.id);
 
+      // ✅ NOVO: Notificar participantes para avaliar
+      await NotificationService.notifyEvaluationRequest(event.id, event.title);
+
       // 🔍 Verificar auto-conclusão
       const shouldComplete = await this.shouldAutoCompleteEvent(event);
       if (shouldComplete) {
         await this.updateEventStatus(event.id, 'Concluído');
+      } else {
+        // ⏰ Agendar lembrete para 24h depois
+        this.scheduleEvaluationReminder(event.id, event.title);
+        
+        // 🏁 Agendar aviso de conclusão automática para 5 dias
+        this.scheduleAutoCompletionWarning(event.id, event.title);
       }
     }
   }
@@ -306,7 +362,7 @@ class EventStatusService {
 
     while (retries > 0) {
       try {
-        const endTime = new Date(event.end_time);
+        const endTime = event.end_time ? new Date(event.end_time) : (event.date ? new Date(new Date(event.date).getTime() + (3 * 60 * 60 * 1000)) : new Date());
         const now = new Date();
         const daysSinceEnd = (now.getTime() - endTime.getTime()) / (1000 * 60 * 60 * 24);
 
@@ -445,27 +501,39 @@ class EventStatusService {
   // ============================================
 
   /**
-   * 🚀 Inicia atualização automática de eventos
-   * @param intervalSeconds - Intervalo em segundos (padrão: adaptativo - 60s mobile, 30s desktop)
-   * ✅ OTIMIZADO: Polling adaptativo baseado em device
+   * 🚀 Inicia atualização automática de eventos com throttling
+   * ✅ SUPER OTIMIZADO: Reduzida frequência para evitar ERR_CONNECTION_CLOSED
    */
   static startAutoUpdate(intervalSeconds?: number): ReturnType<typeof setInterval> {
     if (this.updateInterval) {
       this.stopAutoUpdate();
     }
 
-    // ✅ FIX: Interval adaptativo - 60s mobile, 30s desktop
-    const defaultInterval = this.isMobile() ? 60 : 30;
+    // ✅ FIX: Intervals MUITO mais espaçados para evitar sobrecarga
+    const defaultInterval = this.isMobile() ? 300 : 120; // 5min mobile, 2min desktop
     const actualInterval = intervalSeconds || defaultInterval;
 
-    console.log(`🔄 Iniciando auto-update de eventos a cada ${actualInterval}s (${this.isMobile() ? 'mobile' : 'desktop'})`);
+    console.log(`🔄 Iniciando auto-update OTIMIZADO a cada ${actualInterval}s (${this.isMobile() ? 'mobile' : 'desktop'})`);
 
-    // Executar imediatamente
-    this.updateAllEventStatuses();
+    // Executar após 10 segundos (não imediatamente)
+    setTimeout(() => {
+      this.updateAllEventStatuses();
+    }, 10000);
 
     // Depois executar a cada X segundos
+    let cycleCount = 0;
     this.updateInterval = setInterval(() => {
-      this.updateAllEventStatuses();
+      cycleCount++;
+      
+      // Só executar update a cada 3 ciclos (reduzir ainda mais)
+      if (cycleCount % 3 === 0) {
+        this.updateAllEventStatuses();
+      }
+      
+      // Verificar notificações perdidas apenas a cada 20 ciclos
+      if (cycleCount % 20 === 0) {
+        this.checkAndSendMissingNotifications();
+      }
     }, actualInterval * 1000);
 
     return this.updateInterval;
@@ -487,6 +555,114 @@ class EventStatusService {
    */
   static isAutoUpdateRunning(): boolean {
     return this.updateInterval !== null;
+  }
+
+  /**
+   * ⏰ NOVO: Agenda lembrete de avaliação para 24h depois
+   */
+  private static scheduleEvaluationReminder(eventId: number, eventTitle: string): void {
+    setTimeout(async () => {
+      try {
+        console.log(`⏰ Executando lembrete de avaliação agendado para evento ${eventId}`);
+        await NotificationService.sendEvaluationReminder(eventId, eventTitle);
+      } catch (error) {
+        console.error('❌ Erro no lembrete agendado:', error);
+      }
+    }, 24 * 60 * 60 * 1000); // 24 horas
+  }
+
+  /**
+   * 🏁 NOVO: Agenda aviso de conclusão automática para 5 dias
+   */
+  private static scheduleAutoCompletionWarning(eventId: number, eventTitle: string): void {
+    setTimeout(async () => {
+      try {
+        console.log(`🏁 Executando aviso de conclusão automática para evento ${eventId}`);
+        await NotificationService.notifyAutoCompletionWarning(eventId, eventTitle, 2);
+      } catch (error) {
+        console.error('❌ Erro no aviso de conclusão automática:', error);
+      }
+    }, 5 * 24 * 60 * 60 * 1000); // 5 dias
+  }
+
+  /**
+   * 📊 NOVO: Verifica eventos antigos que precisam de notificações
+   */
+  static async checkAndSendMissingNotifications(): Promise<void> {
+    try {
+      console.log('🔍 Verificando eventos que precisam de notificações de avaliação...');
+
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+
+      // Buscar eventos finalizados há 24h que não têm notificação de lembrete
+      const { data: events24h, error: error24h } = await supabase
+        .from('events')
+        .select('id, title, start_time, end_time')
+        .eq('status', 'Finalizado')
+        .or(`end_time.lt.${oneDayAgo.toISOString()},start_time.lt.${oneDayAgo.toISOString()}`)
+        .or(`end_time.gt.${fiveDaysAgo.toISOString()},start_time.gt.${fiveDaysAgo.toISOString()}`);
+
+      if (!error24h && events24h && events24h.length > 0) {
+        for (const event of events24h) {
+          // ✅ FIX: Verificar se já enviou lembrete (corrigindo erro 400)
+          const { data: existingReminder, error: reminderError } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('event_id', event.id)
+            .in('notification_type', ['participation_request', 'event_application'])
+            .limit(1);
+
+          if (reminderError) {
+            console.warn(`⚠️ Erro ao verificar lembrete existente para evento ${event.id}:`, reminderError);
+            continue; // Pula este evento e continua com o próximo
+          }
+
+          if (!existingReminder || existingReminder.length === 0) {
+            console.log(`⏰ Enviando lembrete tardio para evento ${event.id}`);
+            await NotificationService.sendEvaluationReminder(event.id, event.title);
+          }
+        }
+      }
+
+      // Buscar eventos finalizados há 5 dias que precisam de aviso de conclusão
+      const { data: events5d, error: error5d } = await supabase
+        .from('events')
+        .select('id, title, start_time, end_time')
+        .eq('status', 'Finalizado')
+        .or(`end_time.lt.${fiveDaysAgo.toISOString()},start_time.lt.${fiveDaysAgo.toISOString()}`);
+
+      if (!error5d && events5d && events5d.length > 0) {
+        for (const event of events5d) {
+          // ✅ FIX: Verificar se já enviou aviso (corrigindo erro 400)
+          const { data: existingWarning, error: warningError } = await supabase
+            .from('notifications')
+            .select('id')
+            .eq('event_id', event.id)
+            .in('notification_type', ['Candidatura Aprovada'])
+            .limit(1);
+
+          if (warningError) {
+            console.warn(`⚠️ Erro ao verificar notificação existente para evento ${event.id}:`, warningError);
+            continue; // Pula este evento e continua com o próximo
+          }
+
+          if (!existingWarning || existingWarning.length === 0) {
+            const endTime = event.end_time ? new Date(event.end_time) : (event.start_time ? new Date(new Date(event.start_time).getTime() + (3 * 60 * 60 * 1000)) : new Date());
+            const now = new Date();
+            const daysSinceEnd = Math.floor((now.getTime() - endTime.getTime()) / (1000 * 60 * 60 * 24));
+            const daysLeft = 7 - daysSinceEnd;
+
+            if (daysLeft > 0) {
+              console.log(`🏁 Enviando aviso tardio para evento ${event.id}`);
+              await NotificationService.notifyAutoCompletionWarning(event.id, event.title, daysLeft);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao verificar notificações perdidas:', error);
+    }
   }
 }
 
