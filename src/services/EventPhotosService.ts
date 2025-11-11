@@ -1,9 +1,6 @@
 // src/services/EventPhotosService.ts
 import { supabase } from '@/lib/supabaseClient';
-<<<<<<< HEAD
 import StoragePhotoService from '@/services/StoragePhotoService';
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 const BUCKET = 'event-photos';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB

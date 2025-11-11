@@ -28,11 +28,21 @@ build/
 /docs
 /vendor
 /keys
-/KEYS
 
 # Arquivos de teste
 /src/App.test.jsx
 *.test.jsx
 *.test.ts
 
-# =====================================
+# ============================================
+# 🔒 HISTÓRICO DO VSCODE
+# ============================================
+.history/
+.history/**/*
+**/.history/
+
+# ============================================
+# 🔒 SUPABASE LOCAL
+# ============================================
+/supabase
+/supabase/**

@@ -6,10 +6,7 @@ import { Search, MapPin, Phone, ExternalLink, ChevronRight, Utensils, Calendar }
 import { Input } from '@/features/shared/components/ui/input';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
-<<<<<<< HEAD
 import FavoriteButton from '@/features/shared/components/restaurants/FavoriteButton';
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import RestaurantStatsService from '@/services/RestaurantStatsService';
 
 const RestaurantsPage = () => {
@@ -223,7 +220,6 @@ const RestaurantsPage = () => {
                           </span>
                         </div>
                       )}
-<<<<<<< HEAD
 
                       {/* Botão de Favoritar */}
                       <div className="absolute bottom-3 right-3">
@@ -240,8 +236,6 @@ const RestaurantsPage = () => {
                           variant="solid"
                         />
                       </div>
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                     </div>
 
                     {/* Conteúdo */}

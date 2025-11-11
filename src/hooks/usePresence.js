@@ -1,10 +1,6 @@
 // src/hooks/usePresence.js
 import { useState, useEffect, useCallback, useRef } from 'react';
-<<<<<<< HEAD
 import { presenceService } from '@/services/PresenceService.ts';
-=======
-import presenceService from '@/services/PresenceService';
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 /**
  * Hook para gerenciar presença de um único usuário

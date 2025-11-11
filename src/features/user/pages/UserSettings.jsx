@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // src/features/user/pages/UserSettings.jsx - Versão Atualizada
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -454,26 +453,6 @@ const UserSettings = () => {
     // Recarregar dados para atualizar status de verificação
     loadUserData();
   };
-=======
-// src/features/user/pages/UserSettings.jsx (Refatorado)
-import React, { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
-import { motion } from 'framer-motion';
-import { LogOut, Loader, Lock, Trash2 } from 'lucide-react'; // Ícones necessários
-import { useAuth } from '@/contexts/AuthContext.jsx';
-import { Button } from '@/features/shared/components/ui/button.jsx';
-import { toast } from '@/features/shared/components/ui/use-toast';
-import ChangePasswordModal from '@/components/ChangePasswordModal';
-import DeleteAccountModal from '@/components/DeleteAccountModal';
-import { useNavigate } from 'react-router-dom';
-
-
-const UserSettings = () => {
-  const { user, logout, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
   // Handler para sucesso na alteração de senha
   const handlePasswordChangeSuccess = (message) => {
@@ -493,7 +472,6 @@ const UserSettings = () => {
     navigate('/');
   };
 
-<<<<<<< HEAD
   // Handler para verificação de documentos concluída
   const handleDocumentVerificationComplete = (result) => {
     setShowDocumentVerification(false);
@@ -525,12 +503,6 @@ const UserSettings = () => {
 
 
   if (authLoading || loading) {
-=======
-  
-
-
-  if (authLoading) {
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader className="w-8 h-8 animate-spin text-purple-500" />
@@ -547,7 +519,6 @@ const UserSettings = () => {
       )
   }
 
-<<<<<<< HEAD
   // Modal de verificação de telefone
   if (showPhoneVerification) {
     return (
@@ -560,24 +531,17 @@ const UserSettings = () => {
     );
   }
 
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   return (
     <>
       <Helmet>
         {/* Título pode ser ajustado para "Configurações da Conta" se preferir */}
         <title>Minhas Configurações | Mesapra2</title>
       </Helmet>
-<<<<<<< HEAD
       <div className="space-y-8 max-w-4xl mx-auto py-8">
-=======
-      <div className="space-y-8 max-w-3xl mx-auto py-8">
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         <h1 className="text-3xl font-bold gradient-text mb-4">
           Minhas Configurações
         </h1>
 
-<<<<<<< HEAD
         {/* Seção Informações Pessoais */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} 
@@ -1512,51 +1476,6 @@ const UserSettings = () => {
             <Trash2 className="mr-2 h-4 w-4" />
             Deletar Conta
           </Button>
-=======
-        {/* Seção Perfil Básico REMOVIDA */}
-        {/* Seção Aparência REMOVIDA */}
-        {/* Seção Notificações REMOVIDA */}
-        {/* Seção Privacidade REMOVIDA */}
-        {/* Botão Salvar Geral REMOVIDO */}
-
-        {/* Seção Conta MANTIDA */}
-        <motion.div
-             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} // Delay ajustado
-            className="glass-effect rounded-2xl p-6 border border-white/10 space-y-4"
-        >
-            <h2 className="text-xl font-semibold text-white mb-4 border-b border-white/10 pb-3">Segurança da Conta</h2>
-            
-            {/* Alterar Senha */}
-            <Button 
-              onClick={() => setShowPasswordModal(true)}
-              variant="outline" 
-              className="w-full justify-start glass-effect border-white/10 hover:bg-white/5"
-            >
-              <Lock className="mr-2 h-4 w-4" />
-              Alterar Senha
-            </Button>
-
-            {/* Logout */}
-            <Button
-                type="button"
-                onClick={async () => { await logout(); }}
-                variant="outline"
-                className="w-full justify-start glass-effect border-white/10 hover:bg-white/5"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Deslogar
-            </Button>
-
-            {/* Deletar Conta */}
-             <Button 
-               onClick={() => setShowDeleteModal(true)}
-               variant="destructive" 
-               className="w-full justify-start"
-             >
-               <Trash2 className="mr-2 h-4 w-4" />
-               Deletar Conta
-             </Button>
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         </motion.div>
 
       </div>
@@ -1574,7 +1493,6 @@ const UserSettings = () => {
         onAccountDeleted={handleAccountDeleted}
         userType="user"
       />
-<<<<<<< HEAD
 
       {/* Modal de Gerenciamento de Endereços */}
       {showAddressManager && (
@@ -1598,8 +1516,6 @@ const UserSettings = () => {
           onCancel={handleDocumentVerificationCancel}
         />
       )}
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     </>
   );
 };

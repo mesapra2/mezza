@@ -1,39 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from "react-helmet-async";
 import { motion } from 'framer-motion';
-<<<<<<< HEAD
 import { Link, useNavigate } from 'react-router-dom';
-=======
-import { Link } from 'react-router-dom';
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import { Calendar, Users, Star, MapPin, Clock, Settings as SettingsIcon, UserPlus, XCircle, CheckCircle, MessageSquare, Heart, Loader } from 'lucide-react'; // <-- 1. LOADER ADICIONADO
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/features/shared/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabaseClient';
-<<<<<<< HEAD
 // import Settings from '@/features/user/components/common/Settings'; // Removido - migrado para UserSettings
-=======
-import Settings from '@/features/user/components/common/Settings';
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import EventApply from '@/features/shared/components/events/EventApply';
 import ParticipationService from '@/services/ParticipationService';
 import { toast } from '@/features/shared/components/ui/use-toast';
 import { Dialog,  DialogContent,  DialogHeader,  DialogTitle,  DialogDescription,} from '@/features/shared/components/ui/dialog';
 import BannerCarousel from '@/features/shared/components/BannerCarousel';
-<<<<<<< HEAD
 import CallToAction from '@/features/shared/components/callToAction';
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 
 const Dashboard = () => {
   const { user } = useAuth();
-<<<<<<< HEAD
   const navigate = useNavigate();
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const [stats, setStats] = useState({
     eventosParticipados: 0,
     proximosEventos: 0,
@@ -43,12 +29,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [userAvatar, setUserAvatar] = useState(null);
-<<<<<<< HEAD
   const [currentTime, setCurrentTime] = useState(new Date());
   // const [settingsOpen, setSettingsOpen] = useState(false); // Removido - migrado para UserSettings
-=======
-  const [settingsOpen, setSettingsOpen] = useState(false);
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -250,7 +232,6 @@ const Dashboard = () => {
     } else {
       setLoading(false);
     }
-<<<<<<< HEAD
   }, [user, loadDashboardData, loadUserAvatar]);
 
   // Relógio digital - atualiza a cada segundo
@@ -261,9 +242,6 @@ const Dashboard = () => {
 
     return () => clearInterval(timer);
   }, []); 
-=======
-  }, [user, loadDashboardData, loadUserAvatar]); 
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
   // ✅ FUNÇÃO CORRIGIDA: Avatar do usuário logado
   const getAvatarUrl = () => {
@@ -430,281 +408,30 @@ const Dashboard = () => {
     }
   };
 
-  // =================================================================
-  // 🆕 3. FUNÇÃO PARA INSCRIÇÃO DIRETA (INSTITUCIONAL) ADICIONADA
-  // =================================================================
-  const handleInstitutionalApply = async (event) => {
-    if (!user || !event) return;
-    
-    setIsRegistering(true);
-    try {
-      // Inscrição direta, status 'aprovado', sem mensagem_candidatura
-      const { error } = await supabase
-        .from('event_participants')
-        .insert({
-          event_id: event.id,
-          user_id: user.id,
-          status: 'aprovado' 
-        });
-      
-      if (error) throw error;
-
-      toast({
-        title: '✅ Inscrição Confirmada!',
-        description: 'Você foi inscrito automaticamente neste evento.',
-      });
-      
-      // Recarrega os dados do dashboard
-      await loadDashboardData();
-      // Fecha o modal
-      setApplyModalOpen(false);
-
-    } catch (error) {
-      console.error('Erro ao inscrever-se (institucional):', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro na inscrição',
-        description: error.message || 'Não foi possível se inscrever.',
-      });
-    } finally {
-      setIsRegistering(false);
-    }
-  };
-
-  // ✅ FUNÇÃO CORRIGIDA: Avatar dos participantes
-  const renderParticipantAvatars = (event) => {
-    const maxVagas = event.max_vagas || event.vagas;
-    const approvedParticipants = eventParticipants[event.id] || [];
-    const avatars = [];
-
-    approvedParticipants.forEach((participant) => {
-      // ✅ Constrói URL do avatar corretamente
-      const getParticipantAvatar = () => {
-        const avatarUrl = participant.user?.avatar_url;
-        if (!avatarUrl) {
-          return `https://ui-avatars.com/api/?name=${encodeURIComponent(participant.user?.username || 'User')}&background=8b5cf6&color=fff&size=40`;
-        }
-        // Se já é URL completa (http/https), retorna direto
-        if (avatarUrl.startsWith('http')) {
-          return avatarUrl;
-        }
-        // ✅ Constrói a URL pública do Supabase com timestamp para evitar cache
-        const { data } = supabase.storage.from('avatars').getPublicUrl(avatarUrl);
-        return `${data.publicUrl}?t=${new Date().getTime()}`;
-      };
-
-      avatars.push(
-        <img
-          key={`participant-${participant.id}`}
-          src={getParticipantAvatar()}
-          alt={participant.user?.username || 'Participante'}
-          className="w-10 h-10 rounded-full border-2 border-green-500/70 object-cover"
-          title={participant.user?.username || 'Participante'}
-          onError={(e) => {
-            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-              participant.user?.username || 'User'
-            )}&background=8b5cf6&color=fff&size=40`;
-          }}
-        />
-      );
-    });
-
-    const remainingSlots = maxVagas - approvedParticipants.length;
-    for (let i = 0; i < remainingSlots; i++) {
-      avatars.push(
-        <div
-          key={`empty-${i}`}
-          className="w-10 h-10 rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center"
-          title="Vaga disponível"
-        >
-          <Users className="w-5 h-5 text-white/40" />
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center gap-2 flex-wrap">
-        {avatars}
-      </div>
-    );
-  };
-
-  const getUserParticipationBadge = (eventId) => {
-    const status = userParticipations[eventId];
-    
-    if (!status) return null;
-
-    const badges = {
-      aprovado: {
-        label: '✓ Inscrito',
-        className: 'bg-green-500/20 text-green-300 border-green-500/50',
-        icon: CheckCircle
-      },
-      pendente: {
-        label: '⏳ Pendente',
-        className: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50',
-        icon: Clock
-      },
-      rejeitado: {
-        label: '✗ Rejeitado',
-        className: 'bg-red-500/20 text-red-300 border-red-500/50',
-        icon: XCircle
-      },
-      cancelado: {
-        label: 'Cancelado',
-        className: 'bg-gray-500/20 text-gray-300 border-gray-500/50',
-        icon: XCircle
-      }
-    };
-
-    const badge = badges[status];
-    if (!badge) return null;
-
-    const Icon = badge.icon;
-
-    if (status === 'aprovado') {
-      return (
-        <div className="space-y-2">
-          <div className={`w-full px-4 py-3 rounded-lg border-2 ${badge.className} flex items-center justify-center gap-2 font-semibold`}>
-            <Icon className="w-5 h-5" />
-            {badge.label}
-          </div>
-          <Link to={`/event/${eventId}/chat`}>
-            <Button className="w-full" variant="outline" size="sm">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Acessar Chat
-            </Button>
-          </Link>
-        </div>
-      );
-    }
-
-    return (
-      <div className={`w-full px-4 py-3 rounded-lg border-2 ${badge.className} flex items-center justify-center gap-2 font-semibold`}>
-        <Icon className="w-5 h-5" />
-        {badge.label}
-      </div>
-    );
-  };
-
-  const handleCancelEvent = async (event) => {
-    setEventToCancel(event);
-    setCancelError(null);
-
-    try {
-      const { data: participants, error: participantsError } = await supabase
-        .from('event_participants')
-        .select('id, status')
-        .eq('event_id', event.id)
-        .eq('status', 'aprovado');
-
-      if (participantsError) throw participantsError;
-
-      const hasConfirmedParticipants = participants && participants.length > 0;
-      const eventStart = new Date(event.start_time);
-      const now = new Date();
-      const hoursUntilEvent = (eventStart - now) / (1000 * 60 * 60);
-
-      if (hasConfirmedParticipants && hoursUntilEvent < 24) {
-        setCancelError(
-          `Não é possível cancelar este evento com menos de 24 horas de antecedência quando há participantes confirmados. ${participants.length} ${participants.length === 1 ? 'participante confirmado' : 'participantes confirmados'}.`
-        );
-        setCancelModalOpen(true);
-        return;
-      }
-
-      setCancelModalOpen(true);
-    } catch (error) {
-      console.error('Erro ao verificar participantes:', error);
-      alert('Erro ao verificar participantes do evento');
-    }
-  };
-
-  const confirmCancelEvent = async () => {
-    if (!eventToCancel) return;
-
-    const reason = prompt('Motivo do cancelamento (opcional):');
-    
-    try {
-      const { error } = await supabase
-        .from('events')
-        .update({ 
-          status: 'Cancelado',
-          cancelamento_motivo: reason,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', eventToCancel.id);
-
-      if (error) throw error;
-
-      setCancelModalOpen(false);
-      setEventToCancel(null);
-      loadDashboardData();
-      
-      toast({ title: 'Evento cancelado com sucesso!' });
-    } catch (error) {
-      console.error('Erro ao cancelar evento:', error);
-      toast({ 
-        variant: "destructive",
-        title: 'Erro ao cancelar evento',
-        description: error.message
-      });
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Calendar className="w-16 h-16 text-white/40 animate-spin" />
-      </div>
-    );
-  }
+  // ========================================================== 
+  // Return JSX
+  // ==========================================================
 
   return (
     <>
       <Helmet>
-        <title>Dashboard | Mesapra2</title>
+        <title>Dashboard - Mesapra2</title>
+        <meta name="description" content="Gerencie seus eventos e descubra novas experiências gastronômicas." />
       </Helmet>
 
-      <div className="flex justify-between items-center px-6 py-4 bg-gray-900/80 backdrop-blur-lg border-b border-white/10 sticky top-0 z-40 rounded-b-2xl">
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-<<<<<<< HEAD
-        
-        {/* Relógio Digital Futurista */}
-        <div className="flex flex-col items-center justify-center bg-black/60 rounded-lg px-4 py-2 border border-cyan-500/30 backdrop-blur-sm">
-          <div className="flex items-center space-x-1 text-cyan-400 font-mono text-lg font-bold tracking-wider">
-            <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              {currentTime.toLocaleTimeString('pt-BR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-              })}
-            </span>
-          </div>
-          <div className="text-cyan-300/80 text-xs font-mono uppercase tracking-widest mt-1">
-            {currentTime.toLocaleDateString('pt-BR', { 
-              weekday: 'short',
-              day: '2-digit',
-              month: 'short'
-            }).replace('.', '')}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/settings')}
-=======
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setSettingsOpen(true)}
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
-            className="p-2 rounded-full hover:bg-white/10 transition-colors group relative"
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900">
+        {/* Header com avatar e configurações */}
+        <div className="flex justify-between items-center p-6">
+          <div className="flex-1" />
+          
+          {/* Botão de configurações */}
+          <Link
+            to="/user-settings"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors group relative mr-4"
             title="Configurações"
           >
             <SettingsIcon className="w-6 h-6 text-white/80 group-hover:text-white group-hover:rotate-45 transition-all duration-300" />
-          </button>
+          </Link>
 
           <div className="relative">
             <button
@@ -762,11 +489,7 @@ const Dashboard = () => {
                   <button
                     onClick={() => {
                       setShowMenu(false);
-<<<<<<< HEAD
                       navigate('/settings');
-=======
-                      setSettingsOpen(true);
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:bg-white/10"
                   >
@@ -814,14 +537,11 @@ const Dashboard = () => {
 {/* 🆕 Carrossel de Anúncios */}
 <BannerCarousel />
 
-<<<<<<< HEAD
 {/* Call to Action */}
 <div className="mt-8 text-center">
   <CallToAction />
 </div>
 
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
@@ -1068,14 +788,7 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-<<<<<<< HEAD
       {/* Modal Settings removido - agora está integrado em UserSettings */}
-=======
-      <Settings 
-        isOpen={settingsOpen} 
-        onClose={() => setSettingsOpen(false)} 
-      />
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
       {/* ================================================================= */}
       {/* 💡 4. DIALOG CORRIGIDO COM LÓGICA CONDICIONAL 💡 */}

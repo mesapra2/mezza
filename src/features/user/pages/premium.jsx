@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
@@ -254,24 +253,11 @@ const Premium = () => {
       y: 0,
       transition: { duration: 0.5 }
     }
-=======
-import React from 'react';
-import { Helmet } from 'react-helmet-async';
-import { toast } from '@/features/shared/components/ui/use-toast';
-
-const Premium = () => {
-  const handleAction = () => {
-    toast({
-      title: "🚧 Funcionalidade em desenvolvimento",
-      description: "Esta feature ainda não está implementada—mas você pode solicitá-la no próximo prompt! 🚀",
-    });
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   };
 
   return (
     <>
       <Helmet>
-<<<<<<< HEAD
         <title>Premium - Transforme seus encontros | Mesa Pra 2</title>
         <meta name="description" content="Crie eventos particulares únicos e encontros personalizados. Liberdade total para conectar-se onde quiser!" />
         <meta name="keywords" content="eventos particulares, encontros personalizados, mesa pra 2, premium, dating" />
@@ -607,17 +593,6 @@ const Premium = () => {
             </motion.div>
           </div>
         </motion.div>
-=======
-        <title>Premium - Mesapra2</title>
-        <meta name="description" content="Upgrade para Premium e desbloqueie recursos exclusivos." />
-      </Helmet>
-      <div className="text-center py-20">
-        <h1 className="text-3xl font-bold gradient-text mb-4">Planos Premium</h1>
-        <p className="text-white/60 mb-8">Página em construção</p>
-        <button onClick={handleAction} className="px-6 py-3 bg-purple-500 rounded-lg">
-          Testar Notificação
-        </button>
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
       </div>
     </>
   );

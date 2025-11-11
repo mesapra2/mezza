@@ -27,12 +27,18 @@ build/
 .tmp.driveupload/
 /docs
 /vendor
-/keys
-/KEYS
 
 # Arquivos de teste
 /src/App.test.jsx
 *.test.jsx
 *.test.ts
 
-# =====================================
+# ============================================
+# 🔒 HISTÓRICO DO VSCODE (NOVO - ADICIONAR ISTO)
+# ============================================
+.history/
+.history/**/*
+/supabase
+/supabase/**
+**/.history/
+

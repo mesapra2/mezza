@@ -10,12 +10,8 @@ import { Label } from '@/features/shared/components/ui/label.jsx';
 import { Textarea } from '@/features/shared/components/ui/textarea.jsx';
 import HashtagInterestSelector from '@/features/shared/components/profile/HashtagInterestSelector';
 import { supabase } from '@/lib/supabaseClient'; 
-<<<<<<< HEAD
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import FavoriteRestaurantsList from '@/features/shared/components/restaurants/FavoriteRestaurantsList'; 
-=======
-import { useToast } from '@/features/shared/components/ui/use-toast'; 
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 const customStyles = {
   avatar: 'w-32 h-32 rounded-full object-cover',
@@ -433,7 +429,6 @@ const ProfilePage = () => {
               )}
             </Button>
           </div>
-<<<<<<< HEAD
 
           {/* Seção de Restaurantes Favoritos */}
           <div className="glass-effect rounded-2xl p-8 border border-white/10">
@@ -445,8 +440,6 @@ const ProfilePage = () => {
               }}
             />
           </div>
-=======
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         </motion.div>
       </div>
     </>

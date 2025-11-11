@@ -4,11 +4,7 @@ import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, Users, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { useParticipation } from '@/hooks/useParticipation';
-<<<<<<< HEAD
 import EventStatusBadge from '@/features/shared/components/events/EventStatusBadge';
-=======
-import EventStatusBadge from '@/components/EventStatusBadge';
->>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
