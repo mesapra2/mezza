@@ -631,8 +631,7 @@ const UserSettings = () => {
                 id="gender"
                 value={userData.gender}
                 onChange={(e) => setUserData(prev => ({ ...prev, gender: e.target.value }))}
-                className="w-full p-2 rounded-md glass-effect border border-white/10 text-white/60 bg-white/5 cursor-not-allowed"
-                disabled
+                className="w-full p-2 rounded-md glass-effect border border-white/10 text-white bg-black/20"
               >
                 <option value="">Selecione...</option>
                 <option value="masculino">Ele</option>
