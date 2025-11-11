@@ -12,6 +12,7 @@ import { useAccessibleForm } from '@/hooks/useAccessibleForm';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import SocialLoginButtons from '@/features/shared/components/auth/SocialLoginButtons';
 import { supabase } from '@/lib/supabaseClient';
+import backgroundVideo from '@/assets/vds2.mp4';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -164,13 +165,27 @@ const LoginPage = () => {
         <meta name="description" content="Faça login no Mesapra2 e participe de eventos sociais em restaurantes." />
       </Helmet>
 
-      <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
+        {/* 📹 Vídeo de Fundo */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0"
+        >
+          <source src={backgroundVideo} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        
+        {/* 🎭 Overlay transparente */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10"></div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-sm sm:max-w-md"
+          className="w-full max-w-sm sm:max-w-md relative z-20"
         >
-          <div className="glass-effect rounded-2xl p-6 sm:p-8 border border-white/10">
+          <div className="glass-effect rounded-2xl p-6 sm:p-8 border border-white/10 bg-black/30 backdrop-blur-xl">
             {/* Logo */}
             <div className="flex justify-center mb-6 sm:mb-8">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
