@@ -29,6 +29,7 @@ build/
 /docs
 /vendor
 /keys
+/KEYS
 
 # Arquivos de teste
 /src/App.test.jsx
