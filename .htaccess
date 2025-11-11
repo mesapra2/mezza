@@ -187,10 +187,49 @@ Options -Indexes
     ForceType application/xml
 </Files>
 
+# ===== CONFIGURAÇÃO ESPECÍFICA PARA MANIFEST.JSON =====
+<Files "manifest.json">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+    
+    # Force tipo de conteúdo como JSON
+    <IfModule mod_headers.c>
+        Header set Content-Type "application/manifest+json; charset=utf-8"
+        Header unset Cache-Control
+        Header set Cache-Control "public, max-age=86400"
+        Header set Access-Control-Allow-Origin "*"
+    </IfModule>
+    
+    # Force MIME type
+    ForceType application/manifest+json
+</Files>
+
 # ===== MIME TYPES =====
 <IfModule mod_mime.c>
+    # Text files
     AddType text/plain .csv
     AddType text/plain .log
     AddType text/plain .txt
+    
+    # JavaScript and related files
+    AddType application/javascript .js
+    AddType application/javascript .jsx
+    AddType text/javascript .mjs
+    AddType application/json .json
+    
+    # XML files
     AddType application/xml .xml
+    AddType application/rss+xml .rss
+    
+    # Web app manifest
+    AddType application/manifest+json .webmanifest
+    AddType application/json .json
+    
+    # CSS files
+    AddType text/css .css
 </IfModule>

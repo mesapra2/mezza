@@ -63,6 +63,14 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       historyApiFallback: true, // ⭐ CRÍTICO para React Router
+      // ✅ Fix MIME type issues
+      headers: {
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://app.mesapra2.com https://*.supabase.co;",
+      },
+      middlewareMode: false,
+      fs: {
+        strict: false,
+      },
     },
     
     preview: {
