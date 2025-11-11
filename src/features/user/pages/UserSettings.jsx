@@ -82,8 +82,21 @@ const UserSettings = () => {
   // Verificar se deve abrir a verificação de documentos via URL
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'verification') {
+    const startVerification = searchParams.get('startVerification');
+    
+    console.log('UserSettings - Parâmetros URL:', { tab, startVerification }); // Debug
+    
+    if (tab === 'verification' || startVerification === 'true') {
+      console.log('Abrindo verificação de documentos...'); // Debug
       setShowDocumentVerification(true);
+      
+      if (startVerification === 'true') {
+        toast({
+          title: "🔐 Verificação de Identidade",
+          description: "Complete sua verificação para acessar recursos Premium!",
+          duration: 5000
+        });
+      }
     }
   }, [searchParams]);
 

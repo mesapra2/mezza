@@ -135,14 +135,12 @@ const Premium = () => {
           case 'require_verification':
             toast({
               title: "🔐 Verificação Necessária",
-              description: flowResult.message,
-              duration: 8000
+              description: "Redirecionando para verificação de identidade...",
+              duration: 3000
             });
             
-            // Redirecionar para a página de verificação apropriada
-            if (flowResult.redirectUrl) {
-              navigate(flowResult.redirectUrl);
-            }
+            // Redirecionar para Settings com parâmetro de verificação
+            navigate('/settings?startVerification=true');
             break;
 
           case 'already_premium':
@@ -435,7 +433,10 @@ const Premium = () => {
               variants={itemVariants}
             >
               <VerificationStatus 
-                onStatusChange={setIsVerified}
+                onStatusChange={(verified) => {
+                  console.log('Status de verificação recebido:', verified);
+                  setIsVerified(verified);
+                }}
                 className="bg-white/5"
               />
             </motion.div>
@@ -504,7 +505,19 @@ const Premium = () => {
 
                 {/* CTA Button */}
                 <Button
-                  onClick={handleUpgradeToPremium}
+                  onClick={() => {
+                    console.log('Botão clicado!', { user: !!user, isVerified });
+                    if (!user) {
+                      console.log('Redirecionando para login...');
+                      navigate('/login');
+                    } else if (!isVerified) {
+                      console.log('Redirecionando para verificação...', '/settings?startVerification=true');
+                      navigate('/settings?startVerification=true');
+                    } else {
+                      console.log('Iniciando processo de upgrade premium...');
+                      handleUpgradeToPremium();
+                    }
+                  }}
                   disabled={isProcessingPayment || profile?.is_premium}
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-4 text-lg font-semibold rounded-xl shadow-2xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
@@ -526,7 +539,7 @@ const Premium = () => {
                   ) : !isVerified ? (
                     <>
                       <Shield className="w-5 h-5 mr-2" />
-                      Continuar Verificação
+                      Iniciar Verificação
                     </>
                   ) : (
                     <>

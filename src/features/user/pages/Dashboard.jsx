@@ -582,109 +582,126 @@ const Dashboard = () => {
         <meta name="description" content="Gerencie seus eventos e descubra novas experiências gastronômicas." />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900">
-        {/* Header com avatar e configurações */}
-        <div className="flex justify-end items-center p-6 gap-4">
-          {/* Botão de configurações */}
-          <Link
-            to="/user-settings"
-            className="p-2 rounded-full hover:bg-white/10 transition-colors group relative mr-4"
-            title="Configurações"
-          >
-            <SettingsIcon className="w-6 h-6 text-white/80 group-hover:text-white group-hover:rotate-45 transition-all duration-300" />
-          </Link>
 
-          <div className="relative">
-            <button
-              className="focus:outline-none"
-              onClick={() => setShowMenu(!showMenu)}
-            >
-              <img
-                src={getAvatarUrl()}
-                alt="Avatar do usuário"
-                className="w-10 h-10 rounded-full border-2 border-purple-500/50 object-cover hover:border-purple-500 transition-colors"
-                onError={(e) => {
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                    user?.email || 'Usuário'
-                  )}&background=8b5cf6&color=fff&size=40`;
-                }}
-              />
-            </button>
-
-            {showMenu && (
-              <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-gray-800/90 backdrop-blur-md border border-white/10 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                <div className="py-1">
-                  <div className="px-4 py-3">
-                    <p className="text-sm font-semibold text-white truncate">
-                      {user?.user_metadata?.name || 'Usuário'}
-                    </p>
-                    <p className="text-xs text-white/60 truncate">{user?.email}</p>
-                  </div>
-
-                  <div className="border-t border-white/10"></div>
-
-                  <Link
-                    to="/profile"
-                    className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:bg-white/10"
-                    onClick={() => setShowMenu(false)}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mr-3 h-5 w-5"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <circle cx="12" cy="10" r="3" />
-                      <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
-                    </svg>
-                    Meu Perfil
-                  </Link>
-
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      navigate('/settings');
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:bg-white/10"
-                  >
-                    <SettingsIcon className="mr-3 h-5 w-5" />
-                    Configurações
-                  </button>
-
-                  <div className="border-t border-white/10"></div>
-
-                  <button
-                    className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10"
-                    onClick={() => supabase.auth.signOut()}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="mr-3 h-5 w-5"
-                    >
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" x2="9" y1="12" y2="12" />
-                    </svg>
-                    Sair
-                  </button>
-                </div>
+      {/* Header com arte digital, Dashboard, relógio e controles */}
+      <div className="mx-4 mt-4 rounded-2xl bg-gradient-to-br from-gray-900/80 via-black/60 to-purple-900/80 backdrop-blur-md border border-white/10 p-6">
+        <div className="flex justify-between items-center">
+          {/* Título Dashboard */}
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          
+          {/* Relógio Digital Central */}
+          <div className="flex-1 flex justify-center">
+            <div className="bg-black/40 rounded-xl px-4 py-2 border border-purple-500/30">
+              <div className="text-white/90 text-lg font-mono tracking-wider">
+                {format(currentTime, "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Controles direita - Configurações e Avatar */}
+          <div className="flex items-center gap-4">
+            {/* Botão de configurações */}
+            <Link
+              to="/user-settings"
+              className="p-2 rounded-full hover:bg-white/10 transition-colors group relative"
+              title="Configurações"
+            >
+              <SettingsIcon className="w-6 h-6 text-white/80 group-hover:text-white group-hover:rotate-45 transition-all duration-300" />
+            </Link>
+
+            {/* Avatar e Menu */}
+            <div className="relative">
+              <button
+                className="focus:outline-none"
+                onClick={() => setShowMenu(!showMenu)}
+              >
+                <img
+                  src={getAvatarUrl()}
+                  alt="Avatar do usuário"
+                  className="w-10 h-10 rounded-full border-2 border-purple-500/50 object-cover hover:border-purple-500 transition-colors"
+                  onError={(e) => {
+                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      user?.email || 'Usuário'
+                    )}&background=8b5cf6&color=fff&size=40`;
+                  }}
+                />
+              </button>
+
+              {showMenu && (
+                <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-gray-800/90 backdrop-blur-md border border-white/10 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <div className="py-1">
+                    <div className="px-4 py-3">
+                      <p className="text-sm font-semibold text-white truncate">
+                        {user?.user_metadata?.name || 'Usuário'}
+                      </p>
+                      <p className="text-xs text-white/60 truncate">{user?.email}</p>
+                    </div>
+
+                    <div className="border-t border-white/10"></div>
+
+                    <Link
+                      to="/profile"
+                      className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:bg-white/10"
+                      onClick={() => setShowMenu(false)}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-3 h-5 w-5"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="10" r="3" />
+                        <path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" />
+                      </svg>
+                      Meu Perfil
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        navigate('/settings');
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:bg-white/10"
+                    >
+                      <SettingsIcon className="mr-3 h-5 w-5" />
+                      Configurações
+                    </button>
+
+                    <div className="border-t border-white/10"></div>
+
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10"
+                      onClick={() => supabase.auth.signOut()}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-3 h-5 w-5"
+                      >
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" x2="9" y1="12" y2="12" />
+                      </svg>
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -697,30 +714,6 @@ const Dashboard = () => {
         >
 {/* 🆕 Carrossel de Anúncios */}
           <BannerCarousel />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
-              <Calendar className="w-8 h-8 text-purple-500 mr-4" />
-              <div>
-                <p className="text-white/60 text-sm">Eventos Participados</p>
-                <p className="text-white text-xl font-semibold">{stats.eventosParticipados}</p>
-              </div>
-            </div>
-            <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
-              <Clock className="w-8 h-8 text-green-500 mr-4" />
-              <div>
-                <p className="text-white/60 text-sm">Próximos Eventos</p>
-                <p className="text-white text-xl font-semibold">{stats.proximosEventos}</p>
-              </div>
-            </div>
-            <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
-              <Star className="w-8 h-8 text-yellow-500 mr-4" />
-              <div>
-                <p className="text-white/60 text-sm">Avaliação Média</p>
-                <p className="text-white text-xl font-semibold">{stats.avaliacaoMedia.toFixed(1)}</p>
-              </div>
-            </div>
-          </div>
 
           <div>
             <h2 className="text-2xl font-semibold text-white mb-4">Eventos Recentes</h2>

@@ -66,29 +66,45 @@ class PremiumFlowService {
         throw profileError;
       }
 
-      // Verificar dados de verificação
-      const { data: verification, error: verificationError } = await supabase
-        .from('user_verifications')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Verificar dados de verificação - com tratamento de erro 406
+      let verification = null;
+      let hasVerification = false;
+      
+      try {
+        const { data: verificationData, error: verificationError } = await supabase
+          .from('user_verifications')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
 
-      // Se não encontrou verificação, não é erro
-      const hasVerification = !verificationError && verification;
+        if (!verificationError && verificationData) {
+          verification = verificationData;
+          hasVerification = true;
+        }
+      } catch (error) {
+        console.warn('Tabela user_verifications não encontrada ou sem acesso. Usando fallback.', error);
+        // Fallback: verificar pelo campo is_verified do profile
+        hasVerification = profile?.is_verified === true;
+      }
 
       const status: UserVerificationStatus = {
         isLoggedIn: true,
         hasProfile: !!profile,
         hasPhone: !!profile?.phone,
         phoneVerified: profile?.phone_verified === true,
-        hasDocument: hasVerification && !!verification.document_url,
-        documentVerified: hasVerification && verification.verification_status === 'approved',
+        hasDocument: hasVerification ? !!verification.document_url : (profile?.is_verified === true),
+        documentVerified: hasVerification ? verification.verification_status === 'approved' : (profile?.is_verified === true),
         isPremium: profile?.is_premium === true,
         isFullyVerified: false
       };
 
       // Determinar se está totalmente verificado
-      status.isFullyVerified = status.phoneVerified && status.documentVerified;
+      // Se a tabela user_verifications não existe, usar apenas o campo is_verified do profile
+      if (!hasVerification) {
+        status.isFullyVerified = profile?.is_verified === true;
+      } else {
+        status.isFullyVerified = status.phoneVerified && status.documentVerified;
+      }
 
       return status;
 
