@@ -617,9 +617,8 @@ const UserSettings = () => {
                 onChange={(e) => setUserData(prev => ({ ...prev, birth_date: e.target.value }))}
                 className="glass-effect border-white/10 text-white/60 bg-white/5 cursor-not-allowed"
                 disabled
-                placeholder="Em breve..."
+                placeholder="Sua data de nascimento"
               />
-              <p className="text-xs text-white/40 mt-1">Campo em desenvolvimento</p>
             </div>
 
             {/* Gênero */}
@@ -635,13 +634,12 @@ const UserSettings = () => {
                 className="w-full p-2 rounded-md glass-effect border border-white/10 text-white/60 bg-white/5 cursor-not-allowed"
                 disabled
               >
-                <option value="">Em desenvolvimento...</option>
-                <option value="masculino">Ele/dele</option>
-                <option value="feminino">Ela/dela</option>
+                <option value="">Selecione...</option>
+                <option value="masculino">Ele</option>
+                <option value="feminino">Ela</option>
                 <option value="nao-binario">Elu/dele</option>
                 <option value="prefiro-nao-dizer">Prefiro não dizer</option>
               </select>
-              <p className="text-xs text-white/40 mt-1">Campo em desenvolvimento</p>
             </div>
           </div>
 
@@ -918,7 +916,7 @@ const UserSettings = () => {
               <div className="text-sm text-blue-300">
                 <p className="font-medium mb-1">Sobre os tipos de interação:</p>
                 <ul className="space-y-1 text-xs">
-                  <li>• <strong>Toks:</strong> Interações casuais diárias {userData.allow_pokes ? '(ATIVADO)' : '(DESATIVADO)'}</li>
+                  <li>• <strong>Toks:</strong> Servem para chamar a atenção</li>
                   <li>• <strong>Eventos Crusher:</strong> Convites para encontros (sempre ativo)</li>
                 </ul>
               </div>
@@ -1288,8 +1286,7 @@ const UserSettings = () => {
         >
           <div className="flex items-center gap-3 mb-4 border-b border-white/10 pb-3">
             <MapPin className="w-5 h-5 text-orange-400" />
-            <h2 className="text-xl font-semibold text-white">Endereço para Entrega</h2>
-            <span className="text-sm text-white/60">(Receba Gifts)</span>
+            <h2 className="text-xl font-semibold text-white">Gerenciar Endereços</h2>
           </div>
           
           <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
