@@ -914,7 +914,6 @@ const UserSettings = () => {
                 <p className="font-medium mb-1">Sobre os tipos de interação:</p>
                 <ul className="space-y-1 text-xs">
                   <li>• <strong>Toks:</strong> Servem para chamar a atenção</li>
-                  <li>• <strong>Eventos Crusher:</strong> Convites para encontros (sempre ativo)</li>
                 </ul>
               </div>
             </div>
