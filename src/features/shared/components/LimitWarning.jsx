@@ -54,11 +54,11 @@ export function LimitWarning({
           </p>
           
           {remaining > 0 ? (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-300">
               Ainda restam {remaining} {resourceName} disponíveis no seu plano gratuito.
             </p>
           ) : (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-200">
               Você atingiu o limite do plano gratuito.
             </p>
           )}

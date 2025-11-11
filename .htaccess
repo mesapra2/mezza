@@ -31,12 +31,26 @@
     RewriteRule ^$ /meta-proxy.php [L,QSA]
 
     # ========================================
+    # 🤖 EXCLUSÕES ESPECÍFICAS - ARQUIVOS ESPECIAIS
+    # ========================================
+    # robots.txt deve ser servido como arquivo de texto
+    RewriteCond %{REQUEST_URI} ^/robots\.txt$ [NC]
+    RewriteRule ^robots\.txt$ robots.txt [L]
+    
+    # sitemap.xml deve ser servido como XML
+    RewriteCond %{REQUEST_URI} ^/sitemap\.xml$ [NC]
+    RewriteRule ^sitemap\.xml$ sitemap.xml [L]
+
+    # ========================================
     # 👤 USUÁRIOS NORMAIS - FALLBACK REACT SPA
     # ========================================
     # Se a requisição NÃO for para um arquivo real...
     RewriteCond %{REQUEST_FILENAME} !-f
     # E também NÃO for para um diretório real...
     RewriteCond %{REQUEST_FILENAME} !-d
+    # E NÃO for robots.txt ou sitemap.xml...
+    RewriteCond %{REQUEST_URI} !^/robots\.txt$ [NC]
+    RewriteCond %{REQUEST_URI} !^/sitemap\.xml$ [NC]
     # Então, reescreva a requisição para o index.html
     RewriteRule ^ index.html [L]
 </IfModule>
@@ -131,8 +145,52 @@ Options -Indexes
     DirectoryIndex index.html index.php
 </IfModule>
 
+# ===== CONFIGURAÇÃO ESPECÍFICA PARA ROBOTS.TXT =====
+<Files "robots.txt">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+    
+    # Force tipo de conteúdo como texto simples
+    <IfModule mod_headers.c>
+        Header set Content-Type "text/plain; charset=utf-8"
+        Header unset Cache-Control
+        Header set Cache-Control "public, max-age=86400"
+    </IfModule>
+    
+    # Force MIME type
+    ForceType text/plain
+</Files>
+
+# ===== CONFIGURAÇÃO ESPECÍFICA PARA SITEMAP.XML =====
+<Files "sitemap.xml">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+    
+    # Force tipo de conteúdo como XML
+    <IfModule mod_headers.c>
+        Header set Content-Type "application/xml; charset=utf-8"
+        Header unset Cache-Control
+        Header set Cache-Control "public, max-age=86400"
+    </IfModule>
+    
+    # Force MIME type
+    ForceType application/xml
+</Files>
+
 # ===== MIME TYPES =====
 <IfModule mod_mime.c>
     AddType text/plain .csv
     AddType text/plain .log
+    AddType text/plain .txt
+    AddType application/xml .xml
 </IfModule>

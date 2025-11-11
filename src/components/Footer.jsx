@@ -146,7 +146,7 @@ const Footer = ({
 
         {/* Card Developer CodeMix */}
         {showDeveloper && (
-          <div className="text-center py-8 px-5 pb-5 font-mono text-xs text-gray-400 relative z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 mb-8">
+          <div className="text-center py-8 px-5 pb-5 font-mono text-xs text-gray-300 relative z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 mb-8">
             <a 
               href="https://codemix.com.br" 
               target="_blank" 

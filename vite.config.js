@@ -41,6 +41,9 @@ export default defineConfig(({ mode }) => {
       esbuild: {
         drop: isDev ? [] : ['console', 'debugger'],
       },
+      // ✅ CSS optimization to prevent render blocking
+      cssCodeSplit: true, // Split CSS into separate chunks
+      cssMinify: true, // Minify CSS
     },
     
     optimizeDeps: {
