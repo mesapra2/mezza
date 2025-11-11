@@ -2,6 +2,7 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+<<<<<<< HEAD
   "functions": {
     "api/send-verification-sms.js": {
       "maxDuration": 10
@@ -15,6 +16,8 @@
     "TWILIO_AUTH_TOKEN": "",
     "TWILIO_PHONE_NUMBER": ""
   },
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   "rewrites": [
     {
       "source": "/event/:id",

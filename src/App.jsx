@@ -44,6 +44,7 @@ import ProfilePage from '@/features/shared/pages/ProfilePage';
 import PartnerProfilePage from '@/features/shared/pages/PartnerProfilePage';
 import MyEventsPage from '@/features/shared/pages/MyEventsPage';
 import UserProfilePage from '@/features/shared/pages/UserProfilePage';
+<<<<<<< HEAD
 import MyParticipation from '@/features/shared/pages/MyParticipation';
 import ParticipantHistoryPage from '@/features/shared/pages/ParticipantHistoryPage';
 import Signup from '@/features/shared/pages/signup';
@@ -52,6 +53,8 @@ import FavoritesPage from '@/features/shared/pages/FavoritesPage';
 import MobileVerificationPageSimple from '@/features/shared/pages/MobileVerificationPageSimple';
 import TestCertifiedUser from '@/pages/test-certified-user';
 import TestVerificationFlow from '@/components/TestVerificationFlow';
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 // 🛡️ Componente para verificar telefone verificado
 const RequirePhoneVerification = ({ children }) => {
@@ -94,8 +97,12 @@ RequirePhoneVerification.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
+<<<<<<< HEAD
 // Componente interno que usa o contexto
 function AppContent() {
+=======
+function App() {
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const { user, profile, loading } = useAuth();
 
   const isLoading = loading || (user && !profile);
@@ -142,6 +149,7 @@ function AppContent() {
 
         {/* ROTAS PÚBLICAS (sem login) */}
         {!user ? (
+<<<<<<< HEAD
           <>
             <Route path="/verify-mobile" element={<MobileVerificationPageSimple />} />
             <Route path="/test-certified-user" element={<TestCertifiedUser />} />
@@ -155,6 +163,15 @@ function AppContent() {
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Route>
           </>
+=======
+          <Route path="/" element={<Layout isPublic={true} />}>
+            <Route index element={<Navigate to="/login" replace />} />
+            <Route path="login" element={<LoginPage />} />
+            <Route path="register" element={<RegisterPage />} />
+            <Route path="partner/register" element={<PartnerRegisterPage />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Route>
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         ) : (
           /* ROTAS AUTENTICADAS */
           <>
@@ -302,6 +319,7 @@ function AppContent() {
                   } 
                 />
                 
+<<<<<<< HEAD
                 <Route 
                   path="favoritos" 
                   element={
@@ -311,6 +329,8 @@ function AppContent() {
                   } 
                 />
                 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                 <Route path="*" element={<Navigate to="/partner/dashboard" replace />} />
               </Route>
             ) : (
@@ -473,6 +493,7 @@ function AppContent() {
                   } 
                 />
                 
+<<<<<<< HEAD
                 <Route 
                   path="premium" 
                   element={
@@ -509,6 +530,8 @@ function AppContent() {
                   } 
                 />
                 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Route>
             )}
@@ -519,9 +542,12 @@ function AppContent() {
   );
 }
 
+<<<<<<< HEAD
 // Componente App principal (sem usar contexto)
 function App() {
   return <AppContent />;
 }
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 export default App;

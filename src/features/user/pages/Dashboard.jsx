@@ -1,25 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from "react-helmet-async";
 import { motion } from 'framer-motion';
+<<<<<<< HEAD
 import { Link, useNavigate } from 'react-router-dom';
+=======
+import { Link } from 'react-router-dom';
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import { Calendar, Users, Star, MapPin, Clock, Settings as SettingsIcon, UserPlus, XCircle, CheckCircle, MessageSquare, Heart, Loader } from 'lucide-react'; // <-- 1. LOADER ADICIONADO
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/features/shared/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/lib/supabaseClient';
+<<<<<<< HEAD
 // import Settings from '@/features/user/components/common/Settings'; // Removido - migrado para UserSettings
+=======
+import Settings from '@/features/user/components/common/Settings';
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import EventApply from '@/features/shared/components/events/EventApply';
 import ParticipationService from '@/services/ParticipationService';
 import { toast } from '@/features/shared/components/ui/use-toast';
 import { Dialog,  DialogContent,  DialogHeader,  DialogTitle,  DialogDescription,} from '@/features/shared/components/ui/dialog';
 import BannerCarousel from '@/features/shared/components/BannerCarousel';
+<<<<<<< HEAD
 import CallToAction from '@/features/shared/components/callToAction';
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 
 const Dashboard = () => {
   const { user } = useAuth();
+<<<<<<< HEAD
   const navigate = useNavigate();
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const [stats, setStats] = useState({
     eventosParticipados: 0,
     proximosEventos: 0,
@@ -29,8 +43,12 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [userAvatar, setUserAvatar] = useState(null);
+<<<<<<< HEAD
   const [currentTime, setCurrentTime] = useState(new Date());
   // const [settingsOpen, setSettingsOpen] = useState(false); // Removido - migrado para UserSettings
+=======
+  const [settingsOpen, setSettingsOpen] = useState(false);
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -232,6 +250,7 @@ const Dashboard = () => {
     } else {
       setLoading(false);
     }
+<<<<<<< HEAD
   }, [user, loadDashboardData, loadUserAvatar]);
 
   // Relógio digital - atualiza a cada segundo
@@ -242,6 +261,9 @@ const Dashboard = () => {
 
     return () => clearInterval(timer);
   }, []); 
+=======
+  }, [user, loadDashboardData, loadUserAvatar]); 
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
   // ✅ FUNÇÃO CORRIGIDA: Avatar do usuário logado
   const getAvatarUrl = () => {
@@ -646,6 +668,7 @@ const Dashboard = () => {
 
       <div className="flex justify-between items-center px-6 py-4 bg-gray-900/80 backdrop-blur-lg border-b border-white/10 sticky top-0 z-40 rounded-b-2xl">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+<<<<<<< HEAD
         
         {/* Relógio Digital Futurista */}
         <div className="flex flex-col items-center justify-center bg-black/60 rounded-lg px-4 py-2 border border-cyan-500/30 backdrop-blur-sm">
@@ -671,6 +694,12 @@ const Dashboard = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/settings')}
+=======
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSettingsOpen(true)}
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
             className="p-2 rounded-full hover:bg-white/10 transition-colors group relative"
             title="Configurações"
           >
@@ -733,7 +762,11 @@ const Dashboard = () => {
                   <button
                     onClick={() => {
                       setShowMenu(false);
+<<<<<<< HEAD
                       navigate('/settings');
+=======
+                      setSettingsOpen(true);
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-white/80 hover:bg-white/10"
                   >
@@ -781,11 +814,14 @@ const Dashboard = () => {
 {/* 🆕 Carrossel de Anúncios */}
 <BannerCarousel />
 
+<<<<<<< HEAD
 {/* Call to Action */}
 <div className="mt-8 text-center">
   <CallToAction />
 </div>
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
@@ -1032,7 +1068,14 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
+<<<<<<< HEAD
       {/* Modal Settings removido - agora está integrado em UserSettings */}
+=======
+      <Settings 
+        isOpen={settingsOpen} 
+        onClose={() => setSettingsOpen(false)} 
+      />
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
       {/* ================================================================= */}
       {/* 💡 4. DIALOG CORRIGIDO COM LÓGICA CONDICIONAL 💡 */}

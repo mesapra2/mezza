@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import { supabase } from '@/lib/supabaseClient';
 import NotificationService from '@/services/NotificationService';
+=======
+import { supabase } from '@/lib/supabaseClient';  // ✅ Correto
+import NotificationService from '../../shared/services/notificationService';
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 type EventStatus = 'Aberto' | 'Confirmado' | 'Em Andamento' | 'Finalizado' | 'Concluído' | 'Cancelado';
 type ParticipationStatus = 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';

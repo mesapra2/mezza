@@ -14,16 +14,22 @@ import { toast } from '@/features/shared/components/ui/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import HashtagSelector from '@/features/shared/components/events/HashtagSelector';
 import RestaurantSelector from '@/features/shared/components/ui/RestaurantSelector';
+<<<<<<< HEAD
 import { LimitWarning } from '@/features/shared/components/LimitWarning';
 import { useFavoriteRestaurants } from '@/hooks/useFavoriteRestaurants';
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 const CreateEvent = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
   const [userEventCount, setUserEventCount] = useState(0);
   const { getFavoritesForSuggestions } = useFavoriteRestaurants();
   const [favoriteSuggestions, setFavoriteSuggestions] = useState([]);
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const [formData, setFormData] = useState({
     event_type: 'padrao',
     title: '',
@@ -37,6 +43,7 @@ const CreateEvent = () => {
     acceptedTerms: false,
   });
 
+<<<<<<< HEAD
   // Carregar contagem de eventos do usuário
   useEffect(() => {
     const fetchEventCount = async () => {
@@ -76,6 +83,8 @@ const CreateEvent = () => {
     loadFavoriteSuggestions();
   }, [user?.id, getFavoritesForSuggestions]);
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   // ✅ CORREÇÃO: Usar useEffect separado com replace: true
   useEffect(() => {
     if (formData.event_type === 'particular') {
@@ -245,6 +254,7 @@ const CreateEvent = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="glass-effect rounded-2xl p-8 border border-white/10 space-y-6">
+<<<<<<< HEAD
             {/* Aviso de limite para usuários gratuitos */}
             {!profile?.is_premium && userEventCount >= 5 && (
               <LimitWarning 
@@ -255,6 +265,8 @@ const CreateEvent = () => {
               />
             )}
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
             {/* Tipo de Evento */}
             <div className="space-y-2">
               <Label htmlFor="event_type">Tipo de Evento</Label>
@@ -331,7 +343,10 @@ const CreateEvent = () => {
                   value={formData.partner_id}
                   onChange={(partnerId) => setFormData({ ...formData, partner_id: partnerId })}
                   eventType={formData.event_type}
+<<<<<<< HEAD
                   favoriteSuggestions={favoriteSuggestions}
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                 />
 
                 {/* Data e Hora */}

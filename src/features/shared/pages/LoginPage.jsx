@@ -8,7 +8,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/features/shared/components/ui/button';
 import { Input } from '@/features/shared/components/ui/input';
 import { Label } from '@/features/shared/components/ui/label';
+<<<<<<< HEAD
 import { useAccessibleForm } from '@/hooks/useAccessibleForm';
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import SocialLoginButtons from '@/features/shared/components/auth/SocialLoginButtons';
 import { supabase } from '@/lib/supabaseClient';
@@ -22,7 +25,10 @@ const LoginPage = () => {
   const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+<<<<<<< HEAD
   const { getFieldProps, getLabelProps, getErrorId } = useAccessibleForm();
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -164,6 +170,7 @@ const LoginPage = () => {
         <meta name="description" content="Faça login no Mesapra2 e participe de eventos sociais em restaurantes." />
       </Helmet>
 
+<<<<<<< HEAD
       <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -175,14 +182,34 @@ const LoginPage = () => {
             <div className="flex justify-center mb-6 sm:mb-8">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <Calendar className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+=======
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <div className="glass-effect rounded-2xl p-8 border border-white/10">
+            {/* Logo */}
+            <div className="flex justify-center mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Calendar className="w-8 h-8 text-white" />
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
               </div>
             </div>
 
             {/* Título */}
+<<<<<<< HEAD
             <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2 gradient-text">
               Bem-vindo de volta
             </h1>
             <p className="text-center text-white/60 mb-6 sm:mb-8 text-sm sm:text-base">
+=======
+            <h1 className="text-3xl font-bold text-center mb-2 gradient-text">
+              Bem-vindo de volta
+            </h1>
+            <p className="text-center text-white/60 mb-8">
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
               Entre na sua conta para continuar
             </p>
 
@@ -195,18 +222,28 @@ const LoginPage = () => {
             />
 
             {/* Divisor */}
+<<<<<<< HEAD
             <div className="relative my-4 sm:my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/10"></div>
               </div>
               <div className="relative flex justify-center text-xs sm:text-sm">
                 <span className="px-3 sm:px-4 bg-background text-white/60">
+=======
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-background text-white/60">
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                   ou continue com email
                 </span>
               </div>
             </div>
 
             {/* Formulário Email/Senha */}
+<<<<<<< HEAD
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div className="space-y-2">
                 <Label {...getLabelProps('email')}>Email</Label>
@@ -214,6 +251,15 @@ const LoginPage = () => {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <Input
                     {...getFieldProps('email', { required: true })}
+=======
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Input
+                    id="email"
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                     type="email"
                     placeholder="seu@email.com"
                     value={email}
@@ -270,22 +316,35 @@ const LoginPage = () => {
               <Button
                 type="submit"
                 disabled={loading}
+<<<<<<< HEAD
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-11 sm:h-12 text-sm sm:text-base font-semibold"
+=======
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 text-base font-semibold"
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
               >
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
 
             {/* Links */}
+<<<<<<< HEAD
             <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
               <p className="text-center text-white/60 text-xs sm:text-sm">
+=======
+            <div className="mt-6 space-y-4">
+              <p className="text-center text-white/60 text-sm">
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                 Não tem uma conta?{' '}
                 <Link to="/register" className="text-purple-400 hover:text-purple-300 font-semibold">
                   Cadastre-se
                 </Link>
               </p>
               
+<<<<<<< HEAD
               <p className="text-center text-white/60 text-xs sm:text-sm">
+=======
+              <p className="text-center text-white/60 text-sm">
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                 É um restaurante?{' '}
                 <Link to="/partner/register" className="text-purple-400 hover:text-purple-300 font-semibold">
                   Cadastre seu estabelecimento

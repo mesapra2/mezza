@@ -7,12 +7,17 @@ import {
   Calendar,
   User,
   Settings,
+<<<<<<< HEAD
   MapPin,
+=======
+  UtensilsCrossed,
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   Users,
   MessageSquare,
   Star,
   Store,
   Plus,
+<<<<<<< HEAD
   Search,
   PlusCircle,
   Bell,
@@ -20,21 +25,30 @@ import {
   Crown,
   BarChart3,
   Sparkles,
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/features/shared/components/ui/Navbar';
 import SkipLinks from './SkipLinks';
 import ErrorBoundary from './ErrorBoundary';
+<<<<<<< HEAD
 import PresenceManager from './PresenceManager';
 import { PremiumBadge, PartnerBadge, PartnerPremiumBadge } from '@/features/shared/components/PremiumBAdge';
 
 // === NavLink Component ===
 const NavLink = ({ to, icon: Icon, label, onClick, iconColor = "default" }) => {
+=======
+
+// === NavLink Component ===
+const NavLink = ({ to, icon: Icon, label, onClick }) => {
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const location = useLocation();
   const isActive =
     location.pathname === to ||
     (to === '/chats' && location.pathname.includes('/chat'));
 
+<<<<<<< HEAD
   // Mapa de cores sofisticadas para cada tipo de ícone
   const iconStyles = {
     dashboard: isActive 
@@ -65,10 +79,13 @@ const NavLink = ({ to, icon: Icon, label, onClick, iconColor = "default" }) => {
 
   const iconStyle = iconStyles[iconColor] || iconStyles.default;
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   return (
     <Link
       to={to}
       onClick={onClick}
+<<<<<<< HEAD
       className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 hover:scale-[1.02] ${
         isActive
           ? 'text-white bg-gradient-to-r from-purple-600/40 to-purple-500/30 shadow-lg shadow-purple-500/20 border border-purple-400/30'
@@ -79,6 +96,16 @@ const NavLink = ({ to, icon: Icon, label, onClick, iconColor = "default" }) => {
         <Icon className={`h-5 w-5 flex-shrink-0 ${iconStyle}`} />
       </div>
       <span className="font-semibold tracking-wide">{label}</span>
+=======
+      className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+        isActive
+          ? 'text-white bg-purple-600/30'
+          : 'text-white/70 hover:text-white hover:bg-white/10'
+      }`}
+    >
+      <Icon className="mr-3 h-6 w-6 flex-shrink-0" />
+      {label}
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     </Link>
   );
 };
@@ -88,6 +115,7 @@ NavLink.propTypes = {
   icon: PropTypes.elementType.isRequired,
   label: PropTypes.string.isRequired,
   onClick: PropTypes.func,
+<<<<<<< HEAD
   iconColor: PropTypes.string,
 };
 
@@ -134,22 +162,42 @@ MenuSection.propTypes = {
 
 // === SidebarContent Component ===
 const SidebarContent = ({ onLinkClick, navSections, bottomLinks, isPremium, isPremiumPartner, profile }) => (
+=======
+};
+
+// === SidebarContent Component ===
+const SidebarContent = ({ onLinkClick, navLinks, bottomLinks, isPremium, isPremiumPartner }) => (
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   <div className="flex flex-col h-full">
     {/* Logo + Premium Badge */}
     <div className="flex items-center h-16 flex-shrink-0 px-4">
       <div>
         <h1 className="text-2xl font-bold gradient-text" role="banner">Mesapra2</h1>
         {/* Mostra badge Premium Partner se for parceiro premium, senão mostra Premium normal */}
+<<<<<<< HEAD
         {profile?.partner_data?.isPremium ? (
           <PartnerPremiumBadge size="sm" />
         ) : profile?.isPremium ? (
           <PremiumBadge size="sm" />
         ) : profile?.profile_type === 'partner' ? (
           <PartnerBadge size="sm" />
+=======
+        {isPremiumPartner ? (
+          <div className="flex items-center gap-1 mt-1">
+            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+            <span className="text-xs font-semibold text-yellow-500">Premium Partner</span>
+          </div>
+        ) : isPremium ? (
+          <div className="flex items-center gap-1 mt-1">
+            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+            <span className="text-xs font-semibold text-yellow-500">Premium</span>
+          </div>
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         ) : null}
       </div>
     </div>
 
+<<<<<<< HEAD
     {/* Main Navigation with Sections */}
     <div className="flex-1 overflow-y-auto">
       <nav 
@@ -173,12 +221,25 @@ const SidebarContent = ({ onLinkClick, navSections, bottomLinks, isPremium, isPr
               />
             ))}
           </MenuSection>
+=======
+    {/* Main Navigation */}
+    <div className="flex-1 overflow-y-auto">
+      <nav 
+        id="navigation"
+        className="flex-1 px-2 py-4 space-y-2"
+        aria-label="Menu principal"
+        role="navigation"
+      >
+        {navLinks.map((link) => (
+          <NavLink key={link.to} {...link} onClick={onLinkClick} />
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         ))}
       </nav>
 
       {/* Bottom Links */}
       {bottomLinks.length > 0 && (
         <nav 
+<<<<<<< HEAD
           className="px-2 py-4 space-y-2 border-t border-gradient-to-r from-white/10 to-white/5"
           aria-label="Menu de configurações"
           role="navigation"
@@ -196,6 +257,14 @@ const SidebarContent = ({ onLinkClick, navSections, bottomLinks, isPremium, isPr
               onClick={onLinkClick}
               iconColor={link.iconColor || 'settings'}
             />
+=======
+          className="px-2 py-4 space-y-1 border-t border-white/10"
+          aria-label="Menu de configurações"
+          role="navigation"
+        >
+          {bottomLinks.map((link) => (
+            <NavLink key={link.to} {...link} onClick={onLinkClick} />
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
           ))}
         </nav>
       )}
@@ -205,6 +274,7 @@ const SidebarContent = ({ onLinkClick, navSections, bottomLinks, isPremium, isPr
 
 SidebarContent.propTypes = {
   onLinkClick: PropTypes.func,
+<<<<<<< HEAD
   navSections: PropTypes.arrayOf(PropTypes.shape({
     title: PropTypes.string,
     items: PropTypes.arrayOf(PropTypes.shape({
@@ -212,6 +282,12 @@ SidebarContent.propTypes = {
       icon: PropTypes.elementType.isRequired,
       label: PropTypes.string.isRequired
     })).isRequired
+=======
+  navLinks: PropTypes.arrayOf(PropTypes.shape({
+    to: PropTypes.string.isRequired,
+    icon: PropTypes.elementType.isRequired,
+    label: PropTypes.string.isRequired
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   })).isRequired,
   bottomLinks: PropTypes.arrayOf(PropTypes.shape({
     to: PropTypes.string.isRequired,
@@ -232,6 +308,7 @@ const Layout = () => {
   const isPremium = profile?.is_premium === true;
   const isPremiumPartner = profile?.isPremiumPartner === true;
 
+<<<<<<< HEAD
   // === Links da navegação organizados por seções (memoizados) ===
   const { navSections, bottomLinks } = useMemo(() => {
     if (isPartner) {
@@ -275,19 +352,62 @@ const Layout = () => {
 
       return {
         navSections: partnerSections,
+=======
+  // === Links da navegação (memoizados) ===
+  const { navLinks, bottomLinks } = useMemo(() => {
+    // ✅ LINKS BASE COMPARTILHADOS
+    const baseLinks = [
+      { to: '/events', icon: Calendar, label: 'Eventos' },
+      { to: '/restaurants', icon: UtensilsCrossed, label: 'Restaurantes' },
+      { to: '/people', icon: Users, label: 'Pessoas' },
+      { to: '/chats', icon: MessageSquare, label: 'Chats' },
+    ];
+
+    if (isPartner) {
+      // === NAVEGAÇÃO PARA PARCEIROS ===
+      const partnerNavLinks = [
+        { to: '/partner/dashboard', icon: Home, label: 'Dashboard' },
+        ...baseLinks,
+      ];
+
+      // ✅ SE FOR PREMIUM PARTNER, ADICIONA "MEUS EVENTOS" E "CRIAR EVENTO"
+      if (isPremiumPartner) {
+        partnerNavLinks.splice(1, 0, { 
+          to: '/meus-eventos', 
+          icon: Calendar, 
+          label: 'Meus Eventos' 
+        });
+        partnerNavLinks.splice(2, 0, { 
+          to: '/partner/create-event', 
+          icon: Plus, 
+          label: 'Criar Evento' 
+        });
+      }
+
+      return {
+        navLinks: partnerNavLinks,
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         bottomLinks: user
           ? [
               { 
                 to: `/restaurant/${profile.partner_id}`, 
                 icon: Store, 
+<<<<<<< HEAD
                 label: 'Meu Restaurante',
                 iconColor: 'discover'
+=======
+                label: 'Meu Restaurante' 
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
               },
               { 
                 to: '/partner/settings', 
                 icon: Settings, 
+<<<<<<< HEAD
                 label: 'Configurações',
                 iconColor: 'settings'
+=======
+                label: 'Minha Conta' 
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
               },
             ]
           : [],
@@ -295,6 +415,7 @@ const Layout = () => {
     }
 
     // === NAVEGAÇÃO PARA USUÁRIOS NORMAIS ===
+<<<<<<< HEAD
     const userSections = [
       {
         title: 'Dashboard',
@@ -329,21 +450,43 @@ const Layout = () => {
           ...(isPremium ? [{ to: '/favoritos', icon: Heart, label: 'Favoritos', iconColor: 'premium' }] : [])
         ]
       }
+=======
+    // ✅ CORREÇÃO: Cada link aponta para sua rota correta
+    const userNavLinks = [
+      { to: '/dashboard', icon: Home, label: 'Dashboard' },
+      { to: '/meus-eventos', icon: Calendar, label: 'Meus Eventos' },
+      { to: '/events', icon: Calendar, label: 'Eventos' },
+      { to: '/restaurants', icon: UtensilsCrossed, label: 'Restaurantes' },
+      { to: '/people', icon: Users, label: 'Pessoas' },
+      { to: '/chats', icon: MessageSquare, label: 'Chats' },
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     ];
 
     const userBottomLinks = user
       ? [
+<<<<<<< HEAD
           { to: `/profile/${user.id}`, icon: User, label: 'Meu Perfil', iconColor: 'settings' },
           ...(!isPremium ? [{ to: '/premium', icon: Crown, label: 'Upgrade Premium', iconColor: 'premium' }] : []),
           { to: '/settings', icon: Settings, label: 'Configurações', iconColor: 'settings' },
+=======
+          { to: `/profile/${user.id}`, icon: User, label: 'Meu Perfil' },
+          { to: '/settings', icon: Settings, label: 'Minha Conta' },
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         ]
       : [];
 
     return {
+<<<<<<< HEAD
       navSections: userSections,
       bottomLinks: userBottomLinks,
     };
   }, [isPartner, isPremium, isPremiumPartner, user, profile]);
+=======
+      navLinks: userNavLinks,
+      bottomLinks: userBottomLinks,
+    };
+  }, [isPartner, isPremiumPartner, user, profile]);
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
@@ -373,8 +516,11 @@ const Layout = () => {
   return (
     <>
       <SkipLinks />
+<<<<<<< HEAD
       {/* ✅ Gerenciador de Presença Online */}
       <PresenceManager />
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
       <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
       <aside 
@@ -383,11 +529,19 @@ const Layout = () => {
         role="complementary"
       >
         <SidebarContent
+<<<<<<< HEAD
           navSections={navSections}
           bottomLinks={bottomLinks}
           isPremium={isPremium}
           isPremiumPartner={isPremiumPartner}
           profile={profile}
+=======
+          navLinks={navLinks}
+          bottomLinks={bottomLinks}
+          isPartner={isPartner}
+          isPremium={isPremium}
+          isPremiumPartner={isPremiumPartner}
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         />
       </aside>
 
@@ -412,11 +566,19 @@ const Layout = () => {
       >
         <SidebarContent
           onLinkClick={toggleSidebar}
+<<<<<<< HEAD
           navSections={navSections}
           bottomLinks={bottomLinks}
           isPremium={isPremium}
           isPremiumPartner={isPremiumPartner}
           profile={profile}
+=======
+          navLinks={navLinks}
+          bottomLinks={bottomLinks}
+          isPartner={isPartner}
+          isPremium={isPremium}
+          isPremiumPartner={isPremiumPartner}
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         />
       </aside>
 

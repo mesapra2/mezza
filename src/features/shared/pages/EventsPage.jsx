@@ -83,7 +83,11 @@ const EventsPage = () => {
         .from('events')
         .select(`
           *,
+<<<<<<< HEAD
           partner:partners(id, name, address, logo_url, photos),
+=======
+          partner:partners(id, name, address),
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
           creator:profiles!events_creator_id_fkey(
             id,
             username,
@@ -198,6 +202,7 @@ const EventsPage = () => {
     { value: 'institucional', label: 'Institucional' },
   ];
 
+<<<<<<< HEAD
   const getPartnerBackground = (partner) => {
     if (!partner) return null;
 
@@ -230,6 +235,8 @@ const EventsPage = () => {
     return null;
   };
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   const getPartnerAddress = (partner) => {
     if (!partner) return 'Local não informado';
     if (!partner.address) return partner.name;
@@ -348,7 +355,10 @@ const EventsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredEvents.map((event, index) => {
             const participantsForEvent = eventParticipantsMap[event.id] || [];
+<<<<<<< HEAD
             const backgroundImage = getPartnerBackground(event.partner);
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
             return (
               <motion.div
@@ -358,6 +368,7 @@ const EventsPage = () => {
                 transition={{ delay: index * 0.05 }}
               >
                 <Link to={`/event/${event.id}`}>
+<<<<<<< HEAD
                   <div className="relative rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all cursor-pointer h-full">
                     {/* Fundo com foto do restaurante */}
                     <div 
@@ -377,6 +388,10 @@ const EventsPage = () => {
                     {/* Conteúdo do card */}
                     <div className="relative z-10 p-6 h-full flex flex-col justify-between">
                       <div>
+=======
+                  <div className="glass-effect rounded-2xl p-6 border border-white/10 hover:bg-white/5 transition-colors cursor-pointer h-full flex flex-col justify-between">
+                    <div>
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                       {event.creator && (
                         <div className="flex items-center gap-2 mb-4">
                            <Avatar
@@ -468,9 +483,15 @@ const EventsPage = () => {
                             )}
                           </div>
                         )}
+<<<<<<< HEAD
                      </div>
 
                      <div className="mt-4 pt-4 border-t border-white/10">
+=======
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-white/10">
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                       {participantsForEvent.length > 0 ? (
                         <>
                           <h4 className="text-sm font-medium text-white/80 mb-2">
@@ -497,7 +518,10 @@ const EventsPage = () => {
                            <p className="text-xs text-white/50">Seja o primeiro a participar!</p>
                       )}
                     </div>
+<<<<<<< HEAD
                    </div>
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                   </div>
                 </Link>
               </motion.div>

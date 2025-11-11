@@ -4,9 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Users, Loader2, Heart, Eye, XCircle, Star } from 'lucide-react';
 import { toast } from '@/features/shared/components/ui/use-toast';
+<<<<<<< HEAD
 import { useMultiplePresence } from '@/hooks/usePresence';
 import { calculateStatus, getStatusColor, getStatusLabel } from '@/services/PresenceService.ts';
 import { FavoriteRestaurantService } from '@/services/FavoriteRestaurantService';
+=======
+import PresenceService from '@/services/PresenceService';
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 const PeoplePage = () => {
   const { user, profile } = useAuth();
@@ -15,6 +19,7 @@ const PeoplePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedProfile, setSelectedProfile] = useState(null);
+<<<<<<< HEAD
   const [selectedUserFavorites, setSelectedUserFavorites] = useState([]);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [pokingStates, setPokingStates] = useState({});
@@ -45,11 +50,51 @@ const PeoplePage = () => {
   // ✅ Função para obter cor do indicador de presença
   const getPresenceColor = (status) => {
     return getStatusColor(status);
+=======
+  const [pokingStates, setPokingStates] = useState({});
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+
+  const isPartner = profile?.profile_type === 'partner';
+  const isPremium = profile?.is_premium === true;
+
+  // ✅ Função para obter status de presença
+  const getPresenceStatus = useCallback((userId, lastSeen) => {
+    // Se não temos lastSeen (migração não executada), usar apenas presence realtime
+    if (!lastSeen) {
+      return onlineUsers.has(userId) ? 'online' : 'offline';
+    }
+    return PresenceService.getUserPresenceStatus(userId, lastSeen);
+  }, [onlineUsers]);
+
+  // ✅ Função para obter cor do indicador de presença
+  const getPresenceColor = (status) => {
+    switch (status) {
+      case 'online':
+        return 'bg-green-500';
+      case 'recently-active':
+        return 'bg-yellow-500';
+      case 'offline':
+      default:
+        return 'bg-gray-500';
+    }
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   };
 
   // ✅ Função para obter texto do status
   const getPresenceText = (status) => {
+<<<<<<< HEAD
     return getStatusLabel(status);
+=======
+    switch (status) {
+      case 'online':
+        return 'Online';
+      case 'recently-active':
+        return 'Ativo recentemente';
+      case 'offline':
+      default:
+        return 'Offline';
+    }
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   };
 
   // ✅ FUNÇÃO ADICIONADA: Helper para construir URL do avatar corretamente
@@ -127,6 +172,7 @@ const PeoplePage = () => {
     fetchPeople();
   }, [user, fetchPeople]);
 
+<<<<<<< HEAD
   // ✅ Log para debug da presença
   useEffect(() => {
     if (userIds.length > 0) {
@@ -134,6 +180,30 @@ const PeoplePage = () => {
       console.log('👥 Status de presença carregando:', presenceLoading);
     }
   }, [userIds.length, presenceLoading]);
+=======
+  // ✅ Configurar listener de presença
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('👥 Configurando listener de presença...');
+    
+    // Obter estado inicial de usuários online
+    const initialOnlineUsers = PresenceService.getOnlineUsers();
+    setOnlineUsers(new Set(initialOnlineUsers));
+
+    // Adicionar listener para mudanças de presença
+    const removeListener = PresenceService.addPresenceListener((updatedOnlineUsers) => {
+      console.log('👥 Presença atualizada:', updatedOnlineUsers);
+      setOnlineUsers(new Set(updatedOnlineUsers));
+    });
+
+    // Cleanup
+    return () => {
+      console.log('👥 Removendo listener de presença...');
+      removeListener();
+    };
+  }, [user]);
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
   const sendPoke = async (targetUserId, targetUsername) => {
     setPokingStates(prev => ({ ...prev, [targetUserId]: true }));
@@ -219,6 +289,7 @@ const PeoplePage = () => {
         ...profileData,
         events_participated: eventsCount || 0
       });
+<<<<<<< HEAD
 
       // Buscar favoritos do usuário (apenas se o perfil é público)
       if (profileData.public_profile) {
@@ -239,6 +310,8 @@ const PeoplePage = () => {
       } else {
         setSelectedUserFavorites([]);
       }
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     } catch (err) {
       console.error('❌ Erro ao carregar perfil:', err);
       toast({
@@ -251,8 +324,11 @@ const PeoplePage = () => {
 
   const closeProfileModal = () => {
     setSelectedProfile(null);
+<<<<<<< HEAD
     setSelectedUserFavorites([]);
     setLoadingFavorites(false);
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   };
 
   if (loading) {
@@ -563,6 +639,7 @@ const PeoplePage = () => {
                 </div>
               )}
 
+<<<<<<< HEAD
               {/* ✅ SEÇÃO DE FAVORITOS PÚBLICOS */}
               {selectedProfile && selectedProfile.public_profile && (
                 <div className="mb-6">
@@ -626,6 +703,8 @@ const PeoplePage = () => {
                 </div>
               )}
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
               {/* ✅ BOTÕES DO MODAL CORRIGIDOS */}
               <div className="space-y-4 pt-6 border-t border-white/10">
                 {/* ✅ Botão Ver Perfil - sempre visível para todos */}

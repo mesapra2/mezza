@@ -1,8 +1,15 @@
 // src/features/shared/pages/EventChatPage.jsx - VERSÃO OTIMIZADA
+<<<<<<< HEAD
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Send, ArrowLeft, Trash2, MoreVertical, Lock } from 'lucide-react';
+=======
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { Send, ArrowLeft, Loader2, Trash2, MoreVertical, Lock } from 'lucide-react';
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/features/shared/components/ui/button';
@@ -11,7 +18,10 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SimpleDropdown, SimpleDropdownItem } from '@/features/shared/components/ui/SimpleDropdown';
 import { isChatAvailable } from '@/utils/chatAvailability';
+<<<<<<< HEAD
 import { moderateMessage, analyzeUserBehavior } from '@/utils/chatModeration';
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 const INITIAL_MESSAGE_LIMIT = 50; // Lazy load: apenas últimas 50 mensagens
 
@@ -27,8 +37,11 @@ const EventChatPage = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+<<<<<<< HEAD
   const [moderationError, setModerationError] = useState(null);
   const [isSending, setIsSending] = useState(false);
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
   // ✅ FIX #6: Combinar estados relacionados em um único objeto
   const [chatState, setChatState] = useState({
@@ -286,6 +299,7 @@ const EventChatPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+<<<<<<< HEAD
     if (!newMessage.trim() || chatState.eventStatus === 'Concluído' || isSending) return;
 
     const messageContent = newMessage.trim();
@@ -309,6 +323,9 @@ const EventChatPage = () => {
 
     setIsSending(true);
     setModerationError(null);
+=======
+    if (!newMessage.trim() || chatState.eventStatus === 'Concluído') return;
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
     try {
       const { error } = await supabase
@@ -316,16 +333,23 @@ const EventChatPage = () => {
         .insert({
           event_id: eventId,
           user_id: user.id,
+<<<<<<< HEAD
           content: messageContent,
+=======
+          content: newMessage.trim(),
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
         });
 
       if (error) throw error;
       setNewMessage('');
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
+<<<<<<< HEAD
       setError('Erro ao enviar mensagem. Tente novamente.');
     } finally {
       setIsSending(false);
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     }
   };
 
@@ -508,6 +532,7 @@ const EventChatPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 bg-background/80 backdrop-blur-sm">
+<<<<<<< HEAD
           {/* Erro de moderação */}
           {moderationError && (
             <div className="mb-3 p-3 bg-orange-500/20 border border-orange-500/50 rounded-lg text-orange-300">
@@ -525,6 +550,8 @@ const EventChatPage = () => {
             </div>
           )}
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
           {chatState.eventStatus === 'Concluído' && (
             <div className="mb-3 p-2 rounded-lg bg-gray-700/50 border border-gray-600/50">
               <p className="text-gray-300 text-xs text-center">
@@ -537,19 +564,32 @@ const EventChatPage = () => {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+<<<<<<< HEAD
               placeholder={chatState.eventStatus === 'Concluído' ? 'Chat encerrado...' : 'Digite sua mensagem... (máx. 500 caracteres)'}
               className="flex-1 bg-gray-800 border-gray-700"
               autoComplete="off"
               maxLength={500}
               disabled={chatState.eventStatus === 'Concluído' || isSending}
+=======
+              placeholder={chatState.eventStatus === 'Concluído' ? 'Chat encerrado...' : 'Digite sua mensagem...'}
+              className="flex-1 bg-gray-800 border-gray-700"
+              autoComplete="off"
+              disabled={chatState.eventStatus === 'Concluído'}
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
             />
             <Button
               type="submit"
               size="icon"
               className="flex-shrink-0"
+<<<<<<< HEAD
               disabled={!newMessage.trim() || chatState.eventStatus === 'Concluído' || isSending}
             >
               <Send className={`w-5 h-5 ${isSending ? 'animate-pulse' : ''}`} />
+=======
+              disabled={!newMessage.trim() || chatState.eventStatus === 'Concluído'}
+            >
+              <Send className="w-5 h-5" />
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
             </Button>
           </div>
         </form>

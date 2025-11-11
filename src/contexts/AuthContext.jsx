@@ -5,7 +5,11 @@ import { useToast } from '@/features/shared/components/ui/use-toast.js';
 import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { getUserType, PROFILE_TYPES } from '@/config/userTypes';
+<<<<<<< HEAD
 import { useCurrentUserPresence } from '@/hooks/usePresence';
+=======
+import PresenceService from '@/services/PresenceService';
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 
 const AuthContext = createContext(null);
 
@@ -175,7 +179,16 @@ export const AuthProvider = ({ children }) => {
                 if (mounted && initialProfile) {
                     setProfile(initialProfile);
                     
+<<<<<<< HEAD
                     // ✅ Sistema de presença será inicializado pelo hook
+=======
+                    // ✅ Inicializar sistema de presença
+                    try {
+                        await PresenceService.initialize(initialUser.id);
+                    } catch (presenceError) {
+                        console.warn('⚠️ Erro ao inicializar presença:', presenceError);
+                    }
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                     
                     const currentPath = window.location.pathname;
                     
@@ -188,7 +201,16 @@ export const AuthProvider = ({ children }) => {
                 }
             } else if (mounted) {
                 setProfile(null);
+<<<<<<< HEAD
                 // ✅ Presença será limpa automaticamente pelo hook
+=======
+                // ✅ Limpar presença quando não há usuário
+                try {
+                    await PresenceService.cleanup();
+                } catch (presenceError) {
+                    console.warn('⚠️ Erro ao limpar presença:', presenceError);
+                }
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
             }
         } catch (err) {
             console.error('❌ Erro na inicialização do Auth:', err);
@@ -227,7 +249,16 @@ export const AuthProvider = ({ children }) => {
                 createProfileIfNotExists(currentUser).then(async (p) => {
                     if (mounted && p) {
                         setProfile(p);
+<<<<<<< HEAD
                         // ✅ Presença será gerenciada pelo hook
+=======
+                        // ✅ Inicializar presença para novo usuário
+                        try {
+                            await PresenceService.initialize(currentUser.id);
+                        } catch (presenceError) {
+                            console.warn('⚠️ Erro ao inicializar presença no AuthStateChange:', presenceError);
+                        }
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                     }
                 }).catch(err => {
                     if (!err.message.includes('AbortError') && !err.message.includes('aborted')) {
@@ -237,7 +268,16 @@ export const AuthProvider = ({ children }) => {
             } else {
                 console.log('[AuthStateChange] Usuário deslogado, limpando perfil.');
                 setProfile(null);
+<<<<<<< HEAD
                 // ✅ Presença será limpa automaticamente pelo hook
+=======
+                // ✅ Limpar presença no logout
+                try {
+                    PresenceService.cleanup();
+                } catch (presenceError) {
+                    console.warn('⚠️ Erro ao limpar presença no logout:', presenceError);
+                }
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
                 console.log('[AuthStateChange] Navegando para /login após logout.');
                 navigate('/login', { replace: true });
             }
@@ -276,6 +316,7 @@ export const AuthProvider = ({ children }) => {
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);
     try {
+<<<<<<< HEAD
       // Detectar se é mobile para ajustar o redirect
       const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const baseUrl = window.location.origin;
@@ -295,6 +336,14 @@ export const AuthProvider = ({ children }) => {
       });
       if (error) throw error;
       console.log('✅ Redirecionando para Google... (mobile:', isMobile, ')');
+=======
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin }
+      });
+      if (error) throw error;
+      console.log('✅ Redirecionando para Google...');
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     } catch (error) {
       console.error('❌ Erro no login com Google:', error);
       toast({ variant: "destructive", title: "Erro com Login Google", description: error.message });
@@ -306,6 +355,7 @@ export const AuthProvider = ({ children }) => {
   const signInWithApple = useCallback(async () => {
     setLoading(true);
     try {
+<<<<<<< HEAD
       const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const baseUrl = window.location.origin;
       const redirectTo = isMobile 
@@ -316,11 +366,21 @@ export const AuthProvider = ({ children }) => {
         provider: 'apple',
         options: { 
           redirectTo,
+=======
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { 
+          redirectTo: window.location.origin,
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
           scopes: 'name email'
         }
       });
       if (error) throw error;
+<<<<<<< HEAD
       console.log('✅ Redirecionando para Apple... (mobile:', isMobile, ')');
+=======
+      console.log('✅ Redirecionando para Apple...');
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     } catch (error) {
       console.error('❌ Erro no login com Apple:', error);
       toast({ variant: "destructive", title: "Erro com Login Apple", description: error.message });
@@ -332,6 +392,7 @@ export const AuthProvider = ({ children }) => {
   const signInWithFacebook = useCallback(async () => {
     setLoading(true);
     try {
+<<<<<<< HEAD
       const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const baseUrl = window.location.origin;
       const redirectTo = isMobile 
@@ -342,11 +403,21 @@ export const AuthProvider = ({ children }) => {
         provider: 'facebook',
         options: { 
           redirectTo,
+=======
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: { 
+          redirectTo: window.location.origin,
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
           scopes: 'email public_profile'
         }
       });
       if (error) throw error;
+<<<<<<< HEAD
       console.log('✅ Redirecionando para Facebook... (mobile:', isMobile, ')');
+=======
+      console.log('✅ Redirecionando para Facebook...');
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     } catch (error) {
       console.error('❌ Erro no login com Facebook:', error);
       toast({ variant: "destructive", title: "Erro com Login Facebook", description: error.message });
@@ -406,6 +477,12 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     console.log('[Logout] Iniciando logout...');
     try {
+<<<<<<< HEAD
+=======
+      // ✅ Limpar presença antes do logout
+      await PresenceService.cleanup();
+      
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       toast({ title: "Logout realizado!", description: "Até logo!" });

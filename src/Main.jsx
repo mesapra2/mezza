@@ -40,9 +40,15 @@ try {
         <AuthProvider>
           <PremiumProvider>
             <App />
+<<<<<<< HEAD
           </PremiumProvider>
         </AuthProvider>
         <Toaster />
+=======
+            <Toaster />
+          </PremiumProvider>
+        </AuthProvider>
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
       </HelmetProvider>
     </BrowserRouter>
   );

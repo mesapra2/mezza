@@ -161,6 +161,7 @@ const MyEventsPage = () => {
     }
   }, [user?.id, loadCreatedEvents, loadParticipatingEvents]);
 
+<<<<<<< HEAD
   // --------------------------------------------------
   // FUNÇÃO PARA FILTRAR EVENTOS
   // --------------------------------------------------
@@ -190,21 +191,27 @@ const MyEventsPage = () => {
     setFilteredEvents(filtered);
   }, [events, participatingEvents, filter]);
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   useEffect(() => {
     if (user?.id) {
       loadEvents();
     }
   }, [user?.id, loadEvents]);
 
+<<<<<<< HEAD
   // Aplicar filtros quando os eventos ou o filtro mudarem
   useEffect(() => {
     filterEvents();
   }, [events, participatingEvents, filter, filterEvents]);
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   // --------------------------------------------------
   // CARREGAR ESTATÍSTICAS DE PARTICIPAÇÃO
   // --------------------------------------------------
   const loadEventStats = async (eventList) => {
+<<<<<<< HEAD
     try {
       const stats = {};
       for (const event of eventList) {
@@ -221,13 +228,27 @@ const MyEventsPage = () => {
     } catch (error) {
       console.error('Erro ao carregar estatísticas dos eventos:', error);
     }
+=======
+    const stats = {};
+    for (const event of eventList) {
+      const result = await EventStatusService.getEventStats(event.id);
+      if (result.success && result.data?.participants) {
+        stats[event.id] = result.data;
+      }
+    }
+    setEventStats(stats);
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   };
 
   // --------------------------------------------------
   // ✅ FILTRAR EVENTOS (CRIADOS + PARTICIPANDO) - CORRIGIDO
   // --------------------------------------------------
+<<<<<<< HEAD
   // Aplicar filtros sempre que eventos ou filtro mudarem
   useEffect(() => {
+=======
+  const filterEvents = useCallback(() => {
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
     const now = new Date();
     const allEvents = [...events, ...participatingEvents];
     let filtered = allEvents;
@@ -257,6 +278,13 @@ const MyEventsPage = () => {
     setFilteredEvents(filtered);
   }, [events, participatingEvents, filter]);
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    filterEvents();
+  }, [filterEvents]);
+
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
   // --------------------------------------------------
   // OCULTAR EVENTO
   // --------------------------------------------------

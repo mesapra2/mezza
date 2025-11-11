@@ -1,6 +1,7 @@
 # Ignora a pasta de dependências do Node
 /node_modules
 /backend/node_modules
+<<<<<<< HEAD
 node_modules/
 
 # Arquivos de ambiente (contém dados sensíveis)
@@ -46,3 +47,32 @@ build/
 # ============================================
 /supabase
 /supabase/**
+=======
+/docs
+
+# Você também pode querer ignorar outras coisas, como:
+.env
+.env.production
+.env.development
+# arquivos temporários do Drive
+.tmp.driveupload/
+
+dist
+build
+echo "docs/keys" >> .gitignore
+echo "**/*.key" >> .gitignore
+echo "**/*.env.local" >> .gitignore
+git add .gitignore
+git commit -m "chore: update gitignore"
+.vercel
+/src/App.test.jsx
+*.test.jsx
+*.test.ts
+node_modules
+nul
+NUL
+# Jest cache
+.jest-cache/
+node_modules/
+.cache/
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925

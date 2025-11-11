@@ -6,11 +6,14 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
+<<<<<<< HEAD
 console.log('🔧 Configurações Twilio:');
 console.log('Account SID:', accountSid ? accountSid.substring(0, 10) + '...' : 'MISSING');
 console.log('Phone Number:', twilioPhoneNumber);
 console.log('Auth Token:', authToken ? 'CONFIGURED' : 'MISSING');
 
+=======
+>>>>>>> abc780a8003f9fe8f6caa4cf223087706e04f925
 const client = twilio(accountSid, authToken);
 
 class TwilioService {
