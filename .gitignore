@@ -25,6 +25,7 @@ build/
 
 # Arquivos temporários
 .tmp.driveupload/
+.tmp.drivedownload/
 /docs
 /vendor
 /keys
