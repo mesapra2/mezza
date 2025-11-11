@@ -90,21 +90,47 @@ const MobileVerificationPageSimple = () => {
   // Inicializar câmera
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      // Configuração específica para cada tipo de foto
+      const isSelfie = currentStep === 'selfie';
+      const facingMode = isSelfie ? 'user' : 'environment'; // user = frontal, environment = traseira
+      
+      console.log(`📷 Iniciando câmera para: ${currentStep}`);
+      console.log(`🔄 Modo da câmera: ${facingMode} (${isSelfie ? 'FRONTAL' : 'TRASEIRA'})`);
+      
+      const constraints = {
         video: { 
-          facingMode: currentStep === 'selfie' ? 'user' : 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          facingMode: { exact: facingMode },
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          aspectRatio: { ideal: 16/9, min: 4/3 } // Força formato horizontal
         }
-      });
+      };
+      
+      // Tentar com exact constraint primeiro
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (exactError) {
+        console.warn(`⚠️ Fallback: Não foi possível usar câmera ${facingMode} específica`);
+        // Fallback sem o 'exact' constraint
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: facingMode,
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            aspectRatio: { ideal: 16/9, min: 4/3 } // Mantém formato horizontal no fallback
+          }
+        });
+      }
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
+        console.log(`✅ Câmera ${facingMode.toUpperCase()} iniciada com sucesso`);
       }
     } catch (error) {
-      console.error('Erro ao acessar câmera:', error);
-      alert('Não foi possível acessar a câmera');
+      console.error('❌ Erro ao acessar câmera:', error);
+      alert(`Não foi possível acessar a câmera. Certifique-se de que você permitiu o acesso à câmera no seu navegador.`);
     }
   };
 
@@ -164,6 +190,15 @@ const MobileVerificationPageSimple = () => {
       });
 
       // 2. Chamar API de verificação
+      console.log('🔄 Chamando API de verificação com Google Vision...');
+      console.log('📋 Dados enviados:', {
+        userId,
+        cpf: cpf.replace(/\D/g, ''),
+        documentFrontUrl: documentFrontUrl ? 'URL válida' : 'Sem URL',
+        documentBackUrl: documentBackUrl ? 'URL válida' : 'Sem URL',
+        selfieUrl: selfieUrl ? 'URL válida' : 'Sem URL'
+      });
+
       const response = await fetch('/api/verify-cpf-document', {
         method: 'POST',
         headers: {
@@ -318,19 +353,44 @@ const MobileVerificationPageSimple = () => {
                     <User className="w-12 h-12 mx-auto mb-3 text-purple-300" />
                     <h2 className="text-xl font-bold mb-2">Selfie</h2>
                     <p className="text-sm opacity-80">Tire uma selfie para confirmar sua identidade</p>
+                    <div className="mt-3 px-3 py-2 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+                      <p className="text-xs text-purple-200 flex items-center justify-center">
+                        📱 <span className="ml-2">Câmera frontal ativada automaticamente</span>
+                      </p>
+                    </div>
                   </>
                 )}
               </div>
 
               {/* Câmera */}
               <div className="relative mb-6">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full rounded-lg bg-black"
-                />
+                <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Overlay com guias visuais */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Cantos para enquadramento */}
+                    <div className="absolute top-4 left-4 w-6 h-6 border-l-2 border-t-2 border-white/50"></div>
+                    <div className="absolute top-4 right-4 w-6 h-6 border-r-2 border-t-2 border-white/50"></div>
+                    <div className="absolute bottom-4 left-4 w-6 h-6 border-l-2 border-b-2 border-white/50"></div>
+                    <div className="absolute bottom-4 right-4 w-6 h-6 border-r-2 border-b-2 border-white/50"></div>
+                    
+                    {/* Texto de orientação */}
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                      <div className="bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full">
+                        <p className="text-white text-xs">
+                          {currentStep === 'selfie' ? '📱 Posicione seu rosto no centro' : '📄 Alinhe o documento com as bordas'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <canvas ref={canvasRef} style={{ display: 'none' }} />
               </div>
 
