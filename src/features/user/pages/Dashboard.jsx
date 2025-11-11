@@ -700,11 +700,6 @@ const Dashboard = () => {
 {/* 🆕 Carrossel de Anúncios */}
 <BannerCarousel />
 
-{/* Call to Action */}
-<div className="mt-8 text-center">
-  <CallToAction />
-</div>
-
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
