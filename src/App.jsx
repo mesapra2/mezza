@@ -94,7 +94,8 @@ RequirePhoneVerification.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-function App() {
+// Componente interno que usa o contexto
+function AppContent() {
   const { user, profile, loading } = useAuth();
 
   const isLoading = loading || (user && !profile);
@@ -516,6 +517,11 @@ function App() {
       </Routes>
     </>
   );
+}
+
+// Componente App principal (sem usar contexto)
+function App() {
+  return <AppContent />;
 }
 
 export default App;

@@ -309,7 +309,7 @@ export class AddressService {
   /**
    * Obter coordenadas via geocoding (placeholder)
    */
-  static async getCoordinates(address: string): Promise<{lat: number, lng: number} | null> {
+  static async getCoordinates(_address: string): Promise<{lat: number, lng: number} | null> {
     // Em produção, integrar com Google Maps API ou similar
     // Por enquanto retorna null
     return null;

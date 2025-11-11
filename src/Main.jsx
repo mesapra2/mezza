@@ -40,9 +40,9 @@ try {
         <AuthProvider>
           <PremiumProvider>
             <App />
-            <Toaster />
           </PremiumProvider>
         </AuthProvider>
+        <Toaster />
       </HelmetProvider>
     </BrowserRouter>
   );

@@ -276,12 +276,25 @@ export const AuthProvider = ({ children }) => {
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);
     try {
+      // Detectar se é mobile para ajustar o redirect
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const baseUrl = window.location.origin;
+      const redirectTo = isMobile 
+        ? `${baseUrl}/dashboard` 
+        : `${baseUrl}/auth/callback`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin }
+        options: { 
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
       });
       if (error) throw error;
-      console.log('✅ Redirecionando para Google...');
+      console.log('✅ Redirecionando para Google... (mobile:', isMobile, ')');
     } catch (error) {
       console.error('❌ Erro no login com Google:', error);
       toast({ variant: "destructive", title: "Erro com Login Google", description: error.message });
@@ -293,15 +306,21 @@ export const AuthProvider = ({ children }) => {
   const signInWithApple = useCallback(async () => {
     setLoading(true);
     try {
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const baseUrl = window.location.origin;
+      const redirectTo = isMobile 
+        ? `${baseUrl}/dashboard` 
+        : `${baseUrl}/auth/callback`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: { 
-          redirectTo: window.location.origin,
+          redirectTo,
           scopes: 'name email'
         }
       });
       if (error) throw error;
-      console.log('✅ Redirecionando para Apple...');
+      console.log('✅ Redirecionando para Apple... (mobile:', isMobile, ')');
     } catch (error) {
       console.error('❌ Erro no login com Apple:', error);
       toast({ variant: "destructive", title: "Erro com Login Apple", description: error.message });
@@ -313,15 +332,21 @@ export const AuthProvider = ({ children }) => {
   const signInWithFacebook = useCallback(async () => {
     setLoading(true);
     try {
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const baseUrl = window.location.origin;
+      const redirectTo = isMobile 
+        ? `${baseUrl}/dashboard` 
+        : `${baseUrl}/auth/callback`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: { 
-          redirectTo: window.location.origin,
+          redirectTo,
           scopes: 'email public_profile'
         }
       });
       if (error) throw error;
-      console.log('✅ Redirecionando para Facebook...');
+      console.log('✅ Redirecionando para Facebook... (mobile:', isMobile, ')');
     } catch (error) {
       console.error('❌ Erro no login com Facebook:', error);
       toast({ variant: "destructive", title: "Erro com Login Facebook", description: error.message });

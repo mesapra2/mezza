@@ -16,13 +16,13 @@ CREATE TABLE IF NOT EXISTS user_favorite_restaurants (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     
     -- Constraints
-    UNIQUE(user_id, restaurant_id), -- Um usuário não pode favoritar o mesmo restaurante duas vezes
-    
-    -- Índices para performance
-    INDEX idx_user_favorite_restaurants_user_id ON user_favorite_restaurants(user_id),
-    INDEX idx_user_favorite_restaurants_restaurant_id ON user_favorite_restaurants(restaurant_id),
-    INDEX idx_user_favorite_restaurants_created_at ON user_favorite_restaurants(created_at DESC)
+    UNIQUE(user_id, restaurant_id) -- Um usuário não pode favoritar o mesmo restaurante duas vezes
 );
+
+-- Criar índices separadamente (sintaxe correta para PostgreSQL)
+CREATE INDEX IF NOT EXISTS idx_user_favorite_restaurants_user_id ON user_favorite_restaurants(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorite_restaurants_restaurant_id ON user_favorite_restaurants(restaurant_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorite_restaurants_created_at ON user_favorite_restaurants(created_at DESC);
 
 -- RLS (Row Level Security)
 ALTER TABLE user_favorite_restaurants ENABLE ROW LEVEL SECURITY;
@@ -46,7 +46,7 @@ CREATE POLICY "Usuários podem deletar apenas seus próprios favoritos"
     USING (auth.uid() = user_id);
 
 -- Trigger para updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION update_favorite_restaurants_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -57,7 +57,7 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_user_favorite_restaurants_updated_at 
     BEFORE UPDATE ON user_favorite_restaurants 
     FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION update_favorite_restaurants_updated_at();
 
 -- Comentários para documentação
 COMMENT ON TABLE user_favorite_restaurants IS 'Tabela para armazenar restaurantes favoritos dos usuários';

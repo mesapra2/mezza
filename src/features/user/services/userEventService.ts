@@ -1,5 +1,5 @@
-import { supabase } from '@/lib/supabaseClient';  // ✅ Correto
-import NotificationService from '../../shared/services/notificationService';
+import { supabase } from '@/lib/supabaseClient';
+import NotificationService from '@/services/NotificationService';
 
 type EventStatus = 'Aberto' | 'Confirmado' | 'Em Andamento' | 'Finalizado' | 'Concluído' | 'Cancelado';
 type ParticipationStatus = 'pendente' | 'aprovado' | 'rejeitado' | 'cancelado';

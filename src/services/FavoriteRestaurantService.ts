@@ -210,6 +210,13 @@ export class FavoriteRestaurantService {
           return { success: true, isFavorite: false };
         }
         
+        // Handle 406 Not Acceptable (table/column issues)
+        if (error.status === 406 || error.message?.includes('Not Acceptable')) {
+          console.warn('⚠️ Tabela user_favorite_restaurants pode ter problemas de estrutura');
+          favoritesStateManager.markTableAsMissing();
+          return { success: true, isFavorite: false };
+        }
+        
         console.error('❌ Erro ao verificar favorito:', error);
         return { success: false, error: 'Erro ao verificar favorito' };
       }

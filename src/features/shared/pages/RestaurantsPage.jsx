@@ -227,7 +227,7 @@ const RestaurantsPage = () => {
                           restaurant={{
                             id: String(restaurant.id),
                             name: restaurant.name,
-                            address: restaurant.address,
+                            address: getAddress(restaurant),
                             photo_url: photo,
                             rating: restaurant.rating,
                             place_id: restaurant.google_place_id,

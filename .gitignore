@@ -1,129 +1,46 @@
-# ============================================
-# 🔒 ARQUIVOS SENSÍVEIS E CREDENCIAIS
-# ============================================
-
-# Variáveis de ambiente
-.env
-.env.*
-!.env.example
-!.env.template
-
-# Chaves e certificados
-*.key
-*.pem
-*.p12
-*.pfx
-*.cer
-*.crt
-**/*.key
-
-# ============================================
-# 🔐 CREDENCIAIS GOOGLE CLOUD / FIREBASE
-# ============================================
-
-# Arquivos JSON de credenciais (CRÍTICO!)
-*-credentials.json
-*-service-account.json
-*service-account*.json
-*firebase-adminsdk*.json
-google-credentials*.json
-firebase-service-account*.json
-gcloud-service-key*.json
-google-cloud-keyfile*.json
-
-# Padrões específicos do seu projeto
-mesapra2-*.json
-*-16c36f56dd3e.json
-
-# Qualquer arquivo JSON que termine com hash longo (provável credencial)
-*-[a-f0-9]*.json
-
-# ============================================
-# 📦 DEPENDÊNCIAS E BUILD
-# ============================================
-
-# Node modules
-node_modules/
+# Ignora a pasta de dependências do Node
 /node_modules
 /backend/node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+node_modules/
+/vendor
+/keys
 
-# Build outputs
+# Arquivos de ambiente (contém dados sensíveis)
+.env*
+!.env.example
+**/*.key
+
+# Credenciais Google Cloud
+*.json
+google-credentials.json
+service-account*.json
+firebase-service-account*.json
+gcloud-service-key.json
+google-cloud-keyfile.json
+
+# Diretórios de build e cache
 dist/
 build/
-.vercel/
-.next/
-out/
-
-# Cache
 .cache/
 .jest-cache/
-.eslintcache
-.parcel-cache/
-.turbo/
+.vercel/
 
-# ============================================
-# 🧪 TESTES
-# ============================================
-
-coverage/
-.nyc_output/
-*.test.jsx
-*.test.ts
-*.test.tsx
-/src/App.test.jsx
-
-# ============================================
-# 🗂️ TEMPORÁRIOS E SISTEMA
-# ============================================
-
-# Temporários
-*.tmp
-*.temp
+# Arquivos temporários
 .tmp.driveupload/
-.DS_Store
-Thumbs.db
-
-# Logs
-logs/
-*.log
-
-# Documentação temporária
 /docs
 /vendor
 
-# ============================================
-# 🔧 IDE E EDITORES
-# ============================================
-
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Arquivos de teste
+/src/App.test.jsx
+*.test.jsx
+*.test.ts
 
 # ============================================
-# 📱 MOBILE
+# 🔒 HISTÓRICO DO VSCODE (NOVO - ADICIONAR ISTO)
 # ============================================
+.history/
+.history/**/*
+/supabase
+/supabase/**
+**/.history/
 
-# React Native
-.expo/
-.expo-shared/
-
-# ============================================
-# ⚠️ NUNCA COMMITAR ESTES ARQUIVOS
-# ============================================
-
-# Backups de banco de dados
-*.sql
-*.sqlite
-*.db
-
-# Arquivos de configuração com secrets
-config.local.js
-config.local.ts
-secrets.json
-credentials.json
