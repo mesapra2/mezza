@@ -636,8 +636,6 @@ const UserSettings = () => {
                 <option value="">Selecione...</option>
                 <option value="masculino">Ele</option>
                 <option value="feminino">Ela</option>
-                <option value="nao-binario">Elu/dele</option>
-                <option value="prefiro-nao-dizer">Prefiro não dizer</option>
               </select>
             </div>
           </div>
