@@ -276,12 +276,9 @@ export const AuthProvider = ({ children }) => {
   const signInWithGoogle = useCallback(async () => {
     setLoading(true);
     try {
-      // Detectar se é mobile para ajustar o redirect
-      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       const baseUrl = window.location.origin;
-      const redirectTo = isMobile 
-        ? `${baseUrl}/dashboard` 
-        : `${baseUrl}/auth/callback`;
+      // ✅ FIX: Usar sempre auth/callback para evitar loops no mobile
+      const redirectTo = `${baseUrl}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -294,7 +291,7 @@ export const AuthProvider = ({ children }) => {
         }
       });
       if (error) throw error;
-      console.log('✅ Redirecionando para Google... (mobile:', isMobile, ')');
+      console.log('✅ Redirecionando para Google...');
     } catch (error) {
       console.error('❌ Erro no login com Google:', error);
       toast({ variant: "destructive", title: "Erro com Login Google", description: error.message });

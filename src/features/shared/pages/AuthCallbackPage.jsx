@@ -42,15 +42,10 @@ const AuthCallbackPage = () => {
         setStatus('success');
         setMessage('Email confirmado com sucesso! Agora você pode fazer login.');
 
-        // Aguarda 2 segundos e redireciona para o login
+        // ✅ FIX: Redirecionar para dashboard após login social bem-sucedido
         setTimeout(() => {
-          navigate('/login', { 
-            state: { 
-              emailConfirmed: true,
-              email: data.user?.email 
-            } 
-          });
-        }, 2000);
+          navigate('/dashboard', { replace: true });
+        }, 1500);
 
       } catch (error) {
         console.error('Erro na confirmação:', error);
