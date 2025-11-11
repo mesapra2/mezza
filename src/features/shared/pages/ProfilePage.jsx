@@ -618,13 +618,13 @@ const ProfilePage = () => {
         <title>Meu Perfil - Mesapra2</title>
       </Helmet>
 
-      <div className="py-6 px-4 sm:px-6 lg:px-8">
+      <div className="py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-2xl mx-auto space-y-6"
+          className="max-w-2xl mx-auto space-y-4 sm:space-y-6"
         >
-          <h1 className="text-3xl font-bold text-white">Editar Perfil</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Editar Perfil</h1>
 
           {/* Informações Básicas */}
           <div className="glass-effect rounded-2xl p-8 border border-white/10">
@@ -703,8 +703,8 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                {/* Grid de Fotos Elegante */}
-                <div className="grid grid-cols-3 gap-4">
+                {/* Grid de Fotos Responsivo */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   {Array.from({ length: 3 }).map((_, index) => {
                     const photoPath = photos[index];
                     const photoUrl = photoPath ? photoUrls[photoPath] : null;
@@ -713,7 +713,7 @@ const ProfilePage = () => {
                     return (
                       <div 
                         key={index} 
-                        className="relative group aspect-square rounded-2xl overflow-hidden"
+                        className="relative group aspect-square rounded-xl sm:rounded-2xl overflow-hidden"
                       >
                         {hasPhoto ? (
                           <>

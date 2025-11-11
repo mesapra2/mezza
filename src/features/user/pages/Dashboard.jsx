@@ -602,11 +602,20 @@ const Dashboard = () => {
             </h1>
           </div>
           
-          {/* Relógio Digital Central */}
-          <div className="flex-1 flex justify-center">
-            <div className="bg-black/40 rounded-xl px-4 py-2 border border-purple-500/30">
-              <div className="text-white/90 text-lg font-mono tracking-wider">
+          {/* Relógio Digital Central - Responsivo */}
+          <div className="hidden sm:flex flex-1 justify-center">
+            <div className="bg-black/40 rounded-xl px-3 sm:px-4 py-2 border border-purple-500/30">
+              <div className="text-white/90 text-sm sm:text-lg font-mono tracking-wider">
                 {format(currentTime, "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+              </div>
+            </div>
+          </div>
+
+          {/* Relógio Mobile Compacto */}
+          <div className="sm:hidden">
+            <div className="bg-black/40 rounded-lg px-2 py-1 border border-purple-500/30">
+              <div className="text-white/90 text-xs font-mono">
+                {format(currentTime, "HH:mm", { locale: ptBR })}
               </div>
             </div>
           </div>

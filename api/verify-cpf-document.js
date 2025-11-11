@@ -109,22 +109,59 @@ async function extrairCPFDoDocumento(imageUrl) {
     // Importar Google Vision API
     const vision = require('@google-cloud/vision');
     
-    // Criar cliente Vision API
-    const client = new vision.ImageAnnotatorClient({
-      keyFilename: process.env.GOOGLE_VISION_KEY_PATH, // Caminho para o arquivo JSON das credenciais
-      // OU usar credenciais diretas:
-      // credentials: {
-      //   type: 'service_account',
-      //   project_id: process.env.GOOGLE_VISION_PROJECT_ID,
-      //   private_key_id: process.env.GOOGLE_VISION_PRIVATE_KEY_ID,
-      //   private_key: process.env.GOOGLE_VISION_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      //   client_email: process.env.GOOGLE_VISION_CLIENT_EMAIL,
-      //   client_id: process.env.GOOGLE_VISION_CLIENT_ID,
-      //   auth_uri: 'https://accounts.google.com/o/oauth2/auth',
-      //   token_uri: 'https://oauth2.googleapis.com/token',
-      //   auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs'
-      // }
+    // Configuração das credenciais MesaPra2
+    const credentials = {
+      type: 'service_account',
+      project_id: process.env.GOOGLE_VISION_PROJECT_ID || 'mesapra2-ff033',
+      private_key_id: process.env.GOOGLE_VISION_PRIVATE_KEY_ID,
+      private_key: process.env.GOOGLE_VISION_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      client_email: process.env.GOOGLE_VISION_CLIENT_EMAIL || 'vision-oi-key@mesapra2-ff033.iam.gserviceaccount.com',
+      client_id: process.env.GOOGLE_VISION_CLIENT_ID || '115423317070757943479',
+      auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+      token_uri: 'https://oauth2.googleapis.com/token',
+      auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+      client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.GOOGLE_VISION_CLIENT_EMAIL || 'vision-oi-key@mesapra2-ff033.iam.gserviceaccount.com')}`
+    };
+
+    console.log('🔧 Configurando Google Vision API:', {
+      project_id: credentials.project_id,
+      client_email: credentials.client_email,
+      client_id: credentials.client_id,
+      has_private_key: !!credentials.private_key,
+      private_key_configured: credentials.private_key ? 'SIM' : 'AGUARDANDO'
     });
+
+    // Criar cliente Vision API usando o arquivo JSON encontrado
+    const keyPath = './KEYS/mesapra2-ff033-0cfe7b7a3faa.json';
+    
+    let client;
+    try {
+      // Primeira opção: usar arquivo JSON local
+      const fs = require('fs');
+      if (fs.existsSync(keyPath)) {
+        client = new vision.ImageAnnotatorClient({
+          keyFilename: keyPath
+        });
+        console.log('✅ Cliente Google Vision criado usando arquivo JSON local');
+      } else if (process.env.GOOGLE_VISION_KEY_PATH) {
+        // Segunda opção: usar path de environment
+        client = new vision.ImageAnnotatorClient({
+          keyFilename: process.env.GOOGLE_VISION_KEY_PATH
+        });
+        console.log('✅ Cliente criado usando GOOGLE_VISION_KEY_PATH');
+      } else if (credentials.private_key) {
+        // Terceira opção: usar credenciais inline
+        client = new vision.ImageAnnotatorClient({
+          credentials: credentials
+        });
+        console.log('✅ Cliente criado usando credenciais inline');
+      } else {
+        throw new Error('❌ Nenhuma credencial do Google Vision encontrada');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao criar cliente Google Vision:', error.message);
+      throw new Error('Falha na configuração do Google Vision: ' + error.message);
+    }
 
     // Baixar a imagem
     const response = await fetch(imageUrl);

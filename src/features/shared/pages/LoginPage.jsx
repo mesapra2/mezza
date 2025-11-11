@@ -256,33 +256,33 @@ const LoginPage = () => {
 
             {/* Formulário Email/Senha */}
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-              <div className="space-y-2">
-                <Label {...getLabelProps('email')}>Email</Label>
+              <div className="space-y-3">
+                <Label {...getLabelProps('email')} className="text-sm sm:text-base">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Mail className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <Input
                     {...getFieldProps('email', { required: true })}
                     type="email"
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 glass-effect border-white/10"
+                    className="h-12 sm:h-14 pl-10 sm:pl-12 text-base glass-effect border-white/10 touch-manipulation"
                     required
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-sm sm:text-base">Senha</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                   <Input
                     id="password"
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 glass-effect border-white/10"
+                    className="h-12 sm:h-14 pl-10 sm:pl-12 text-base glass-effect border-white/10 touch-manipulation"
                     required
                   />
                 </div>

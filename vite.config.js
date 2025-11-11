@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     },
     
     build: {
-      sourcemap: false,
+      sourcemap: true, // ✅ Habilitar source maps para produção
       rollupOptions: {
         output: {
           manualChunks: {
@@ -30,6 +30,10 @@ export default defineConfig(({ mode }) => {
             'ui-vendor': ['framer-motion', 'lucide-react', 'date-fns'],
             'helmet-vendor': ['react-helmet-async'],
           },
+          // ✅ Configurar nomes de arquivos para melhor debug
+          chunkFileNames: 'assets/js/[name]-[hash].js',
+          entryFileNames: 'assets/js/[name]-[hash].js',
+          assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
         },
       },
       chunkSizeWarningLimit: 1000,

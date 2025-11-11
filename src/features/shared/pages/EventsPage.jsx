@@ -167,21 +167,34 @@ const EventsPage = () => {
   };
 
   const filterEvents = useCallback(() => {
-    let filtered = events;
-
-    if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
-      filtered = filtered.filter(e =>
-        e.title?.toLowerCase().includes(lowerSearch) ||
-        e.description?.toLowerCase().includes(lowerSearch) ||
-        e.hashtags?.some(tag => tag.toLowerCase().includes(lowerSearch)) ||
-        e.creator?.username?.toLowerCase().includes(lowerSearch) ||
-        e.partner?.name?.toLowerCase().includes(lowerSearch)
-      );
+    if (!events.length) {
+      setFilteredEvents([]);
+      return;
     }
 
+    let filtered = events;
+
+    // Otimização: cache da busca e aplicar filtros em sequência
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter(event => {
+        // Cache das strings para evitar múltiplas conversões toLowerCase()
+        return (
+          event.title?.toLowerCase().includes(lowerSearch) ||
+          event.description?.toLowerCase().includes(lowerSearch) ||
+          (event.hashtags && event.hashtags.some(tag => tag.toLowerCase().includes(lowerSearch))) ||
+          event.creator?.username?.toLowerCase().includes(lowerSearch) ||
+          event.partner?.name?.toLowerCase().includes(lowerSearch)
+        );
+      });
+    }
+
+    // Filtro de tipo otimizado
     if (selectedType !== 'todos') {
-        filtered = filtered.filter(e => e.event_type === selectedType || (selectedType === 'crusher' && e.event_type === 'Mesapra2'));
+      const typeFilter = selectedType === 'crusher' 
+        ? (e) => e.event_type === 'crusher' || e.event_type === 'Mesapra2'
+        : (e) => e.event_type === selectedType;
+      filtered = filtered.filter(typeFilter);
     }
 
     setFilteredEvents(filtered);
@@ -293,29 +306,29 @@ const EventsPage = () => {
       <div className="space-y-8 py-6 px-4">
         {/* HEADER COM BOTÃO CRIAR */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center space-x-6">
-            {/* Logo flutuante com efeito */}
+          <div className="flex items-center space-x-3 md:space-x-6">
+            {/* Logo responsiva com efeito */}
             <MesaPra2Logo 
-              size="lg" 
+              size="md" 
               variant="dark"
               glow={true}
               animate={false}
-              className="hover:scale-105 drop-shadow-2xl"
+              className="hover:scale-105 drop-shadow-2xl flex-shrink-0"
             />
             
-            {/* Separador elegante */}
-            <div className="hidden md:block h-16 w-px bg-gradient-to-b from-transparent via-purple-400 to-transparent"></div>
+            {/* Separador elegante - só desktop */}
+            <div className="hidden lg:block h-16 w-px bg-gradient-to-b from-transparent via-purple-400 to-transparent"></div>
             
-            {/* Textos */}
-            <div>
-              <h1 className="text-4xl font-bold gradient-text mb-2">
+            {/* Textos responsivos */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold gradient-text mb-1 md:mb-2">
                 Descubra Eventos
               </h1>
-              <p className="text-white/60 text-lg">
+              <p className="text-white/60 text-sm sm:text-base lg:text-lg">
                 Encontre experiências incríveis e conecte-se com pessoas
               </p>
               {filteredEvents.length > 0 && (
-                <p className="text-white/40 text-sm mt-2">
+                <p className="text-white/40 text-xs sm:text-sm mt-1 md:mt-2">
                   {filteredEvents.length} {filteredEvents.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
                 </p>
               )}

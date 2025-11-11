@@ -13,9 +13,10 @@ async function testGoogleVision() {
     
     // 1. Verificar variáveis de ambiente
     console.log('\n📋 Verificando variáveis de ambiente:');
-    console.log('GOOGLE_VISION_PROJECT_ID:', process.env.GOOGLE_VISION_PROJECT_ID ? '✅ Configurado' : '❌ Não configurado');
-    console.log('GOOGLE_VISION_CLIENT_EMAIL:', process.env.GOOGLE_VISION_CLIENT_EMAIL ? '✅ Configurado' : '❌ Não configurado');
-    console.log('GOOGLE_VISION_PRIVATE_KEY:', process.env.GOOGLE_VISION_PRIVATE_KEY ? '✅ Configurado' : '❌ Não configurado');
+    console.log('GOOGLE_VISION_PROJECT_ID:', process.env.GOOGLE_VISION_PROJECT_ID || 'mesapra2-ff033 (padrão)');
+    console.log('GOOGLE_VISION_CLIENT_EMAIL:', process.env.GOOGLE_VISION_CLIENT_EMAIL || 'vision-oi-key@mesapra2-ff033.iam.gserviceaccount.com (padrão)');
+    console.log('GOOGLE_VISION_CLIENT_ID:', process.env.GOOGLE_VISION_CLIENT_ID || '115423317070757943479 (padrão)');
+    console.log('GOOGLE_VISION_PRIVATE_KEY:', process.env.GOOGLE_VISION_PRIVATE_KEY ? '✅ Configurado' : '❌ Aguardando private key');
     console.log('GOOGLE_VISION_KEY_PATH:', process.env.GOOGLE_VISION_KEY_PATH ? '✅ Configurado' : '❌ Não configurado');
     
     // 2. Tentar importar a biblioteca
