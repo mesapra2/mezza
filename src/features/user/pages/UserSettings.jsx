@@ -1285,12 +1285,6 @@ const UserSettings = () => {
             <h2 className="text-xl font-semibold text-white">Gerenciar Endereços</h2>
           </div>
           
-          <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-            <p className="text-yellow-300 text-sm flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              A Funcionalidade de receber presentes necessita de seus dados de endereço.
-            </p>
-          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-50">
             {/* CEP */}
