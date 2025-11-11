@@ -18,13 +18,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
-
-// Configurar Supabase
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { supabase } from '../../../lib/supabaseClient';
 
 const MobileVerificationPageSimple = () => {
   const [searchParams] = useSearchParams();

@@ -9,35 +9,50 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-  // ✅ Configurações para resolver ERR_CONNECTION_CLOSED
-  global: {
-    headers: {
-      'Content-Type': 'application/json',
-      'Connection': 'keep-alive',
+// ✅ Singleton pattern para evitar múltiplas instâncias
+const SUPABASE_SINGLETON_KEY = Symbol.for('supabase.client.singleton');
+
+let globalThis: any;
+if (typeof window !== 'undefined') {
+  globalThis = window;
+} else if (typeof global !== 'undefined') {
+  globalThis = global;
+} else {
+  globalThis = {};
+}
+
+if (!globalThis[SUPABASE_SINGLETON_KEY]) {
+  globalThis[SUPABASE_SINGLETON_KEY] = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: 'sb-ksmnfhenhppasfcikefd-auth-token',
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
-    fetch: (url, options = {}) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-      
-      return fetch(url, {
-        ...options,
-        signal: controller.signal,
-        keepalive: true,
-      }).finally(() => clearTimeout(timeoutId));
+    global: {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      fetch: (url, options = {}) => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout para deploy
+        
+        return fetch(url, {
+          ...options,
+          signal: controller.signal,
+        }).finally(() => clearTimeout(timeoutId));
+      },
     },
-  },
-  db: {
-    schema: 'public',
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
+    db: {
+      schema: 'public',
     },
-  },
-});
+    realtime: {
+      params: {
+        eventsPerSecond: 5, // Reduzido para produção
+      },
+    },
+  });
+}
+
+export const supabase = globalThis[SUPABASE_SINGLETON_KEY];
