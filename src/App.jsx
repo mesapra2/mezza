@@ -144,6 +144,7 @@ function AppContent() {
         {!user ? (
           <>
             <Route path="/verify-mobile" element={<MobileVerificationPageSimple />} />
+            <Route path="/mobile-verification" element={<MobileVerificationPageSimple />} />
             <Route path="/test-certified-user" element={<TestCertifiedUser />} />
             <Route path="/test-verification" element={<TestVerificationFlow />} />
             <Route path="/" element={<Layout isPublic={true} />}>
