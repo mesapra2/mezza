@@ -408,6 +408,65 @@ const Dashboard = () => {
     }
   };
 
+  const confirmCancelEvent = async () => {
+    if (!eventToCancel) return;
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .update({ 
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString()
+        })
+        .eq('id', eventToCancel.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Notificar participantes do cancelamento
+      const { data: participants } = await supabase
+        .from('participations')
+        .select('user_id')
+        .eq('event_id', eventToCancel.id)
+        .eq('status', 'confirmed');
+
+      if (participants && participants.length > 0) {
+        // Criar notificações para os participantes
+        const notifications = participants.map(participant => ({
+          user_id: participant.user_id,
+          type: 'event_cancelled',
+          title: 'Evento Cancelado',
+          message: `O evento "${eventToCancel.title}" foi cancelado pelo organizador.`,
+          event_id: eventToCancel.id,
+          created_at: new Date().toISOString()
+        }));
+
+        await supabase
+          .from('notifications')
+          .insert(notifications);
+      }
+
+      toast({
+        title: "✅ Evento cancelado",
+        description: "O evento foi cancelado e os participantes foram notificados."
+      });
+
+      setCancelModalOpen(false);
+      setEventToCancel(null);
+      loadDashboardData(); // Recarregar dados
+
+    } catch (error) {
+      console.error('Erro ao cancelar evento:', error);
+      setCancelError(error.message);
+      toast({
+        variant: "destructive",
+        title: "Erro ao cancelar evento",
+        description: "Não foi possível cancelar o evento. Tente novamente."
+      });
+    }
+  };
+
   // ========================================================== 
   // Return JSX
   // ==========================================================
