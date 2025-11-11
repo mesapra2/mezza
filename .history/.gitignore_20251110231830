@@ -1,0 +1,28 @@
+# Ignora a pasta de dependências do Node
+/node_modules
+/backend/node_modules
+node_modules/
+
+# Arquivos de ambiente (contém dados sensíveis)
+.env
+.env.local
+.env.production
+.env.development
+**/*.key
+
+# Diretórios de build e cache
+dist/
+build/
+.cache/
+.jest-cache/
+.vercel/
+
+# Arquivos temporários
+.tmp.driveupload/
+/docs
+/vendor
+
+# Arquivos de teste
+/src/App.test.jsx
+*.test.jsx
+*.test.ts

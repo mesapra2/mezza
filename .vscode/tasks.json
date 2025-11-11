@@ -1,0 +1,33 @@
+{
+  // 1. Versão corrigida para "2.0.0"
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: dev",
+      "type": "shell", // 2. Tipo corrigido para "shell"
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "npm: test (vitest)",
+      "type": "shell",
+      "command": "npm run test",
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: tree",
+      "type": "shell",
+      "command": "npm run tree",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+// src/utils/chatAvailability.js
+
+/**
+ * Determina se o chat do evento deve estar disponível
+ * 
+ * REGRAS:
+ * - Eventos INSTITUCIONAIS: Chat liberado desde o primeiro aprovado
+ * - Outros tipos (crusher, particular, normal): Chat só após evento "fechar" (vagas completas)
+ * 
+ * @param {Object} event - Objeto do evento com propriedades: event_type, status, vagas, approvedCount
+ * @param {boolean} isCreator - Se o usuário é o criador do evento
+ * @param {boolean} isApprovedParticipant - Se o usuário é participante aprovado
+ * @returns {Object} { available: boolean, reason: string }
+ */
+export const isChatAvailable = (event, isCreator, isApprovedParticipant) => {
+  // Criador sempre tem acesso ao chat
+  if (isCreator) {
+    return { available: true, reason: 'Você é o criador do evento' };
+  }
+
+  // Usuário precisa ser participante aprovado
+  if (!isApprovedParticipant) {
+    return { available: false, reason: 'Você não está aprovado neste evento' };
+  }
+
+  // Evento cancelado ou concluído
+  if (['Cancelado', 'Concluído'].includes(event.status)) {
+    return { available: true, reason: 'Chat em modo leitura' };
+  }
+
+  // ⭐ REGRA ESPECIAL: Eventos INSTITUCIONAIS
+  if (event.event_type === 'institucional') {
+    // Chat disponível desde o primeiro aprovado
+    const hasApprovedParticipants = event.approvedCount > 0;
+    
+    if (hasApprovedParticipants) {
+      return { 
+        available: true, 
+        reason: 'Chat liberado para interação entre participantes' 
+      };
+    }
+    
+    return { 
+      available: false, 
+      reason: 'Aguardando primeiro participante aprovado' 
+    };
+  }
+
+  // 🔒 REGRA PADRÃO: Outros tipos de evento (crusher, particular, normal)
+  // Chat só disponível quando evento está "fechado" (vagas completas ou confirmado)
+  const isEventClosed = event.approvedCount >= event.vagas || event.status === 'Confirmado';
+
+  if (isEventClosed) {
+    return { 
+      available: true, 
+      reason: 'Evento confirmado - chat liberado' 
+    };
+  }
+
+  return { 
+    available: false, 
+    reason: `Chat será liberado quando o evento fechar (${event.approvedCount}/${event.vagas} vagas preenchidas)` 
+  };
+};
+
+/**
+ * Verifica se deve mostrar o botão de chat (mesmo que desabilitado)
+ * O botão aparece para criador e participantes aprovados
+ */
+export const shouldShowChatButton = (isCreator, isApprovedParticipant) => {
+  return isCreator || isApprovedParticipant;
+};

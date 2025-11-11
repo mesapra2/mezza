@@ -1,0 +1,68 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/send-verification-sms.js": {
+      "maxDuration": 10
+    },
+    "api/verify-phone-code.js": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "TWILIO_ACCOUNT_SID": "",
+    "TWILIO_AUTH_TOKEN": "",
+    "TWILIO_PHONE_NUMBER": ""
+  },
+  "rewrites": [
+    {
+      "source": "/event/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
+        }
+      ],
+      "destination": "/api/og.js?type=event&id=:id"
+    },
+    {
+      "source": "/event/:id/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
+        }
+      ],
+      "destination": "/api/og.js?type=event&id=:id"
+    },
+    {
+      "source": "/restaurant/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
+        }
+      ],
+      "destination": "/api/og.js?type=restaurant&id=:id"
+    },
+    {
+      "source": "/restaurant/:id/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|googlebot|discord|slackbot|preview)"
+        }
+      ],
+      "destination": "/api/og.js?type=restaurant&id=:id"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

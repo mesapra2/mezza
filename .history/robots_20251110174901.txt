@@ -1,0 +1,50 @@
+# -------------------------------------------
+# robots.txt – MesaPra2
+# Projeto: app.mesapra2.com
+# Otimizado para SEO, PageSpeed e segurança
+# -------------------------------------------
+
+# Permitir acesso a todos os crawlers (Google, Bing, etc.)
+User-agent: *
+Allow: /
+
+# -----------------------------
+# Bloqueios de rotas sensíveis
+# -----------------------------
+Disallow: /api/
+Disallow: /auth/
+Disallow: /login
+Disallow: /logout
+Disallow: /signup
+Disallow: /settings
+Disallow: /profile
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /user/
+Disallow: /_next/
+Disallow: /server/
+Disallow: /supabase/
+Disallow: /*.env
+Disallow: /*.json$
+Disallow: /*?*
+
+# -----------------------------
+# Prerender.io (para SEO de SPA)
+# -----------------------------
+# Permite que o serviço de pré-renderização (Prerender.io ou Vercel OG) acesse as páginas públicas
+User-agent: Prerender
+Allow: /
+
+# -----------------------------
+# Mapa do site (para SEO)
+# -----------------------------
+Sitemap: https://app.mesapra2.com/sitemap.xml
+
+# -----------------------------
+# Informações adicionais
+# -----------------------------
+# - Este arquivo permite o rastreamento das rotas públicas e de eventos.
+# - Bloqueia endpoints dinâmicos e de autenticação.
+# - Garante compatibilidade com o Google PageSpeed Insights.
+# - Configurado para ser lido corretamente em deploys da Vercel.
+# -----------------------------
