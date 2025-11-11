@@ -584,9 +584,7 @@ const Dashboard = () => {
 
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900">
         {/* Header com avatar e configurações */}
-        <div className="flex justify-between items-center p-6">
-          <div className="flex-1" />
-          
+        <div className="flex justify-end items-center p-6 gap-4">
           {/* Botão de configurações */}
           <Link
             to="/user-settings"
