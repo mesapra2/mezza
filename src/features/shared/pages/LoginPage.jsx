@@ -185,14 +185,14 @@ const LoginPage = () => {
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0"
+          className="fixed inset-0 w-screen h-screen object-cover z-0"
         >
           <source src={selectedVideo} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         
         {/* 🎭 Overlay transparente */}
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10"></div>
+        <div className="fixed inset-0 w-screen h-screen bg-black/60 backdrop-blur-[2px] z-10"></div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
