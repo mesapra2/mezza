@@ -27,6 +27,7 @@ import SkipLinks from './SkipLinks';
 import ErrorBoundary from './ErrorBoundary';
 import PresenceManager from './PresenceManager';
 import { PremiumBadge, PartnerBadge, PartnerPremiumBadge } from '@/features/shared/components/PremiumBAdge';
+import Footer from './Footer';
 
 // === NavLink Component ===
 const NavLink = ({ to, icon: Icon, label, onClick, iconColor = "default" }) => {
@@ -438,6 +439,9 @@ const Layout = () => {
             </ErrorBoundary>
           </div>
         </main>
+
+        {/* Footer Inteligente */}
+        <Footer />
       </div>
     </div>
     </>

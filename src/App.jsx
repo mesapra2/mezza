@@ -50,6 +50,7 @@ import Signup from '@/features/shared/pages/signup';
 import Premium from '@/features/user/pages/premium';
 import FavoritesPage from '@/features/shared/pages/FavoritesPage';
 import MobileVerificationPageSimple from '@/features/shared/pages/MobileVerificationPageSimple';
+import FAQPage from '@/features/shared/pages/FAQPage';
 import TestCertifiedUser from '@/pages/test-certified-user';
 import TestVerificationFlow from '@/components/TestVerificationFlow';
 
@@ -508,6 +509,11 @@ function AppContent() {
                       <FavoritesPage />
                     </RequirePhoneVerification>
                   } 
+                />
+
+                <Route 
+                  path="faq" 
+                  element={<FAQPage />} 
                 />
                 
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

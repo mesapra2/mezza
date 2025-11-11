@@ -468,9 +468,12 @@ export const AuthProvider = ({ children }) => {
     try {
       const fileExt = file.name.split('.').pop();
       const timestamp = Date.now();
-      const fileName = `${user.id}-${isAdditionalPhoto ? 'photo' : 'avatar'}-${timestamp}.${fileExt}`;
+      // Usar estrutura consistente para todos os uploads
+      const fileName = isAdditionalPhoto 
+        ? `${user.id}/profile-photos/${timestamp}.${fileExt}`  // Nova estrutura organizada
+        : `${user.id}-avatar-${timestamp}.${fileExt}`;         // Avatar mantém formato simples
       
-      const bucket = isAdditionalPhoto ? 'photos' : 'avatars';
+      const bucket = 'avatars'; // Usar sempre o mesmo bucket para consistência
       const options = { 
         cacheControl: '3600', 
         upsert: true,

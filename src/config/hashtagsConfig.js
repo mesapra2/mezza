@@ -21,8 +21,6 @@ export const HASHTAGS_PREMIUM = [
  */
 export const HASHTAGS_COMUNS = [
   'happyhour',
-  'cafe',
-  'brunch',
   'almoco',
   'jantar',
   'drinks',
@@ -40,11 +38,11 @@ export const HASHTAGS_COMUNS = [
   'italiana',
   'japonesa',
   'mexicana',
-  'sobremesa',
   'acai',
-  'tapioca',
   'rodadadechopp',
-  'boteco'
+  'boteco',
+  'rolêdelancha',
+  'rolênoparque'
 ];
 
 /**

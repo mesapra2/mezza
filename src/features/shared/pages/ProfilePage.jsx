@@ -32,6 +32,7 @@ const ProfilePage = () => {
   const [avatarUrl, setAvatarUrl] = useState(null); 
   const [avatarPath, setAvatarPath] = useState(null); 
   const [photos, setPhotos] = useState([]);
+  const [photoUrls, setPhotoUrls] = useState({}); // Cache de URLs das fotos
   const [hashtagsInteresse, setHashtagsInteresse] = useState([]);
   const [isPremium, setIsPremium] = useState(false);
   const fileInputRef = useRef(null);
@@ -45,8 +46,12 @@ const ProfilePage = () => {
       setUsername(initialProfile.username || '');
       setBio(initialProfile.bio || '');
       setAvatarPath(initialProfile.avatar_url || null); 
+      
       const photosArray = initialProfile.photos || [];
+      console.log('📸 Fotos do perfil carregadas:', photosArray);
+      console.log('📊 Tipo e estrutura das fotos:', typeof photosArray, photosArray);
       setPhotos(Array.isArray(photosArray) ? photosArray : []);
+      
       const hashtags = initialProfile.hashtags_interesse || [];
       setHashtagsInteresse(Array.isArray(hashtags) ? hashtags : []);
       setIsPremium(initialProfile.is_premium || false);
@@ -92,6 +97,152 @@ const ProfilePage = () => {
        setAvatarUrl(null);
     }
    }, [avatarPath]);
+
+   // Carregar URLs das fotos e limpar referências quebradas
+   useEffect(() => {
+     if (!photos || photos.length === 0) {
+       setPhotoUrls({});
+       return;
+     }
+
+     console.log('🔄 Carregando URLs para fotos:', photos);
+     const urls = {};
+     const brokenPhotos = [];
+     
+     for (let i = 0; i < photos.length; i++) {
+       const photoPath = photos[i];
+       if (photoPath) {
+         try {
+           const url = getPublicPhotoUrl(photoPath);
+           
+           // Verificar se a URL é válida testando se a imagem carrega
+           const img = new Image();
+           img.onload = () => {
+             urls[photoPath] = url;
+             console.log(`✅ URL válida para foto ${i + 1}:`, url);
+           };
+           
+           img.onerror = () => {
+             console.warn(`❌ Foto quebrada detectada: ${photoPath}`);
+             brokenPhotos.push(photoPath);
+           };
+           
+           img.src = url;
+           
+           // Adicionar URL provisoriamente (será removida se der erro)
+           urls[photoPath] = url;
+           
+         } catch (error) {
+           console.error(`❌ Erro ao carregar URL da foto ${i + 1}:`, error);
+           brokenPhotos.push(photoPath);
+         }
+       }
+     }
+     
+     setPhotoUrls(urls);
+     console.log('🎯 Cache de URLs atualizado:', urls);
+     
+     // Agrupar detecção de fotos quebradas e limpar quando todas forem testadas
+     let detectedBroken = 0;
+     let totalToTest = photos.length;
+     
+     const processBrokenPhotos = async () => {
+       detectedBroken++;
+       
+       // Aguardar até que todas as fotos sejam testadas
+       if (detectedBroken === totalToTest && brokenPhotos.length > 0) {
+         console.log('🧹 Todas as fotos testadas. Limpando fotos quebradas:', brokenPhotos);
+         const validPhotos = photos.filter(photo => !brokenPhotos.includes(photo));
+         
+         if (validPhotos.length !== photos.length) {
+           setPhotos(validPhotos);
+           
+           // Atualizar cache para remover URLs quebradas
+           const cleanUrls = {};
+           validPhotos.forEach(photo => {
+             if (urls[photo]) {
+               cleanUrls[photo] = urls[photo];
+             }
+           });
+           setPhotoUrls(cleanUrls);
+           
+           // Salvar automaticamente no banco de dados
+           try {
+             await updateProfile({ 
+               photos: validPhotos,
+               username, 
+               bio, 
+               hashtags_interesse: hashtagsInteresse,
+               avatar_url: avatarPath 
+             });
+             
+             toast({
+               title: "✅ Perfil corrigido",
+               description: `${brokenPhotos.length} foto(s) quebrada(s) removidas automaticamente.`,
+               variant: "default"
+             });
+             console.log('✅ Fotos quebradas removidas e salvas no banco');
+             
+           } catch (error) {
+             console.error('❌ Erro ao salvar remoção de fotos quebradas:', error);
+             toast({
+               title: "⚠️ Ação necessária",
+               description: `${brokenPhotos.length} foto(s) removidas. Clique em "Guardar Alterações".`,
+               variant: "destructive"
+             });
+           }
+         }
+       }
+     };
+     
+     // Modificar as funções de callback para usar o novo sistema
+     for (let i = 0; i < photos.length; i++) {
+       const photoPath = photos[i];
+       if (photoPath) {
+         const img = new Image();
+         
+         img.onload = () => {
+           console.log(`✅ Foto válida: ${photoPath}`);
+           processBrokenPhotos();
+         };
+         
+         img.onerror = () => {
+           console.log(`❌ Foto quebrada: ${photoPath}`);
+           console.log(`🔗 URL testada: ${img.src}`);
+           console.log(`📁 Bucket esperado: avatars`);
+           
+           // Testar URL alternativa (sem timestamp)
+           const urlSemTimestamp = img.src.split('?')[0];
+           console.log(`🔄 Testando URL sem timestamp: ${urlSemTimestamp}`);
+           
+           // Verificar se arquivo existe no storage
+           supabase.storage
+             .from('avatars')
+             .download(photoPath)
+             .then(({ data, error }) => {
+               if (error) {
+                 console.error(`💥 Arquivo NÃO existe no storage: ${error.message}`);
+                 console.log(`📋 Possíveis causas:
+                   1. Arquivo não foi enviado corretamente
+                   2. Políticas RLS muito restritivas 
+                   3. Bucket 'avatars' não existe ou não é público
+                   4. Caminho incorreto: ${photoPath}`);
+               } else {
+                 console.log(`✅ Arquivo EXISTE no storage, problema de permissão de acesso público`);
+                 console.log(`🛠️ Execute os SQLs do arquivo SUPABASE_STORAGE_FIX.md`);
+               }
+             });
+           
+           if (!brokenPhotos.includes(photoPath)) {
+             brokenPhotos.push(photoPath);
+           }
+           processBrokenPhotos();
+         };
+         
+         img.src = urls[photoPath];
+       }
+     }
+   }, [photos, toast, updateProfile, username, bio, hashtagsInteresse, avatarPath]);
 
   const getAvatarFallbackUrl = useCallback(() => {
      return `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -152,15 +303,165 @@ const ProfilePage = () => {
   };
 
   const getPublicPhotoUrl = (path) => {
-      if (!path) return null;
-      if (path.startsWith('http')) return path;
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    
+    console.log('🔍 Gerando URL para foto:', path);
+    
+    // Verificar se é formato antigo (userId-photo-timestamp.ext)
+    const isOldFormat = path.includes('-photo-') && !path.includes('/');
+    
+    if (isOldFormat) {
+      console.log('📄 Formato antigo detectado, tentando bucket photos:', path);
+      // Para fotos antigas, tentar bucket 'photos' primeiro
       const { data } = supabase.storage.from('photos').getPublicUrl(path);
-      return data.publicUrl;
+      const finalUrl = `${data.publicUrl}?t=${new Date().getTime()}`;
+      console.log('✅ URL gerada (formato antigo):', finalUrl);
+      return finalUrl;
+    }
+    
+    // Formato novo (userId/profile-photos/timestamp.ext) - bucket avatars
+    console.log('📄 Formato novo detectado, usando bucket avatars:', path);
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    const finalUrl = `${data.publicUrl}?t=${new Date().getTime()}`;
+    console.log('✅ URL gerada (formato novo):', finalUrl);
+    
+    return finalUrl;
+  };
+
+  // Função para redimensionar imagem para <= 1MB
+  const resizeImage = async (file, targetSizeKB = 1024) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Calcular dimensões mantendo proporção
+        let { width, height } = img;
+        const maxDimension = 1200; // Máximo 1200px na maior dimensão
+
+        if (width > height && width > maxDimension) {
+          height = (height * maxDimension) / width;
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = (width * maxDimension) / height;
+          height = maxDimension;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Desenhar imagem redimensionada
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Função para tentar diferentes qualidades
+        const tryCompress = (quality) => {
+          canvas.toBlob((blob) => {
+            const sizeKB = blob.size / 1024;
+            console.log(`🔧 Tentativa com qualidade ${quality}: ${sizeKB.toFixed(1)}KB`);
+
+            if (sizeKB <= targetSizeKB || quality <= 0.1) {
+              console.log(`✅ Imagem otimizada: ${sizeKB.toFixed(1)}KB (${((blob.size / file.size) * 100).toFixed(1)}% do original)`);
+              resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+            } else {
+              // Tentar com qualidade menor
+              tryCompress(quality - 0.1);
+            }
+          }, 'image/jpeg', quality);
+        };
+
+        // Iniciar com qualidade 0.8
+        tryCompress(0.8);
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Função dedicada para upload de fotos do perfil
+  const uploadProfilePhoto = async (file) => {
+    if (!file || !user?.id) {
+      throw new Error('Arquivo ou usuário inválido');
+    }
+
+    // Validar tipo
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      throw new Error('Tipo de arquivo inválido. Use PNG ou JPEG.');
+    }
+
+    console.log(`📷 Processando imagem: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+
+    // Redimensionar se maior que 2MB
+    let processedFile = file;
+    if (file.size > 2 * 1024 * 1024) { // 2MB
+      console.log('🔄 Imagem > 2MB, redimensionando para ~1MB...');
+      processedFile = await resizeImage(file, 1024); // Target: 1MB
+    } else {
+      console.log('✅ Imagem já está no tamanho adequado');
+    }
+
+    // Gerar nome único para o arquivo
+    const timestamp = Date.now();
+    const fileName = `${user.id}/profile-photos/${timestamp}.jpeg`; // Sempre JPEG após processamento
+
+    console.log('📤 Enviando foto otimizada para:', fileName);
+
+    // Upload para Supabase Storage com retry
+    let uploadResult = null;
+    let lastError = null;
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Tentativa de upload ${attempt}/${maxRetries}`);
+        
+        const { data, error } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, processedFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        uploadResult = data;
+        console.log('✅ Foto enviada com sucesso:', data.path);
+        break;
+
+      } catch (error) {
+        lastError = error;
+        console.warn(`⚠️ Tentativa ${attempt} falhou:`, error.message);
+        
+        if (attempt < maxRetries) {
+          const delay = attempt * 1000; // 1s, 2s, 3s
+          console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    if (!uploadResult) {
+      console.error('❌ Upload falhou após todas as tentativas:', lastError);
+      throw new Error(`Falha no upload: ${lastError?.message || 'Erro desconhecido'}`);
+    }
+
+    return uploadResult.path;
   };
 
   const handlePhotosUpload = async (event) => {
     const filesToUpload = Array.from(event.target.files);
     const availableSlots = 3 - photos.length;
+    
+    console.log('📸 Iniciando upload de fotos:', {
+      filesSelected: filesToUpload.length,
+      availableSlots,
+      currentPhotos: photos.length
+    });
+
     if (availableSlots <= 0) {
         toast({ variant: "destructive", title: "Limite atingido", description: "Você já tem 3 fotos." });
         return;
@@ -171,49 +472,133 @@ const ProfilePage = () => {
 
     setUploading(true);
     setError(null);
+    
     try {
-      const uploadPromises = files.map(async (file) => await uploadAvatar(file, true));
-      const newPhotoPaths = (await Promise.all(uploadPromises)).filter(Boolean); 
+      console.log(`🔄 Processando ${files.length} arquivo(s)...`);
       
-      const updatedPhotos = [...photos, ...newPhotoPaths];
-      setPhotos(updatedPhotos); 
+      const uploadPromises = files.map(async (file, index) => {
+        console.log(`📤 Enviando arquivo ${index + 1}: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
+        return await uploadProfilePhoto(file);
+      });
       
-      console.log('Fotos adicionadas (paths):', updatedPhotos);
-      setSuccess('Fotos adicionadas! Clique em "Salvar" para confirmar.');
-      toast({ title: "Fotos Prontas!", description: `Adicionadas ${newPhotoPaths.length} foto(s). Clique em "Guardar Alterações" para salvar.` });
+      const newPhotoPaths = await Promise.all(uploadPromises);
+      const validPaths = newPhotoPaths.filter(Boolean);
+      
+      const updatedPhotos = [...photos, ...validPaths];
+      setPhotos(updatedPhotos);
+      
+      // Atualizar cache de URLs para as novas fotos
+      const newUrls = { ...photoUrls };
+      for (const path of validPaths) {
+        try {
+          const url = getPublicPhotoUrl(path);
+          if (url) {
+            newUrls[path] = url;
+          }
+        } catch (error) {
+          console.error('❌ Erro ao gerar URL para nova foto:', error);
+        }
+      }
+      setPhotoUrls(newUrls);
+      
+      console.log('✅ Fotos adicionadas com sucesso:', {
+        newPaths: validPaths,
+        totalPhotos: updatedPhotos.length
+      });
+
+      setSuccess(`Fotos adicionadas! Clique em "Guardar Alterações" para salvar.`);
+      toast({ 
+        title: "Fotos Prontas!", 
+        description: `${validPaths.length} foto(s) adicionada(s) com sucesso!` 
+      });
+
+      console.log('🎯 Estado atual após upload:', {
+        photosAntes: photos.length,
+        photosDepois: updatedPhotos.length,
+        novasFotos: validPaths,
+        todasFotos: updatedPhotos
+      });
+      
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error('Erro ao enviar fotos:', err);
-      setError('Falha ao enviar fotos. Tente novamente.');
-      toast({ variant: "destructive", title: "Erro no Upload", description: "Falha ao enviar fotos." });
+      console.error('❌ Erro ao enviar fotos:', err);
+      setError(`Falha ao enviar fotos: ${err.message}`);
+      toast({ 
+        variant: "destructive", 
+        title: "Erro no Upload", 
+        description: err.message || "Falha ao enviar fotos."
+      });
     }
+    
     setUploading(false);
+    
+    // Limpar input para permitir re-upload do mesmo arquivo
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const handleDeletePhoto = async (index) => {
     const photoToDelete = photos[index];
     if (!photoToDelete) return;
 
+    console.log('🗑️ Removendo foto:', photoToDelete);
+
     try {
+      // Atualizar estado local primeiro
       const updatedPhotos = photos.filter((_, i) => i !== index);
       setPhotos(updatedPhotos);
-      console.log('Foto removida localmente. Array atualizado:', updatedPhotos);
+      
+      // Remover URL do cache
+      const updatedUrls = { ...photoUrls };
+      delete updatedUrls[photoToDelete];
+      setPhotoUrls(updatedUrls);
+      
+      console.log('✅ Foto removida localmente. Array atualizado:', updatedPhotos);
 
+      // Tentar deletar do storage se não for URL externa
       if (!photoToDelete.startsWith('http')) { 
-         const { error: deleteError } = await supabase.storage.from('photos').remove([photoToDelete]);
-         if(deleteError) {
-            console.warn("Não foi possível deletar a foto do storage (pode já ter sido removida):", deleteError.message);
+         // Tentar deletar do bucket 'avatars' primeiro (novo formato)
+         const { error: deleteError } = await supabase.storage
+           .from('avatars')
+           .remove([photoToDelete]);
+           
+         if (deleteError) {
+            console.warn("⚠️ Erro ao deletar do bucket 'avatars':", deleteError.message);
+            
+            // Se falhar, tentar bucket 'photos' (formato antigo)
+            try {
+              const { error: deleteError2 } = await supabase.storage
+                .from('photos')
+                .remove([photoToDelete]);
+                
+              if (deleteError2) {
+                console.warn("⚠️ Erro ao deletar do bucket 'photos':", deleteError2.message);
+              } else {
+                console.log("✅ Foto deletada do storage (bucket photos):", photoToDelete);
+              }
+            } catch (err2) {
+              console.warn("⚠️ Erro secundário ao deletar:", err2.message);
+            }
          } else {
-             console.log("Foto deletada do storage:", photoToDelete);
+             console.log("✅ Foto deletada do storage (bucket avatars):", photoToDelete);
          }
       }
       
-      setSuccess('Foto removida! Clique em "Salvar" para confirmar.');
-      toast({ title: "Foto Removida!", description: 'Clique em "Guardar Alterações" para salvar a mudança.' });
+      setSuccess('Foto removida! Clique em "Guardar Alterações" para confirmar.');
+      toast({ 
+        title: "Foto Removida!", 
+        description: 'Clique em "Guardar Alterações" para salvar a mudança.' 
+      });
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      console.error('Erro ao remover foto:', err);
+      console.error('❌ Erro ao remover foto:', err);
       setError('Falha ao remover foto. Tente novamente.');
+      toast({ 
+        variant: "destructive", 
+        title: "Erro", 
+        description: "Falha ao remover foto." 
+      });
     }
   };
 
@@ -304,46 +689,108 @@ const ProfilePage = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-white/80">Fotos Adicionais (máximo 3)</Label>
-                <div className="flex gap-3 mb-4 flex-wrap">
-                  {photos && photos.length > 0 ? (
-                    photos.map((photoPath, index) => {
-                      const photoUrl = getPublicPhotoUrl(photoPath);
-                      return (
-                        <div key={index} className="relative">
-                          {photoUrl && (
-                            <>
-                              <img
-                                src={photoUrl}
-                                alt={`Foto ${index + 1}`}
-                                className="w-24 h-24 object-cover rounded-lg border-2 border-white/20"
-                                onError={(e) => { 
-                                  console.error('Erro ao carregar foto:', photoUrl);
-                                  e.target.style.display = 'none'; 
-                                }}
-                              />
+              {/* 🎨 Galeria de Fotos Reimaginada */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <Label className="text-white font-semibold text-lg flex items-center">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
+                    Galeria de Fotos
+                  </Label>
+                  <div className="px-3 py-1 bg-purple-500/20 rounded-full border border-purple-500/30">
+                    <span className="text-purple-300 text-xs font-medium">
+                      {photos.length}/3 fotos
+                    </span>
+                  </div>
+                </div>
+
+                {/* Grid de Fotos Elegante */}
+                <div className="grid grid-cols-3 gap-4">
+                  {Array.from({ length: 3 }).map((_, index) => {
+                    const photoPath = photos[index];
+                    const photoUrl = photoPath ? photoUrls[photoPath] : null;
+                    const hasPhoto = photoUrl && photoPath;
+
+                    return (
+                      <div 
+                        key={index} 
+                        className="relative group aspect-square rounded-2xl overflow-hidden"
+                      >
+                        {hasPhoto ? (
+                          <>
+                            {/* Foto Existente */}
+                            <img
+                              src={photoUrl}
+                              alt={`Foto ${index + 1}`}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              onError={(e) => { 
+                                console.error('Erro ao carregar foto:', photoUrl);
+                                // Em vez de esconder, mostrar placeholder
+                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+                                    <rect width="200" height="200" fill="#374151"/>
+                                    <path d="M100 75c-13.807 0-25 11.193-25 25s11.193 25 25 25 25-11.193 25-25-11.193-25-25-25zM60 140h80l-20-20-15 15-15-15-30 20z" fill="#6b7280"/>
+                                    <text x="100" y="170" text-anchor="middle" fill="#9ca3af" font-size="10" font-family="Arial">Erro ao carregar</text>
+                                  </svg>
+                                `)}`;
+                              }}
+                            />
+                            
+                            {/* Overlay com ações */}
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                               <button
                                 type="button"
                                 onClick={() => handleDeletePhoto(index)}
-                                className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 rounded-full p-1.5 shadow-lg transition-all hover:scale-110"
+                                className="p-3 bg-red-500/90 hover:bg-red-600 rounded-full transition-all hover:scale-110 shadow-lg backdrop-blur-sm"
                                 aria-label="Deletar foto"
                                 title="Deletar foto"
                               >
-                                <X className="w-3 h-3 text-white" />
+                                <X className="w-5 h-5 text-white" />
                               </button>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-white/50 text-sm">Nenhuma foto adicional ainda</p>
-                  )}
+                            </div>
+
+                            {/* Badge de posição */}
+                            <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg">
+                              <span className="text-white text-xs font-medium">#{index + 1}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Slot Vazio Elegante */}
+                            <div className="w-full h-full bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-2 border-dashed border-white/20 hover:border-purple-400/50 transition-colors duration-300 flex flex-col items-center justify-center group-hover:bg-gradient-to-br group-hover:from-purple-900/20 group-hover:to-blue-900/20">
+                              <div className="p-3 bg-white/10 rounded-full mb-2 group-hover:bg-purple-500/20 transition-colors">
+                                <UploadCloud className="w-6 h-6 text-white/60 group-hover:text-purple-300" />
+                              </div>
+                              <span className="text-white/40 text-xs text-center px-2">
+                                Foto #{index + 1}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                {photos.length < 3 && photos.length > 0 && (
-                  <p className="text-white/60 text-xs mb-2">Você pode adicionar mais {3 - photos.length} foto(s)</p>
-                )}
+
+                {/* Instruções Elegantes */}
+                <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/20 rounded-xl p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="p-2 bg-purple-500/20 rounded-lg flex-shrink-0">
+                      <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white/90 font-medium text-sm mb-1">Dicas para fotos incríveis:</h4>
+                      <ul className="text-white/60 text-xs space-y-1">
+                        <li>• Use fotos nítidas e bem iluminadas</li>
+                        <li>• Mostre seu rosto claramente na primeira foto</li>
+                        <li>• Evite filtros excessivos</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input de Upload Oculto */}
                 <input
                   type="file"
                   ref={photosInputRef}
@@ -353,51 +800,110 @@ const ProfilePage = () => {
                   multiple
                   disabled={uploading}
                 />
-                <Button
-                  type="button"
-                  onClick={() => photosInputRef.current.click()}
-                  disabled={uploading || photos.length >= 3}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 text-base font-semibold"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud className="mr-2 h-4 w-4" />
-                      Adicionar Fotos
-                    </>
-                  )}
-                </Button>
+
+                {/* Botão de Upload Magistral */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => photosInputRef.current.click()}
+                    disabled={uploading || photos.length >= 3}
+                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 p-[2px] transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="relative rounded-2xl bg-gradient-to-r from-gray-900 via-black to-gray-900 px-6 py-4 transition-all duration-300 group-hover:bg-opacity-80">
+                      <div className="flex items-center justify-center space-x-3">
+                        {uploading ? (
+                          <>
+                            <Loader className="h-6 w-6 animate-spin text-purple-400" />
+                            <span className="text-white font-semibold">Enviando fotos...</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors">
+                              <UploadCloud className="h-6 w-6 text-purple-300" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-white font-semibold">Adicionar Fotos</span>
+                              <span className="text-white/60 text-xs">PNG ou JPEG • Auto-otimizado</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Efeito de brilho */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                </div>
               </div>
 
-              {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
-              {success && <p className="text-green-500 text-sm mt-4 text-center">{success}</p>}
+              {/* Mensagens de Status Elegantes */}
+              {error && (
+                <div className="bg-gradient-to-r from-red-900/30 to-pink-900/30 border border-red-500/30 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-red-500/20 rounded-lg">
+                      <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-red-300 text-sm font-medium">{error}</p>
+                  </div>
+                </div>
+              )}
 
-              <Button type="submit" disabled={saving || uploading} className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 text-base font-semibold">
-                {saving ? (
-                  <>
-                    <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    A Guardar...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Guardar Alterações
-                  </>
-                )}
-              </Button>
+              {success && (
+                <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/30 rounded-xl p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-500/20 rounded-lg">
+                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-green-300 text-sm font-medium">{success}</p>
+                  </div>
+                </div>
+              )}
 
-              <Button
-                type="button"
-                onClick={async () => { await logout(); }}
-                className="w-full bg-red-500 hover:bg-red-600 h-12 text-base font-semibold flex items-center justify-center"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Deslogar
-              </Button>
+              {/* 🎯 Botões de Ação Magistrais */}
+              <div className="space-y-4 pt-4">
+                {/* Botão Guardar - Premium Style */}
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-2xl blur-sm opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                  
+                  <button 
+                    type="submit" 
+                    disabled={saving || uploading}
+                    className="relative w-full px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-2xl leading-none transition-all duration-300 hover:shadow-[0_0_40px_rgba(168,85,247,0.6)] disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <div className="flex items-center justify-center space-x-3">
+                      {saving ? (
+                        <>
+                          <div className="p-2 bg-white/20 rounded-lg">
+                            <Loader className="h-6 w-6 animate-spin text-white" />
+                          </div>
+                          <div className="text-left">
+                            <div className="text-white font-bold text-lg">Salvando...</div>
+                            <div className="text-white/80 text-sm">Aguarde um momento</div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                            <Save className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="text-left">
+                            <div className="text-white font-bold text-lg">Guardar Alterações</div>
+                            <div className="text-white/80 text-sm">Salvar todas as mudanças</div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Shine Effect */}
+                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] group-hover:translate-x-[100%] skew-x-12"></div>
+                  </button>
+                </div>
+
+              </div>
             </form>
           </div>
 
@@ -411,23 +917,43 @@ const ProfilePage = () => {
               isPremium={isPremium}
             />
 
-            <Button 
-              onClick={handleUpdateProfile} 
-              disabled={saving || uploading}
-              className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-12 text-base font-semibold"
-            >
-              {saving ? (
-                <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salvar Preferências
-                </>
-              )}
-            </Button>
+            {/* Botão Salvar Preferências - Consistente */}
+            <div className="relative group mt-6">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 rounded-2xl blur-sm opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+              
+              <button 
+                onClick={handleUpdateProfile} 
+                disabled={saving || uploading}
+                className="relative w-full px-6 py-4 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  {saving ? (
+                    <>
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <Loader className="h-5 w-5 animate-spin text-white" />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white font-semibold">Salvando...</div>
+                        <div className="text-white/70 text-xs">Atualizando preferências</div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
+                        <Save className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white font-semibold">Salvar Preferências</div>
+                        <div className="text-white/70 text-xs">Interesses e configurações</div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Shine Effect */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] group-hover:translate-x-[100%] skew-x-12"></div>
+              </button>
+            </div>
           </div>
 
           {/* Seção de Restaurantes Favoritos */}
@@ -439,6 +965,50 @@ const ProfilePage = () => {
                 window.open(`https://maps.google.com/maps/place/?q=place_id:${restaurant.restaurant_place_id}`, '_blank');
               }}
             />
+          </div>
+
+          {/* Seção de Configurações de Conta - Separada */}
+          <div className="glass-effect rounded-2xl p-8 border border-white/10">
+            
+            <div className="space-y-4">
+              {/* Aviso de Segurança */}
+              <div className="flex justify-center mb-4">
+                <div className="p-2 bg-amber-500/20 rounded-lg">
+                  <svg className="w-5 h-5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Botão Deslogar - Danger Style */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={async () => { await logout(); }}
+                  className="relative w-full overflow-hidden rounded-2xl border-2 border-red-500/30 bg-gradient-to-r from-red-900/20 to-pink-900/20 px-8 py-4 transition-all duration-300 hover:border-red-400/50 hover:bg-gradient-to-r hover:from-red-900/40 hover:to-pink-900/40 group-hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="p-2 bg-red-500/20 rounded-lg group-hover:bg-red-500/30 transition-colors">
+                      <LogOut className="h-6 w-6 text-red-400" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-red-300 font-bold text-lg group-hover:text-red-200">Sair da Conta</div>
+                      <div className="text-red-400/80 text-sm">Encerrar sessão atual</div>
+                    </div>
+                  </div>
+
+                  {/* Hover Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-600/0 via-red-500/5 to-red-600/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </button>
+
+                {/* Warning Icon */}
+                <div className="absolute -top-2 -right-2 p-1 bg-amber-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
