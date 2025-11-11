@@ -12,7 +12,11 @@ import { useAccessibleForm } from '@/hooks/useAccessibleForm';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import SocialLoginButtons from '@/features/shared/components/auth/SocialLoginButtons';
 import { supabase } from '@/lib/supabaseClient';
-import backgroundVideo from '@/assets/vds2.mp4';
+import vds2 from '@/assets/vds2.mp4';
+import vds4 from '@/assets/vds4.mp4';
+import vds5 from '@/assets/vds5.mp4';
+import vds7 from '@/assets/vds7.mp4';
+import vds9 from '@/assets/vds9.mp4';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -21,6 +25,15 @@ const LoginPage = () => {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
+
+  // 🎬 Sistema de vídeos aleatórios
+  const videoFiles = [vds2, vds4, vds5, vds7, vds9];
+  const [selectedVideo] = useState(() => {
+    const randomIndex = Math.floor(Math.random() * videoFiles.length);
+    const selectedFile = videoFiles[randomIndex];
+    console.log(`🎬 Vídeo selecionado: vds${[2, 4, 5, 7, 9][randomIndex]}.mp4`);
+    return selectedFile;
+  });
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getFieldProps, getLabelProps, getErrorId } = useAccessibleForm();
@@ -174,7 +187,7 @@ const LoginPage = () => {
           playsInline
           className="absolute inset-0 w-full h-full object-cover z-0"
         >
-          <source src={backgroundVideo} type="video/mp4" />
+          <source src={selectedVideo} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         
