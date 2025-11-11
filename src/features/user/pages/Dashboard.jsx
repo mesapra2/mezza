@@ -512,6 +512,65 @@ const Dashboard = () => {
     );
   };
 
+  const getUserParticipationBadge = (eventId) => {
+    const participation = userParticipations[eventId];
+    if (!participation) return null;
+
+    const status = participation.status;
+    
+    const badges = {
+      aprovado: {
+        label: 'Confirmado',
+        className: 'bg-green-500/20 text-green-400 border-green-500/50',
+        icon: CheckCircle
+      },
+      pendente: {
+        label: 'Aguardando',
+        className: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+        icon: Clock
+      },
+      recusado: {
+        label: 'Recusado',
+        className: 'bg-red-500/20 text-red-400 border-red-500/50',
+        icon: XCircle
+      },
+      cancelado: {
+        label: 'Cancelado',
+        className: 'bg-gray-500/20 text-gray-300 border-gray-500/50',
+        icon: XCircle
+      }
+    };
+
+    const badge = badges[status];
+    if (!badge) return null;
+
+    const Icon = badge.icon;
+
+    if (status === 'aprovado') {
+      return (
+        <div className="space-y-2">
+          <div className={`w-full px-4 py-3 rounded-lg border-2 ${badge.className} flex items-center justify-center gap-2 font-semibold`}>
+            <Icon className="w-5 h-5" />
+            {badge.label}
+          </div>
+          <Link to={`/event/${eventId}/chat`}>
+            <Button className="w-full" variant="outline" size="sm">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Acessar Chat
+            </Button>
+          </Link>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`w-full px-4 py-3 rounded-lg border-2 ${badge.className} flex items-center justify-center gap-2 font-semibold`}>
+        <Icon className="w-5 h-5" />
+        {badge.label}
+      </div>
+    );
+  };
+
   // ========================================================== 
   // Return JSX
   // ==========================================================
