@@ -2,8 +2,6 @@
 /node_modules
 /backend/node_modules
 node_modules/
-/vendor
-/keys
 
 # Arquivos de ambiente (contém dados sensíveis)
 .env*
@@ -29,6 +27,7 @@ build/
 .tmp.driveupload/
 /docs
 /vendor
+/keys
 
 # Arquivos de teste
 /src/App.test.jsx
@@ -36,11 +35,14 @@ build/
 *.test.ts
 
 # ============================================
-# 🔒 HISTÓRICO DO VSCODE (NOVO - ADICIONAR ISTO)
+# 🔒 HISTÓRICO DO VSCODE
 # ============================================
 .history/
 .history/**/*
-/supabase
-/supabase/**
 **/.history/
 
+# ============================================
+# 🔒 SUPABASE LOCAL
+# ============================================
+/supabase
+/supabase/**
