@@ -15,6 +15,7 @@ import { toast } from '@/features/shared/components/ui/use-toast';
 import { Dialog,  DialogContent,  DialogHeader,  DialogTitle,  DialogDescription,} from '@/features/shared/components/ui/dialog';
 import BannerCarousel from '@/features/shared/components/BannerCarousel';
 import CallToAction from '@/features/shared/components/callToAction';
+import Avatar from '@/features/shared/components/profile/Avatar';
 
 
 const Dashboard = () => {
@@ -465,6 +466,50 @@ const Dashboard = () => {
         description: "Não foi possível cancelar o evento. Tente novamente."
       });
     }
+  };
+
+  const renderParticipantAvatars = (event) => {
+    const maxVagas = event.max_vagas || event.vagas;
+    const approvedParticipants = eventParticipants[event.id] || [];
+    const avatars = [];
+
+    // Renderizar avatares dos participantes aprovados
+    approvedParticipants.forEach((participant) => {
+      avatars.push(
+        <div key={`participant-${participant.id}`} className="flex-shrink-0">
+          <Avatar
+            url={participant.user?.avatar_url}
+            name={participant.user?.username || 'Participante'}
+            size="sm"
+          />
+        </div>
+      );
+    });
+
+    // Vagas vazias
+    const remainingSlots = maxVagas - approvedParticipants.length;
+    for (let i = 0; i < remainingSlots; i++) {
+      avatars.push(
+        <div
+          key={`empty-${i}`}
+          className="w-8 h-8 rounded-full border-2 border-white/20 bg-white/5 flex items-center justify-center flex-shrink-0"
+          title="Vaga disponível"
+        >
+          <Users className="w-4 h-4 text-white/40" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex -space-x-2 overflow-hidden">
+        {avatars.slice(0, Math.min(6, maxVagas))}
+        {avatars.length > 6 && (
+          <div className="w-8 h-8 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center text-xs text-white/60">
+            +{avatars.length - 6}
+          </div>
+        )}
+      </div>
+    );
   };
 
   // ========================================================== 
