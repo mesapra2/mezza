@@ -7,6 +7,7 @@ import { toast } from '@/features/shared/components/ui/use-toast';
 import { useMultiplePresence } from '@/hooks/usePresence';
 import { calculateStatus, getStatusColor, getStatusLabel } from '@/services/PresenceService.ts';
 import { FavoriteRestaurantService } from '@/services/FavoriteRestaurantService';
+import MesaPra2Logo from '@/components/MesaPra2Logo';
 
 const PeoplePage = () => {
   const { user, profile } = useAuth();
@@ -280,8 +281,25 @@ const PeoplePage = () => {
   return (
     <div className="py-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2 gradient-text">Pessoas Ativas</h1>
-        <p className="text-white/60">Conecte-se com outros membros da comunidade</p>
+        <div className="flex items-center space-x-6 mb-4">
+          {/* Logo com efeito suave */}
+          <MesaPra2Logo 
+            size="lg" 
+            variant="dark"
+            glow={true}
+            animate={false}
+            className="hover:scale-105 transition-transform duration-300"
+          />
+          
+          {/* Separador minimalista */}
+          <div className="hidden sm:block h-12 w-px bg-gradient-to-b from-transparent via-blue-400 to-transparent"></div>
+          
+          {/* Textos */}
+          <div>
+            <h1 className="text-3xl font-bold mb-2 gradient-text">Pessoas Ativas</h1>
+            <p className="text-white/60">Conecte-se com outros membros da comunidade</p>
+          </div>
+        </div>
       </div>
 
       {!isPartner && (

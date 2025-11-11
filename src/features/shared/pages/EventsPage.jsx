@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Avatar from '@/features/shared/components/profile/Avatar';
+import MesaPra2Logo from '@/components/MesaPra2Logo';
 
 const EventsPage = () => {
   const [events, setEvents] = useState([]);
@@ -292,18 +293,33 @@ const EventsPage = () => {
       <div className="space-y-8 py-6 px-4">
         {/* HEADER COM BOTÃO CRIAR */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-bold gradient-text mb-2">
-              Descubra Eventos
-            </h1>
-            <p className="text-white/60 text-lg">
-              Encontre experiências incríveis e conecte-se com pessoas
-            </p>
-            {filteredEvents.length > 0 && (
-              <p className="text-white/40 text-sm mt-2">
-                {filteredEvents.length} {filteredEvents.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
+          <div className="flex items-center space-x-6">
+            {/* Logo flutuante com efeito */}
+            <MesaPra2Logo 
+              size="lg" 
+              variant="dark"
+              glow={true}
+              animate={false}
+              className="hover:scale-105 drop-shadow-2xl"
+            />
+            
+            {/* Separador elegante */}
+            <div className="hidden md:block h-16 w-px bg-gradient-to-b from-transparent via-purple-400 to-transparent"></div>
+            
+            {/* Textos */}
+            <div>
+              <h1 className="text-4xl font-bold gradient-text mb-2">
+                Descubra Eventos
+              </h1>
+              <p className="text-white/60 text-lg">
+                Encontre experiências incríveis e conecte-se com pessoas
               </p>
-            )}
+              {filteredEvents.length > 0 && (
+                <p className="text-white/40 text-sm mt-2">
+                  {filteredEvents.length} {filteredEvents.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
+                </p>
+              )}
+            </div>
           </div>
 
           <Link to="/criar-evento">

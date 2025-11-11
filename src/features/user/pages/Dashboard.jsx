@@ -16,6 +16,7 @@ import { Dialog,  DialogContent,  DialogHeader,  DialogTitle,  DialogDescription
 import BannerCarousel from '@/features/shared/components/BannerCarousel';
 import CallToAction from '@/features/shared/components/callToAction';
 import Avatar from '@/features/shared/components/profile/Avatar';
+import MesaPra2Logo from '@/components/MesaPra2Logo';
 
 
 const Dashboard = () => {
@@ -586,8 +587,20 @@ const Dashboard = () => {
       {/* Header com arte digital, Dashboard, relógio e controles */}
       <div className="mx-4 mt-4 rounded-2xl bg-gradient-to-br from-gray-900/80 via-black/60 to-purple-900/80 backdrop-blur-md border border-white/10 p-6">
         <div className="flex justify-between items-center">
-          {/* Título Dashboard */}
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          {/* Logo + Título Dashboard */}
+          <div className="flex items-center space-x-4">
+            <MesaPra2Logo 
+              size="md" 
+              variant="dark"
+              glow={true}
+              animate={false}
+              className="hover:scale-110 transition-transform duration-300"
+            />
+            <div className="h-8 w-px bg-gradient-to-b from-purple-400 to-blue-500"></div>
+            <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-purple-200 to-blue-200 bg-clip-text text-transparent">
+              Dashboard
+            </h1>
+          </div>
           
           {/* Relógio Digital Central */}
           <div className="flex-1 flex justify-center">

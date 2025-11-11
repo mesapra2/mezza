@@ -14,8 +14,17 @@ import {
   User,
   CreditCard,
   FileText,
-  Loader2
+  Loader2,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+// Configurar Supabase
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 const MobileVerificationPageSimple = () => {
   const [searchParams] = useSearchParams();
@@ -79,11 +88,7 @@ const MobileVerificationPageSimple = () => {
         break;
       case 'selfie':
         setCurrentStep('processing');
-        // Simular processamento por enquanto
-        setTimeout(() => {
-          alert('Verificação simulada - implementar integração real');
-          window.location.href = '/';
-        }, 2000);
+        processDocuments();
         break;
     }
   };
@@ -144,6 +149,89 @@ const MobileVerificationPageSimple = () => {
       stopCamera();
       handleNextStep();
     }, 'image/jpeg', 0.8);
+  };
+
+  // Processar documentos com Google Vision
+  const processDocuments = async () => {
+    setProcessing(true);
+    
+    try {
+      console.log('🔄 Iniciando processamento de documentos...');
+      
+      // 1. Fazer upload das imagens para Supabase Storage
+      const documentFrontUrl = await uploadPhoto(photos.documentFront, 'document-front');
+      const documentBackUrl = await uploadPhoto(photos.documentBack, 'document-back');
+      const selfieUrl = await uploadPhoto(photos.selfie, 'selfie');
+
+      console.log('📤 Fotos enviadas:', {
+        documentFrontUrl,
+        documentBackUrl,
+        selfieUrl
+      });
+
+      // 2. Chamar API de verificação
+      const response = await fetch('/api/verify-cpf-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          cpfInformado: cpf.replace(/\D/g, ''),
+          documentFrontUrl,
+          documentBackUrl,
+          selfieUrl
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('✅ Verificação aprovada:', result);
+        setCurrentStep('success');
+        setTimeout(() => {
+          window.location.href = '/?verified=true';
+        }, 3000);
+      } else {
+        console.error('❌ Verificação rejeitada:', result);
+        setCurrentStep('error');
+      }
+
+    } catch (error) {
+      console.error('💥 Erro no processamento:', error);
+      setCurrentStep('error');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Fazer upload de uma foto para o Supabase Storage
+  const uploadPhoto = async (photoFile, photoType) => {
+    if (!photoFile) throw new Error(`Foto ${photoType} não encontrada`);
+
+    const fileExt = photoFile.name.split('.').pop();
+    const fileName = `${userId}-${sessionId}-${photoType}-${Date.now()}.${fileExt}`;
+    const filePath = `verifications/${fileName}`;
+
+    // Upload para o bucket de verificações
+    const { data, error } = await supabase.storage
+      .from('user-verifications')
+      .upload(filePath, photoFile, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Erro no upload:', error);
+      throw new Error(`Erro ao enviar ${photoType}: ${error.message}`);
+    }
+
+    // Retornar URL pública
+    const { data: urlData } = supabase.storage
+      .from('user-verifications')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
   };
 
   // Cleanup
@@ -283,6 +371,58 @@ const MobileVerificationPageSimple = () => {
               <p className="text-sm opacity-80">
                 Aguarde enquanto verificamos se o CPF corresponde ao documento apresentado.
               </p>
+            </div>
+          )}
+
+          {/* Sucesso */}
+          {currentStep === 'success' && (
+            <div className="text-center text-white">
+              <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
+              <h2 className="text-xl font-bold mb-2">Verificação Aprovada!</h2>
+              <p className="text-sm opacity-80 mb-4">
+                Sua identidade foi verificada com sucesso. O CPF corresponde ao documento apresentado.
+              </p>
+              <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
+                <p className="text-sm text-green-300">
+                  ✅ Agora você pode acessar recursos Premium!
+                </p>
+              </div>
+              <p className="text-xs opacity-60 mt-4">Redirecionando...</p>
+            </div>
+          )}
+
+          {/* Erro */}
+          {currentStep === 'error' && (
+            <div className="text-center text-white">
+              <XCircle className="w-16 h-16 mx-auto mb-4 text-red-400" />
+              <h2 className="text-xl font-bold mb-2">Verificação Rejeitada</h2>
+              <p className="text-sm opacity-80 mb-4">
+                Não foi possível verificar sua identidade. Possíveis motivos:
+              </p>
+              <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4 mb-6">
+                <ul className="text-sm text-red-300 text-left space-y-1">
+                  <li>• CPF não corresponde ao documento</li>
+                  <li>• Documento ilegível ou borrado</li>
+                  <li>• Selfie não corresponde ao documento</li>
+                </ul>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setCurrentStep('cpf');
+                    setPhotos({ documentFront: null, documentBack: null, selfie: null });
+                  }}
+                  className="flex-1 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Tentar Novamente
+                </button>
+                <button
+                  onClick={() => window.location.href = '/'}
+                  className="flex-1 py-3 px-4 border border-white/20 text-white hover:bg-white/10 rounded-lg font-medium transition-colors"
+                >
+                  Voltar ao Início
+                </button>
+              </div>
             </div>
           )}
         </div>

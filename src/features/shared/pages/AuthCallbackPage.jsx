@@ -20,6 +20,16 @@ const AuthCallbackPage = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
+    // 🔧 FIX: Timeout de segurança para evitar loops no mobile
+    const safetyTimeout = setTimeout(() => {
+      console.warn('⚠️ Timeout na autenticação - Forçando redirecionamento');
+      setStatus('error');
+      setMessage('Tempo limite excedido. Redirecionando para login...');
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 2000);
+    }, 10000); // 10 segundos de timeout
+
     const handleAuthCallback = async () => {
       try {
         // Verificar se é um callback OAuth (como Facebook, Google)
@@ -31,8 +41,30 @@ const AuthCallbackPage = () => {
           setStatus('success');
           setMessage('Login realizado com sucesso! Redirecionando...');
           
+          // 🔧 FIX: Verificar tipo de usuário e redirecionar adequadamente
+          const user = sessionData.session.user;
+          let targetRoute = '/dashboard'; // Default para usuários comuns
+          
+          try {
+            // Buscar perfil para determinar rota correta
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('profile_type, partner_id')
+              .eq('id', user.id)
+              .single();
+            
+            // Se for parceiro, redirecionar para dashboard do parceiro
+            if (profile?.profile_type === 'partner' || profile?.partner_id) {
+              targetRoute = '/partner/dashboard';
+            }
+          } catch (error) {
+            console.log('Perfil não encontrado, usando rota padrão');
+          }
+          
+          console.log(`🎯 Redirecionando para: ${targetRoute}`);
+          clearTimeout(safetyTimeout); // Limpar timeout de segurança
           setTimeout(() => {
-            navigate('/dashboard', { replace: true });
+            navigate(targetRoute, { replace: true });
           }, 1500);
           return;
         }
@@ -56,8 +88,29 @@ const AuthCallbackPage = () => {
           setStatus('success');
           setMessage('Email confirmado com sucesso! Agora você pode fazer login.');
           
+          // 🔧 FIX: Determinar rota adequada após confirmação de email
+          let targetRoute = '/dashboard';
+          
+          if (data?.user) {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('profile_type, partner_id')
+                .eq('id', data.user.id)
+                .single();
+              
+              if (profile?.profile_type === 'partner' || profile?.partner_id) {
+                targetRoute = '/partner/dashboard';
+              }
+            } catch (error) {
+              console.log('Perfil não encontrado após confirmação, usando rota padrão');
+            }
+          }
+          
+          console.log(`🎯 Email confirmado - Redirecionando para: ${targetRoute}`);
+          clearTimeout(safetyTimeout); // Limpar timeout de segurança
           setTimeout(() => {
-            navigate('/dashboard', { replace: true });
+            navigate(targetRoute, { replace: true });
           }, 1500);
           return;
         }
@@ -75,6 +128,7 @@ const AuthCallbackPage = () => {
 
       } catch (error) {
         console.error('Erro no callback de autenticação:', error);
+        clearTimeout(safetyTimeout); // Limpar timeout de segurança
         setStatus('error');
         
         if (error.message.includes('already confirmed')) {

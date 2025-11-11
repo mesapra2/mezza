@@ -48,6 +48,9 @@ const MyEventsPage = () => {
   // ✅ NOVO: Estado para mostrar/esconder formulário de senha
   const [showPasswordForm, setShowPasswordForm] = useState({});
 
+  // ✅ Estado para controlar a exibição do vídeo de orientação
+  const [showVideoGuide, setShowVideoGuide] = useState(true);
+
   // --------------------------------------------------
   // ✅ CARREGAR EVENTOS ONDE SOU CRIADOR
   // --------------------------------------------------
@@ -415,6 +418,129 @@ const MyEventsPage = () => {
               <Plus className="w-5 h-5 mr-2" /> Criar Evento
             </Button>
           </Link>
+        </div>
+
+        {/* 🎥 Vídeo de Orientação */}
+        <div className="glass-effect rounded-2xl p-6 border border-white/10 bg-gradient-to-br from-purple-900/20 via-black/40 to-blue-900/20">
+          {/* Header colapsável */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <svg className="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Guia de Orientação</h2>
+                <p className="text-white/60 text-sm">Como criar eventos seguros e frutíferos</p>
+              </div>
+            </div>
+            <button 
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              onClick={() => setShowVideoGuide(!showVideoGuide)}
+            >
+              <svg className={`w-5 h-5 text-white/70 transition-transform ${showVideoGuide ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Conteúdo colapsável com animação */}
+          {showVideoGuide && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="flex flex-col lg:flex-row gap-6 items-start">
+            {/* Vídeo */}
+            <div className="flex-shrink-0 w-full lg:w-96">
+              <div className="relative overflow-hidden rounded-xl border-2 border-purple-500/30 shadow-2xl">
+                {/* Placeholder para vídeo de orientação */}
+                <div className="relative bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-xl overflow-hidden min-h-[200px] flex items-center justify-center">
+                  <div className="text-center space-y-3 p-6">
+                    <div className="w-16 h-16 mx-auto bg-purple-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-8 h-8 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-white font-semibold">Vídeo de Orientação</h3>
+                    <p className="text-white/60 text-sm">
+                      Vídeo em produção - Em breve disponível!
+                    </p>
+                    <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors">
+                      🎬 Assistir Preview
+                    </button>
+                  </div>
+                  
+                  {/* Ícone de play elegante */}
+                  <div className="absolute top-4 right-4">
+                    <div className="w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Overlay gradiente sutil */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none"></div>
+              </div>
+            </div>
+
+            {/* Conteúdo Textual */}
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-500/20 rounded-lg">
+                  <svg className="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-white">Guia: Como Criar Eventos Seguros e Frutíferos</h2>
+              </div>
+
+              <p className="text-white/70 leading-relaxed">
+                Assista a este vídeo para aprender as melhores práticas na criação de eventos no MesaPra2. 
+                Descubra como escolher locais seguros, definir participantes ideais e garantir experiências 
+                memoráveis para todos.
+              </p>
+
+              {/* Tópicos do vídeo */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-white/90 flex items-center">
+                  <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
+                  O que você aprenderá:
+                </h3>
+                <ul className="text-sm text-white/60 space-y-1 ml-4">
+                  <li>• Escolha de restaurantes parceiros verificados</li>
+                  <li>• Definição de critérios para participantes</li>
+                  <li>• Comunicação efetiva antes e durante o evento</li>
+                  <li>• Gestão de expectativas e segurança</li>
+                  <li>• Como lidar com imprevistos</li>
+                </ul>
+              </div>
+
+              {/* Badge de duração */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex items-center space-x-1 bg-black/30 px-3 py-1 rounded-full">
+                  <svg className="w-4 h-4 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs text-white/60">~3min</span>
+                </div>
+                <div className="flex items-center space-x-1 bg-green-500/20 px-3 py-1 rounded-full border border-green-500/30">
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs text-green-300">Recomendado</span>
+                </div>
+              </div>
+            </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Filtros */}

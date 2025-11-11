@@ -180,10 +180,18 @@ export const AuthProvider = ({ children }) => {
                     const currentPath = window.location.pathname;
                     
                     // ✅ NÃO redireciona se estiver em /verify-phone ou se for usuário antigo sem telefone
-                    if (initialProfile && ['/', '/login', '/register'].includes(currentPath)) {
+                    // 🔧 FIX: Adicionar mais verificações para evitar loops no mobile
+                    const allowedRedirectPaths = ['/', '/login', '/register', '/auth/callback'];
+                    if (initialProfile && allowedRedirectPaths.includes(currentPath)) {
                         const targetRoute = initialProfile.isPartner ? '/partner/dashboard' : '/dashboard';
-                        console.log(`[Auth Effect Init] Navegando para rota inicial: ${targetRoute}`);
-                        navigate(targetRoute, { replace: true });
+                        console.log(`[Auth Effect Init] Navegando para rota inicial: ${targetRoute} (mobile: ${/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)})`);
+                        
+                        // Verificar se não está já na rota correta para evitar loop
+                        if (currentPath !== targetRoute) {
+                            navigate(targetRoute, { replace: true });
+                        } else {
+                            console.log('✅ Já está na rota correta, evitando redirecionamento');
+                        }
                     }
                 }
             } else if (mounted) {
