@@ -72,7 +72,21 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
 
   const generateMobileQRCode = async () => {
     try {
-      const mobileUrl = `${window.location.origin}/verify-mobile?userId=${userId}&sessionId=${sessionId}&cpf=${encodeURIComponent(cpf)}`;
+      // ✅ FIX: Usar URL de produção em ambiente de produção
+      const getBaseUrl = () => {
+        // Se tem VITE_SITE_URL definida, usar ela (produção)
+        if (import.meta.env.VITE_SITE_URL) {
+          return import.meta.env.VITE_SITE_URL;
+        }
+        // Senão, usar window.location.origin (desenvolvimento)
+        return window.location.origin;
+      };
+
+      const baseUrl = getBaseUrl();
+      const mobileUrl = `${baseUrl}/verify-mobile?userId=${userId}&sessionId=${sessionId}&cpf=${encodeURIComponent(cpf)}`;
+      
+      console.log('📱 QR Code URL gerada:', mobileUrl);
+      
       const qrDataURL = await QRCode.toDataURL(mobileUrl, {
         width: 300,
         margin: 2,
@@ -163,7 +177,18 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
 
   // Redirecionar para mobile
   const redirectToMobile = () => {
-    const mobileUrl = `/verify-mobile?userId=${userId}&sessionId=${sessionId}`;
+    // ✅ FIX: Usar mesma lógica de URL do QR Code
+    const getBaseUrl = () => {
+      if (import.meta.env.VITE_SITE_URL) {
+        return import.meta.env.VITE_SITE_URL;
+      }
+      return window.location.origin;
+    };
+
+    const baseUrl = getBaseUrl();
+    const mobileUrl = `${baseUrl}/verify-mobile?userId=${userId}&sessionId=${sessionId}`;
+    
+    console.log('📱 Redirecionando para mobile:', mobileUrl);
     window.location.href = mobileUrl;
   };
 
