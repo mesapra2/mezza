@@ -7,7 +7,7 @@
  * para o usuário poder assinar o Premium
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
@@ -30,15 +30,9 @@ const VerificationStatus = ({ onStatusChange, className = '' }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user?.id) {
-      loadVerificationStatus();
-    } else {
-      setLoading(false);
-    }
-  }, [user?.id]);
-
-  const loadVerificationStatus = async () => {
+  const loadVerificationStatus = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
       setLoading(true);
       const summary = await PremiumFlowService.getVerificationSummary(user.id);
@@ -53,7 +47,15 @@ const VerificationStatus = ({ onStatusChange, className = '' }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, onStatusChange]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadVerificationStatus();
+    } else {
+      setLoading(false);
+    }
+  }, [user?.id, loadVerificationStatus]);
 
   // ✅ MODIFICADO: Agora roteia direto para verificação de identidade
   const handleContinueVerification = () => {

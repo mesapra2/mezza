@@ -24,6 +24,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
 
   // 🎬 Sistema de vídeos aleatórios
@@ -178,21 +179,40 @@ const LoginPage = () => {
         <meta name="description" content="Faça login no Mesapra2 e participe de eventos sociais em restaurantes." />
       </Helmet>
 
-      <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
-        {/* 📹 Vídeo de Fundo */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="fixed inset-0 w-screen h-screen object-cover z-0"
-        >
-          <source src={selectedVideo} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+      <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative bg-gradient-to-br from-gray-900 via-black to-purple-900">
+        {/* 📹 Vídeo de Fundo com fallback */}
+        {selectedVideo && (
+          <>
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className={`fixed inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000 ${
+                videoLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
+              onLoadedData={() => {
+                setVideoLoaded(true);
+                console.log('✅ Vídeo carregado com sucesso');
+              }}
+              onError={(e) => {
+                console.warn('⚠️ Erro ao carregar vídeo, usando background estático');
+                e.target.style.display = 'none';
+                setVideoLoaded(false);
+              }}
+            >
+              <source src={selectedVideo} type="video/mp4" />
+            </video>
+            
+            {/* 🎭 Overlay transparente */}
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-10"></div>
+          </>
+        )}
         
-        {/* 🎭 Overlay transparente */}
-        <div className="fixed inset-0 w-screen h-screen bg-black/60 backdrop-blur-[2px] z-10"></div>
+        {/* 🌟 Background estático como fallback */}
+        {!videoLoaded && (
+          <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-0"></div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
