@@ -215,8 +215,8 @@ class PremiumFlowService {
     const redirectMap = {
       phone_number: '/verify-phone',
       phone_verification: '/verify-phone',
-      document_upload: '/mobile-verification',
-      document_verification: '/mobile-verification'
+      document_upload: '/user-settings?tab=verification',
+      document_verification: '/user-settings?tab=verification'
     };
 
     return redirectMap[firstMissingStep as keyof typeof redirectMap] || '/user/settings';

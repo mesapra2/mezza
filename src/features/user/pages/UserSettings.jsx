@@ -16,13 +16,14 @@ import CertifiedUserService from '@/services/CertifiedUserService';
 import AddressManager from '@/components/AddressManager';
 import AddressService from '@/services/AddressService';
 import VerificationBadge from '@/components/VerificationBadge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 
 
 const UserSettings = () => {
   const { user, profile, logout, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   // Estados dos modais
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -77,6 +78,14 @@ const UserSettings = () => {
       loadDefaultAddress();
     }
   }, [user, profile]);
+
+  // Verificar se deve abrir a verificação de documentos via URL
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'verification') {
+      setShowDocumentVerification(true);
+    }
+  }, [searchParams]);
 
   // Carregar dados de certificação
   const loadCertificationData = async () => {

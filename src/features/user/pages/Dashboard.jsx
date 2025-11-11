@@ -698,8 +698,7 @@ const Dashboard = () => {
           className="space-y-6"
         >
 {/* 🆕 Carrossel de Anúncios */}
-<BannerCarousel />
-
+          <BannerCarousel />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="glass-effect rounded-2xl p-6 border border-white/10 flex items-center">
