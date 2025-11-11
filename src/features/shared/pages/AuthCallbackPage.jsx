@@ -8,8 +8,10 @@ import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/features/shared/components/ui/button';
 
 /**
- * Página de callback para processar confirmação de email
- * Esta página é chamada quando o usuário clica no link de confirmação enviado por email
+ * Página de callback para processar confirmação de email e OAuth social
+ * Esta página é chamada quando:
+ * 1. Usuário clica no link de confirmação enviado por email
+ * 2. Retorno do OAuth (Google, Facebook, Apple)
  */
 const AuthCallbackPage = () => {
   const [searchParams] = useSearchParams();
@@ -18,50 +20,76 @@ const AuthCallbackPage = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const handleEmailConfirmation = async () => {
+    const handleAuthCallback = async () => {
       try {
-        // Pega os parâmetros da URL
+        // Verificar se é um callback OAuth (como Facebook, Google)
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionData?.session) {
+          // ✅ Login social bem-sucedido - usuário já autenticado
+          console.log('✅ Login OAuth bem-sucedido:', sessionData.session.user.email);
+          setStatus('success');
+          setMessage('Login realizado com sucesso! Redirecionando...');
+          
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 1500);
+          return;
+        }
+
+        // Se não há sessão ativa, verificar se é confirmação de email
         const token_hash = searchParams.get('token_hash');
         const type = searchParams.get('type');
         
-        if (!token_hash || type !== 'email') {
-          throw new Error('Link de confirmação inválido');
+        // Verificar se tem parâmetros de confirmação de email
+        if (token_hash && type === 'email') {
+          // Processar confirmação de email
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash,
+            type: 'email'
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          setStatus('success');
+          setMessage('Email confirmado com sucesso! Agora você pode fazer login.');
+          
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 1500);
+          return;
         }
 
-        // Verifica o token de email
-        const { data, error } = await supabase.auth.verifyOtp({
-          token_hash,
-          type: 'email'
-        });
-
+        // Se chegou até aqui, verificar se há erro OAuth nos parâmetros
+        const error_description = searchParams.get('error_description');
+        const error = searchParams.get('error');
+        
         if (error) {
-          throw error;
+          throw new Error(error_description || `Erro OAuth: ${error}`);
         }
 
-        // Email confirmado com sucesso!
-        setStatus('success');
-        setMessage('Email confirmado com sucesso! Agora você pode fazer login.');
-
-        // ✅ FIX: Redirecionar para dashboard após login social bem-sucedido
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 1500);
+        // Nenhum parâmetro válido encontrado
+        throw new Error('Callback inválido - parâmetros não reconhecidos');
 
       } catch (error) {
-        console.error('Erro na confirmação:', error);
+        console.error('Erro no callback de autenticação:', error);
         setStatus('error');
         
         if (error.message.includes('already confirmed')) {
           setMessage('Este email já foi confirmado anteriormente. Você pode fazer login normalmente.');
         } else if (error.message.includes('expired')) {
           setMessage('Este link de confirmação expirou. Solicite um novo link de confirmação.');
+        } else if (error.message.includes('OAuth')) {
+          setMessage('Erro no login social. Tente fazer login novamente.');
         } else {
-          setMessage(error.message || 'Erro ao confirmar email. Tente novamente.');
+          setMessage(error.message || 'Erro na autenticação. Tente novamente.');
         }
       }
     };
 
-    handleEmailConfirmation();
+    handleAuthCallback();
   }, [searchParams, navigate]);
 
   return (
@@ -83,10 +111,10 @@ const AuthCallbackPage = () => {
                   <Loader2 className="w-16 h-16 text-purple-400 animate-spin" />
                 </div>
                 <h2 className="text-2xl font-bold text-white">
-                  Confirmando seu email...
+                  Processando autenticação...
                 </h2>
                 <p className="text-white/60">
-                  Aguarde enquanto validamos seu cadastro
+                  Aguarde enquanto validamos seu acesso
                 </p>
               </div>
             )}
@@ -99,7 +127,7 @@ const AuthCallbackPage = () => {
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold text-white">
-                  Email Confirmado!
+                  Autenticação Bem-sucedida!
                 </h2>
                 <p className="text-white/60">{message}</p>
                 <p className="text-sm text-white/40">
