@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pt-BR" prefix="og: http://ogp.me/ns#">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Mobile Safari Status Bar (alternativa ao theme-color) -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Windows Tile Colors -->
+    <meta name="msapplication-TileColor" content="#0a0a0a" />
+    <meta name="msapplication-navbutton-color" content="#0a0a0a" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- SEO -->
+    <title>Mesapra2 – Jantares sociais que conectam pessoas</title>
+    <meta
+      name="description"
+      content="Conecte-se a pessoas incríveis com Mesapra2. Social Dinner Experience."
+    />
+    <link rel="canonical" href="https://app.mesapra2.com" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mesapra2" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://app.mesapra2.com" />
+    <meta property="og:title" content="Mesapra2 – Jantares sociais que conectam pessoas" />
+    <meta
+      property="og:description"
+      content="Conecte-se a pessoas incríveis com Mesapra2. Social Dinner Experience."
+    />
+    <meta property="og:image" content="https://app.mesapra2.com/og-default.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mesapra2" />
+    <meta name="twitter:title" content="Mesapra2 – Jantares sociais que conectam pessoas" />
+    <meta
+      name="twitter:description"
+      content="Conecte-se a pessoas incríveis com Mesapra2. Social Dinner Experience."
+    />
+    <meta name="twitter:image" content="https://app.mesapra2.com/og-default.jpg" />
+
+    <!-- Performance hints -->
+    <link rel="dns-prefetch" href="https://ksmnfhenhppasfcikefd.supabase.co" />
+    <link rel="preconnect" href="https://ksmnfhenhppasfcikefd.supabase.co" />
+    
+    <!-- ✅ Critical CSS Inline - Evita render blocking -->
+    <style>
+      /* Reset e base */
+      *,*::before,*::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}
+      html{line-height:1.5;-webkit-text-size-adjust:100%;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+      body{margin:0;line-height:inherit;background:#111827;color:white;min-height:100vh;overflow-x:hidden;max-width:100vw}
+      
+      /* Loading screen crítico - aparece imediatamente */
+      .loading-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#111827;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column}
+      .spinner{width:40px;height:40px;border:3px solid #374151;border-top:3px solid #8b5cf6;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}
+      .loading-text{color:#9ca3af;font-size:14px;font-weight:500}
+      @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+      
+      /* Layout básico para evitar FOUC */
+      .flex{display:flex}
+      .hidden{display:none}
+      .items-center{align-items:center}
+      .justify-center{justify-content:center}
+      .flex-col{flex-direction:column}
+      .min-h-screen{min-height:100vh}
+      .w-full{width:100%}
+      .relative{position:relative}
+      .fixed{position:fixed}
+      .inset-0{top:0;right:0;bottom:0;left:0}
+      
+      /* Gradients para background */
+      .bg-gradient-to-br{background:linear-gradient(to bottom right,var(--tw-gradient-stops))}
+      .from-purple-900{--tw-gradient-from:#581c87;--tw-gradient-to:rgb(88 28 135 / 0);--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}
+      .via-blue-900{--tw-gradient-to:rgb(30 58 138 / 0);--tw-gradient-stops:var(--tw-gradient-from),#1e3a8a,var(--tw-gradient-to)}
+      .to-black{--tw-gradient-to:#000;--tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to)}
+      
+      /* Mobile optimizations */
+      @media (max-width:768px){
+        input,textarea,select{font-size:16px!important} /* Evita zoom iOS */
+        body{-webkit-text-size-adjust:100%} /* Controle de texto mobile */
+      }
+      
+      /* Performance */
+      *{-webkit-tap-highlight-color:transparent}
+      #root{min-height:100vh;width:100%;contain:layout style paint}
+    </style>
+  </head>
+
+  <body>
+    <!-- ✅ Loading Screen - Aparece instantaneamente -->
+    <div id="loading-screen" class="loading-screen">
+      <div class="spinner"></div>
+      <div class="loading-text">Carregando Mesapra2...</div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <!-- ✅ Preload critical resources -->
+    <link rel="preload" href="/src/main.js" as="script" type="module">
+    
+    <!-- ✅ Script com loading otimizado -->
+    <script>
+      // Remove loading screen quando React carrega
+      window.addEventListener('DOMContentLoaded', function() {
+        const loadingScreen = document.getElementById('loading-screen');
+        
+        // Esconder loading quando React monta
+        const observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+              // React montou algo no #root
+              const root = document.getElementById('root');
+              if (root && root.children.length > 0) {
+                setTimeout(function() {
+                  if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.3s ease-out';
+                    setTimeout(function() {
+                      loadingScreen.remove();
+                    }, 300);
+                  }
+                }, 100);
+                observer.disconnect();
+              }
+            }
+          });
+        });
+        
+        observer.observe(document.getElementById('root'), {
+          childList: true,
+          subtree: true
+        });
+        
+        // Fallback: remover após 10s no máximo
+        setTimeout(function() {
+          if (loadingScreen) {
+            loadingScreen.remove();
+          }
+          observer.disconnect();
+        }, 10000);
+      });
+    </script>
+    
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
