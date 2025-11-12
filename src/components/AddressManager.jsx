@@ -301,9 +301,9 @@ const AddressManager = ({ onClose, onSuccess }) => {
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p>Carregando endereços...</p>
+        <div className="bg-gray-900 border border-white/10 rounded-2xl p-8">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-white" />
+          <p className="text-white">Carregando endereços...</p>
         </div>
       </div>
     );
@@ -315,7 +315,7 @@ const AddressManager = ({ onClose, onSuccess }) => {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+        className="bg-gray-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
@@ -365,10 +365,10 @@ const AddressManager = ({ onClose, onSuccess }) => {
                 {addresses.length === 0 ? (
                   <div className="text-center py-12">
                     <MapPin className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <h3 className="text-lg font-medium text-white mb-2">
                       Nenhum endereço cadastrado
                     </h3>
-                    <p className="text-gray-500">
+                    <p className="text-gray-300">
                       Adicione seu primeiro endereço de entrega
                     </p>
                   </div>
@@ -382,8 +382,8 @@ const AddressManager = ({ onClose, onSuccess }) => {
                           key={address.id}
                           className={`border-2 rounded-lg p-4 ${
                             address.is_default 
-                              ? 'border-blue-500 bg-blue-50' 
-                              : 'border-gray-200 bg-gray-50'
+                              ? 'border-blue-500 bg-blue-500/10' 
+                              : 'border-gray-600 bg-gray-800'
                           }`}
                         >
                           <div className="flex items-start justify-between">
@@ -396,7 +396,7 @@ const AddressManager = ({ onClose, onSuccess }) => {
                               
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h4 className="font-semibold text-gray-900">
+                                  <h4 className="font-semibold text-white">
                                     {address.label}
                                   </h4>
                                   {address.is_default && (
@@ -407,14 +407,14 @@ const AddressManager = ({ onClose, onSuccess }) => {
                                   )}
                                 </div>
                                 
-                                <p className="text-gray-700 text-sm">
+                                <p className="text-white/80 text-sm">
                                   {address.street}, {address.number}
                                   {address.complement && `, ${address.complement}`}
                                 </p>
-                                <p className="text-gray-500 text-sm">
+                                <p className="text-white/60 text-sm">
                                   {address.neighborhood} - {address.city}/{address.state}
                                 </p>
-                                <p className="text-gray-500 text-sm">
+                                <p className="text-white/60 text-sm">
                                   CEP: {AddressService.formatZipCode(address.zip_code)}
                                 </p>
                               </div>
@@ -437,7 +437,7 @@ const AddressManager = ({ onClose, onSuccess }) => {
                                 onClick={() => handleEditAddress(address)}
                                 variant="outline"
                                 size="sm"
-                                className="text-gray-600 hover:bg-gray-50"
+                                className="text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
@@ -468,7 +468,7 @@ const AddressManager = ({ onClose, onSuccess }) => {
                 className="space-y-6"
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">
+                  <h3 className="text-lg font-semibold text-white">
                     {editingAddress ? 'Editar Endereço' : 'Novo Endereço'}
                   </h3>
                   <Button
@@ -484,7 +484,7 @@ const AddressManager = ({ onClose, onSuccess }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* CEP */}
                   <div className="md:col-span-1">
-                    <Label htmlFor="zip_code">CEP *</Label>
+                    <Label htmlFor="zip_code" className="text-white">CEP *</Label>
                     <div className="flex gap-2 mt-1">
                       <Input
                         id="zip_code"
@@ -492,19 +492,20 @@ const AddressManager = ({ onClose, onSuccess }) => {
                         onChange={(e) => handleFormChange('zip_code', e.target.value)}
                         placeholder="00000-000"
                         maxLength={9}
+                        className="bg-gray-800 border-gray-600 text-white"
                       />
-                      {lookingUpZip && <Loader2 className="w-5 h-5 animate-spin self-center" />}
+                      {lookingUpZip && <Loader2 className="w-5 h-5 animate-spin self-center text-white" />}
                     </div>
                   </div>
 
                   {/* Rótulo */}
                   <div>
-                    <Label htmlFor="label">Rótulo *</Label>
+                    <Label htmlFor="label" className="text-white">Rótulo *</Label>
                     <select
                       id="label"
                       value={formData.label}
                       onChange={(e) => handleFormChange('label', e.target.value)}
-                      className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                      className="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-800 text-white"
                     >
                       <option value="Principal">Principal</option>
                       <option value="Casa">Casa</option>
@@ -515,65 +516,70 @@ const AddressManager = ({ onClose, onSuccess }) => {
 
                   {/* Rua */}
                   <div className="md:col-span-2">
-                    <Label htmlFor="street">Rua/Avenida *</Label>
+                    <Label htmlFor="street" className="text-white">Rua/Avenida *</Label>
                     <Input
                       id="street"
                       value={formData.street}
                       onChange={(e) => handleFormChange('street', e.target.value)}
                       placeholder="Nome da rua"
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   {/* Número e Complemento */}
                   <div>
-                    <Label htmlFor="number">Número *</Label>
+                    <Label htmlFor="number" className="text-white">Número *</Label>
                     <Input
                       id="number"
                       value={formData.number}
                       onChange={(e) => handleFormChange('number', e.target.value)}
                       placeholder="123"
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="complement">Complemento</Label>
+                    <Label htmlFor="complement" className="text-white">Complemento</Label>
                     <Input
                       id="complement"
                       value={formData.complement}
                       onChange={(e) => handleFormChange('complement', e.target.value)}
                       placeholder="Apto, sala, etc."
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   {/* Bairro */}
                   <div className="md:col-span-2">
-                    <Label htmlFor="neighborhood">Bairro *</Label>
+                    <Label htmlFor="neighborhood" className="text-white">Bairro *</Label>
                     <Input
                       id="neighborhood"
                       value={formData.neighborhood}
                       onChange={(e) => handleFormChange('neighborhood', e.target.value)}
                       placeholder="Nome do bairro"
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   {/* Cidade e Estado */}
                   <div>
-                    <Label htmlFor="city">Cidade *</Label>
+                    <Label htmlFor="city" className="text-white">Cidade *</Label>
                     <Input
                       id="city"
                       value={formData.city}
                       onChange={(e) => handleFormChange('city', e.target.value)}
                       placeholder="Nome da cidade"
+                      className="bg-gray-800 border-gray-600 text-white"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="state">Estado *</Label>
+                    <Label htmlFor="state" className="text-white">Estado *</Label>
                     <select
                       id="state"
                       value={formData.state}
                       onChange={(e) => handleFormChange('state', e.target.value)}
-                      className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                      className="w-full mt-1 p-2 border border-gray-600 rounded-md bg-gray-800 text-white"
                     >
                       <option value="">Selecione o Estado</option>
                       <option value="AC">Acre</option>
@@ -613,9 +619,9 @@ const AddressManager = ({ onClose, onSuccess }) => {
                         type="checkbox"
                         checked={formData.is_default}
                         onChange={(e) => handleFormChange('is_default', e.target.checked)}
-                        className="rounded border-gray-300"
+                        className="rounded border-gray-600 bg-gray-800 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-800"
                       />
-                      <span className="text-sm">Definir como endereço padrão</span>
+                      <span className="text-sm text-white">Definir como endereço padrão</span>
                     </label>
                   </div>
                 </div>

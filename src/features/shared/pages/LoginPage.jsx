@@ -12,12 +12,12 @@ import { useAccessibleForm } from '@/hooks/useAccessibleForm';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import SocialLoginButtons from '@/features/shared/components/auth/SocialLoginButtons';
 import { supabase } from '@/lib/supabaseClient';
-// ✅ VÍDEOS REMOVIDOS - Causavam lentidão de 4+ minutos
-// import vds2 from '@/assets/vds2.mp4';
-// import vds4 from '@/assets/vds4.mp4';
-// import vds5 from '@/assets/vds5.mp4';
-// import vds7 from '@/assets/vds7.mp4';
-// import vds9 from '@/assets/vds9.mp4';
+// ✅ VÍDEOS RESTAURADOS - Com otimização de performance
+import vds2 from '@/assets/vds2.mp4';
+import vds4 from '@/assets/vds4.mp4';
+import vds5 from '@/assets/vds5.mp4';
+import vds7 from '@/assets/vds7.mp4';
+import vds9 from '@/assets/vds9.mp4';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -25,10 +25,23 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
-  // ✅ VÍDEO REMOVIDO - Estado desnecessário
+  // ✅ VÍDEO RESTAURADO - Com controle otimizado
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
 
-  // ✅ VÍDEOS REMOVIDOS - Sem estado necessário
+  // ✅ VÍDEOS RESTAURADOS - Array otimizado
+  const videos = [vds2, vds4, vds5, vds7, vds9];
+  
+  // Effect para rotação de vídeos
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % videos.length);
+    }, 8000); // Troca vídeo a cada 8 segundos
+    
+    return () => clearInterval(interval);
+  }, [videos.length]);
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getFieldProps, getLabelProps, getErrorId } = useAccessibleForm();
@@ -174,16 +187,52 @@ const LoginPage = () => {
       </Helmet>
 
       <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative bg-gradient-to-br from-gray-900 via-black to-purple-900">
-        {/* ✅ BACKGROUND CSS LEVE - Vídeos removidos para performance */}
-        <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-0">
-          {/* Animações CSS leves */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-500 rounded-full blur-xl animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-blue-500 rounded-full blur-lg animate-pulse delay-1000"></div>
-            <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-pink-400 rounded-full blur-md animate-pulse delay-500"></div>
+        {/* ✅ VÍDEO BACKGROUND RESTAURADO - Com otimização */}
+        <div className="fixed inset-0 z-0">
+          {videos.map((video, index) => (
+            <video
+              key={index}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                index === currentVideoIndex ? 'opacity-70' : 'opacity-0'
+              }`}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload={index === 0 ? 'auto' : 'none'} // Carrega apenas o primeiro vídeo imediatamente
+              onLoadedData={() => index === 0 && setVideoLoaded(true)}
+            >
+              <source src={video} type="video/mp4" />
+            </video>
+          ))}
+          
+          {/* Fallback enquanto vídeo não carrega */}
+          {!videoLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black">
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-500 rounded-full blur-xl animate-pulse"></div>
+                <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-blue-500 rounded-full blur-lg animate-pulse delay-1000"></div>
+                <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-pink-400 rounded-full blur-md animate-pulse delay-500"></div>
+              </div>
+            </div>
+          )}
+          
+          {/* Overlay escuro para melhor legibilidade */}
+          <div className="absolute inset-0 bg-black/40 z-10"></div>
+          
+          {/* Indicadores de vídeo */}
+          <div className="absolute bottom-4 left-4 flex space-x-2 z-20">
+            {videos.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === currentVideoIndex 
+                    ? 'bg-white shadow-lg' 
+                    : 'bg-white/30 hover:bg-white/50'
+                }`}
+              />
+            ))}
           </div>
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-black/20 z-10"></div>
         </div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}

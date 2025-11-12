@@ -185,7 +185,7 @@ const Dashboard = () => {
       
       const { data: userEvents, error: eventsError } = await supabase
         .from('events')
-        .select('id, title, start_time, end_time, status, event_type, location, max_participants, current_participants')
+        .select('id, title, start_time, end_time, status, event_type, location')
         .in('id', eventIds);
 
       if (eventsError) throw eventsError;

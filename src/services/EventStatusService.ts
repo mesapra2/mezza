@@ -456,7 +456,7 @@ class EventStatusService {
     try {
       const { data: event, error: eventError } = await supabase
         .from('events')
-        .select('id, title, status, start_time, end_time, creator_id, event_type, max_participants')
+        .select('id, title, status, start_time, end_time, creator_id, event_type')
         .eq('id', eventId)
         .single();
 

@@ -1,4 +1,4 @@
-# ✅ CORREÇÃO MIME TYPES - Apache Configuration
+# ✅ CORREÇÃO MIME TYPES + FACEBOOK OAuth - Apache Configuration
 # Configurar tipos MIME corretos para módulos JavaScript
 
 <IfModule mod_mime.c>

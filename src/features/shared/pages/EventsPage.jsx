@@ -39,12 +39,13 @@ const EventsPage = () => {
     // ✅ DEBUG: Log apenas em desenvolvimento
     if (import.meta.env.MODE === 'development') {
       console.log('🔍 DEBUG Avatar:', {
-      profileId: profile?.id,
-      username: profile?.username,
-      originalUrl: profile?.avatar_url,
-      cleanUrl: cleanUrl,
-      isHttp: cleanUrl.startsWith('http')
-    });
+        profileId: profile?.id,
+        username: profile?.username,
+        originalUrl: profile?.avatar_url,
+        cleanUrl: cleanUrl,
+        isHttp: cleanUrl.startsWith('http')
+      });
+    }
     
     // ✅ CORREÇÃO 2: Validar se URL está completa e válida
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
@@ -109,7 +110,7 @@ const EventsPage = () => {
         console.warn('Erro com joins, carregando apenas eventos:', fetchError);
         const simple = await supabase
           .from('events')
-          .select('id, title, description, start_time, end_time, status, creator_id, event_type, location, max_participants, current_participants')
+          .select('id, title, description, start_time, end_time, status, creator_id, event_type, location')
           .order('start_time', { ascending: true });
         data = simple.data;
         fetchError = simple.error;
@@ -545,12 +546,12 @@ const EventsPage = () => {
             <Calendar className="w-16 h-16 text-white/20 mx-auto mb-4" />
             <p className="text-white/60 text-lg mb-4">
               {events.length === 0
-                ? 'Nenhum evento disponível no momento'
+                ? 'Nenhum evento disponivel no momento'
                 : 'Nenhum evento encontrado com esses filtros'}
             </p>
             <p className="text-white/40 text-sm mb-6">
               {events.length === 0
-                ? 'Seja o primeiro a criar um evento incrível!'
+                ? 'Seja o primeiro a criar um evento incrivel!'
                 : 'Tente ajustar seus filtros ou criar um novo evento'}
             </p>
             <Link to="/criar-evento">

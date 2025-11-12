@@ -207,7 +207,7 @@ class ParticipationService {
       // 1. busca o evento
       const { data: event, error: eventError } = await supabase
         .from('events')
-        .select('id, title, start_time, end_time, status, creator_id, max_participants, current_participants, entry_locked')
+        .select('id, title, start_time, end_time, status, creator_id, entry_locked')
         .eq('id', eventId)
         .single();
 

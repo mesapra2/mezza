@@ -28,36 +28,16 @@ export default defineConfig(({ mode }) => {
     },
     
     build: {
-      sourcemap: true, // ✅ Habilitar source maps para produção
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'supabase-vendor': ['@supabase/supabase-js'],
-            'ui-vendor': ['framer-motion', 'lucide-react', 'date-fns'],
-            'helmet-vendor': ['react-helmet-async'],
-          },
-          // ✅ Configurar nomes de arquivos para melhor debug
-          chunkFileNames: 'assets/js/[name]-[hash].js',
-          entryFileNames: 'assets/js/[name]-[hash].js',
-          assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
-        },
-      },
+      sourcemap: true,
       chunkSizeWarningLimit: 1000,
       minify: 'esbuild',
       esbuild: {
         drop: isDev ? [] : ['console', 'debugger'],
-        // Remove todos os console.* em produção
         pure: isDev ? [] : ['console.log', 'console.info', 'console.warn'],
       },
-      // ✅ CSS optimization to prevent render blocking
-      cssCodeSplit: true, // Split CSS into separate chunks
-      cssMinify: true, // Minify CSS
-      
-      // ✅ Resource hints para performance
-      assetsInlineLimit: 4096, // Inline assets menores que 4KB
-      
-      // ✅ Rollup options para otimização
+      cssCodeSplit: true,
+      cssMinify: true,
+      assetsInlineLimit: 4096,
       rollupOptions: {
         output: {
           manualChunks: {
@@ -102,28 +82,30 @@ export default defineConfig(({ mode }) => {
         strict: false,
       },
       
-      // ✅ Configuração de middleware personalizado (apenas para dev)
-      ...(process.env.NODE_ENV !== 'production' && {
-        configureServer(server) {
-          server.middlewares.use((req, res, next) => {
-            // ✅ MIME types corretos para módulos
-            if (req.url?.endsWith('.jsx') || req.url?.endsWith('.tsx')) {
-              res.setHeader('Content-Type', 'application/javascript');
-            }
-            if (req.url?.endsWith('.ts') && !req.url.endsWith('.tsx')) {
-              res.setHeader('Content-Type', 'application/javascript');
-            }
-            
-            // ✅ Headers de segurança e performance
+      // ✅ MIME types configuração universal (dev + prod)
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          // ✅ CORREÇÃO CRÍTICA: MIME types corretos
+          if (req.url?.endsWith('.jsx')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
             res.setHeader('X-Content-Type-Options', 'nosniff');
-            res.setHeader('X-Frame-Options', 'DENY');
-            res.setHeader('X-XSS-Protection', '1; mode=block');
-            res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-            
-            next();
-          });
-        }
-      }),
+          }
+          if (req.url?.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+          }
+          if (req.url?.endsWith('.tsx') || req.url?.endsWith('.ts')) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          }
+          
+          // ✅ Headers de segurança
+          res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Permitir OAuth iframes
+          res.setHeader('X-XSS-Protection', '1; mode=block');
+          res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+          
+          next();
+        });
+      },
     },
     
     preview: {

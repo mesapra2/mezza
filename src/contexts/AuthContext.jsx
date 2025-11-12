@@ -337,24 +337,47 @@ export const AuthProvider = ({ children }) => {
   const signInWithFacebook = useCallback(async () => {
     setLoading(true);
     try {
-      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      // ✅ CORREÇÃO: Usar sempre auth/callback para Facebook
       const baseUrl = window.location.origin;
-      const redirectTo = isMobile 
-        ? `${baseUrl}/dashboard` 
-        : `${baseUrl}/auth/callback`;
+      const redirectTo = `${baseUrl}/auth/callback`;
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: { 
           redirectTo,
-          scopes: 'email public_profile'
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+          // ✅ CRÍTICO: Scopes específicos para evitar erro de exchange
+          scopes: 'email,public_profile'
         }
       });
-      if (error) throw error;
-      console.log('✅ Redirecionando para Facebook... (mobile:', isMobile, ')');
+      
+      if (error) {
+        console.error('❌ Erro no login Facebook:', error);
+        throw error;
+      }
+      
+      console.log('✅ Redirecionando para Facebook...', data);
+      return data;
     } catch (error) {
-      console.error('❌ Erro no login com Facebook:', error);
-      toast({ variant: "destructive", title: "Erro com Login Facebook", description: error.message });
+      console.error('❌ Erro no login com Facebook:', error.message);
+      
+      // ✅ Error handling específico para Facebook
+      if (error.message?.includes('exchange external code') || error.message?.includes('Unable to exchange')) {
+        toast({ 
+          variant: "destructive", 
+          title: "Erro de Autenticação Facebook", 
+          description: "Erro na autenticação do Facebook. Tente novamente ou use outro método de login."
+        });
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Erro com Login Facebook", 
+          description: error.message || "Erro desconhecido"
+        });
+      }
       setLoading(false);
       throw error;
     }
