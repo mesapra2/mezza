@@ -12,7 +12,14 @@ export default defineConfig(({ mode }) => {
   const __dirname = path.dirname(fileURLToPath(import.meta.url)); // Substitui __dirname
 
   return {
-    plugins: [react()],
+    plugins: [
+      react({
+        // ✅ Habilitar JSX em todos os arquivos relevantes
+        include: "**/*.{jsx,js,tsx,ts}",
+        // ✅ Configuração para JSX automático
+        jsxRuntime: 'automatic'
+      })
+    ],
     
     resolve: {
       alias: {
