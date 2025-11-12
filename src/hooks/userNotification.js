@@ -18,7 +18,7 @@ export const useNotifications = (userId, pollingInterval = 10000) => {
     try {
       const { data, error: fetchError } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, user_id, event_id, notification_type, title, message, sent, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);

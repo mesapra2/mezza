@@ -36,8 +36,9 @@ const EventsPage = () => {
     // ✅ CORREÇÃO 1: Limpar URL (remover espaços/quebras de linha)
     const cleanUrl = profile.avatar_url.trim();
     
-    // ✅ DEBUG: Log para verificar (remova depois que funcionar)
-    console.log('🔍 DEBUG Avatar:', {
+    // ✅ DEBUG: Log apenas em desenvolvimento
+    if (import.meta.env.MODE === 'development') {
+      console.log('🔍 DEBUG Avatar:', {
       profileId: profile?.id,
       username: profile?.username,
       originalUrl: profile?.avatar_url,
@@ -68,7 +69,9 @@ const EventsPage = () => {
       
       return `${data.publicUrl}?t=${Date.now()}`;
     } catch (error) {
-      console.error('Erro ao construir URL do avatar:', error);
+      if (import.meta.env.MODE === 'development') {
+        console.error('Erro ao construir URL do avatar:', error);
+      }
       // Retornar fallback em caso de erro
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(
         profile?.username || profile?.full_name || nameFallback
@@ -104,7 +107,10 @@ const EventsPage = () => {
       }
       if (fetchError && !data) {
         console.warn('Erro com joins, carregando apenas eventos:', fetchError);
-        const simple = await supabase.from('events').select('*').order('start_time', { ascending: true });
+        const simple = await supabase
+          .from('events')
+          .select('id, title, description, start_time, end_time, status, creator_id, event_type, location, max_participants, current_participants')
+          .order('start_time', { ascending: true });
         data = simple.data;
         fetchError = simple.error;
       }

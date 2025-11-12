@@ -27,7 +27,7 @@ const RestaurantSelector = ({ value, onChange, eventType }) => {
       // ✅ BUSCA TODOS OS RESTAURANTES ATIVOS
       const { data, error } = await supabase
         .from('partners')
-        .select('*')
+        .select('id, name, address, phone, cuisine_type, rating, price_range')
         .order('name', { ascending: true });
 
       if (error) {

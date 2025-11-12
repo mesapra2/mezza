@@ -202,7 +202,7 @@ const PeoplePage = () => {
     try {
       const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, bio, age, hashtags, public_profile, trust_score')
         .eq('id', userId)
         .single();
 

@@ -68,7 +68,9 @@ class NotificationService {
     target_participation_id?: string;
   }): Promise<ServiceResult> {
     try {
-      console.log(`📢 Criando notificação via RPC para ${params.target_user_id}:`, params);
+      if (import.meta.env.MODE === 'development') {
+        console.log(`📢 Criando notificação via RPC para ${params.target_user_id}:`, params);
+      }
       
       // Ajuste para lidar com participation_id nulo
       const rpcParams = {
@@ -149,7 +151,9 @@ class NotificationService {
     inviterName: string,
     eventTitle: string
   ): Promise<ServiceResult> {
-    console.log(`💘 Enviando notificação Crusher para ${userId}`);
+    if (import.meta.env.MODE === 'development') {
+      console.log(`💘 Enviando notificação Crusher para ${userId}`);
+    }
     
     // ✨ Usar RPC para notificar o convidado
     return this.createForUser({
@@ -291,7 +295,7 @@ class NotificationService {
     try {
       const { data, error } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id, user_id, event_id, notification_type, title, message, sent, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);

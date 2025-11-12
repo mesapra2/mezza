@@ -301,7 +301,7 @@ export default class EventPhotosService {
     try {
       const { data: photo, error: fetchError } = await supabase
         .from('event_photos')
-        .select('*')
+        .select('id, event_id, user_id, photo_url, caption, created_at, is_approved')
         .eq('id', photoId)
         .maybeSingle();
 

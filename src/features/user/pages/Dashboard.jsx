@@ -175,7 +175,7 @@ const Dashboard = () => {
 
       const { data: participations, error: participationsError } = await supabase
         .from('event_participants')
-        .select('*')
+        .select('id, event_id, user_id, status, created_at')
         .eq('user_id', user.id);
 
       if (participationsError) throw participationsError;
@@ -185,7 +185,7 @@ const Dashboard = () => {
       
       const { data: userEvents, error: eventsError } = await supabase
         .from('events')
-        .select('*')
+        .select('id, title, start_time, end_time, status, event_type, location, max_participants, current_participants')
         .in('id', eventIds);
 
       if (eventsError) throw eventsError;

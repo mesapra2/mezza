@@ -8,12 +8,13 @@ import { Toaster } from '@/features/shared/components/ui/toaster.jsx';
 import { AuthProvider } from '@/contexts/AuthContext.jsx';
 import { PremiumProvider } from '@/contexts/PremiumContext.jsx';
 
-console.log('🚀 Iniciando aplicação Mesapra2...');
-
-// Mostra variáveis de ambiente para debug
-console.log('🔍 Ambiente:', import.meta.env.MODE);
-console.log('📊 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-console.log('📊 Site URL:', import.meta.env.VITE_SITE_URL);
+// ✅ Logger otimizado - só em desenvolvimento
+if (import.meta.env.MODE === 'development') {
+  console.log('🚀 Iniciando aplicação Mesapra2...');
+  console.log('🔍 Ambiente:', import.meta.env.MODE);
+  console.log('📊 Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+  console.log('📊 Site URL:', import.meta.env.VITE_SITE_URL);
+}
 
 window.addEventListener('error', (event) => {
   console.error('❌ Erro global:', event.error);

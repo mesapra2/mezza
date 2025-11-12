@@ -6,6 +6,7 @@ import EventSecurityService from './EventSecurityService';
 import PushNotificationService from './PushNotificationService';
 import TrustScoreService from './TrustScoreService';
 import NotificationService from './NotificationService';
+import { smartLog } from '../utils/replaceConsoleLog.js';
 
 interface Event {
   id: number;
@@ -89,17 +90,17 @@ class EventStatusService {
         if (error.message?.includes('Failed to fetch')) {
           console.warn('⚠️ Conexão temporariamente indisponível');
         } else {
-          console.error('❌ Erro ao buscar eventos:', error);
+          smartLog.error('Erro ao buscar eventos:', error);
         }
         return;
       }
 
       if (!events || events.length === 0) {
-        console.log('✅ Nenhum evento ativo para atualizar');
+        smartLog.debug('Nenhum evento ativo para atualizar');
         return;
       }
 
-      console.log(`🔄 Processando ${events.length} eventos (${this.isMobile() ? 'mobile' : 'desktop'})...`);
+      smartLog.service('EventStatusService', 'processing', `${events.length} eventos (${this.isMobile() ? 'mobile' : 'desktop'})`);
 
       // ✅ FIX: Processar com delays para não sobrecarregar
       const chunkSize = this.isMobile() ? 5 : 8;
@@ -114,7 +115,7 @@ class EventStatusService {
               await new Promise(resolve => setTimeout(resolve, index * 100));
               await this.calculateEventStatus(event as Event);
             } catch (err) {
-              console.error(`❌ Erro no evento ${event.id}:`, err);
+              smartLog.error(`Erro no evento ${event.id}:`, err);
             }
           })
         );
@@ -455,7 +456,7 @@ class EventStatusService {
     try {
       const { data: event, error: eventError } = await supabase
         .from('events')
-        .select('*')
+        .select('id, title, status, start_time, end_time, creator_id, event_type, max_participants')
         .eq('id', eventId)
         .single();
 

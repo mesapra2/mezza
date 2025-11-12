@@ -181,7 +181,7 @@ const NotificationDropdown = ({ userId }) => {
       loadNotifications();
       loadPokes();
       loadUnreadCount();
-    }, 30000);
+    }, 60000); // ✅ Otimizado: Reduzido de 30s para 60s para economizar recursos
 
     let notifChannel = null;
     let pokesChannel = null;

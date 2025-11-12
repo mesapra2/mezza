@@ -31,7 +31,7 @@ const RestaurantsPage = () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('partners')
-        .select('*')
+        .select('id, name, address, phone, cuisine_type, rating, price_range, image_url, description')
         .order('name', { ascending: true });
 
       if (fetchError) throw fetchError;

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR" prefix="og: http://ogp.me/ns#">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+    
+    <!-- Favicon completo para múltiplos dispositivos -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Título e descrição -->
+    <title>Mesapra2 — Jantares sociais que conectam pessoas</title>
+    <meta
+      name="description"
+      content="Conecte-se a pessoas incríveis com Mesapra2. Social Dinner Experience."
+    />
+
+    <!-- Canonical (boa prática SEO) -->
+    <link rel="canonical" href="https://app.mesapra2.com" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mesapra2" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://app.mesapra2.com" />
+    <meta property="og:title" content="Mesapra2 — Jantares sociais que conectam pessoas" />
+    <meta
+      property="og:description"
+      content="Conecte-se a pessoas incríveis com Mesapra2. Social Dinner Experience."
+    />
+    <meta property="og:image" content="https://app.mesapra2.com/og-default.jpg" />
+    <meta property="og:image:secure_url" content="https://app.mesapra2.com/og-default.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/jpeg" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@mesapra2" />
+    <meta name="twitter:title" content="Mesapra2 — Jantares sociais que conectam pessoas" />
+    <meta
+      name="twitter:description"
+      content="Conecte-se a pessoas incríveis com Mesapra2. Social Dinner Experience."
+    />
+    <meta name="twitter:image" content="https://app.mesapra2.com/og-default.jpg" />
+
+    <!-- Resource hints for better performance -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://app.mesapra2.com">
+    <link rel="prefetch" href="/og-default.jpg" />
+    
+    <!-- Preload critical resources -->
+    <link rel="modulepreload" href="/src/Main.jsx">
+    
+    <!-- Critical CSS inlined to prevent render blocking -->
+    <style>
+      /* Critical CSS - Only the essential styles needed for initial render */
+      *,*::before,*::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal}body{margin:0;line-height:inherit;background:#111827;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:white;min-height:100vh;overflow-x:hidden;max-width:100vw}.flex{display:flex}.hidden{display:none}.block{display:block}.grid{display:grid}.relative{position:relative}.absolute{position:absolute}.fixed{position:fixed}.bg-gray-900{background-color:rgb(17 24 39)}.bg-gray-800{background-color:rgb(31 41 55)}.text-white{color:rgb(255 255 255)}.p-4{padding:1rem}.p-6{padding:1.5rem}.m-0{margin:0}.mx-auto{margin-left:auto;margin-right:auto}.w-full{width:100%}.h-full{height:100%}.min-h-screen{min-height:100vh}.items-center{align-items:center}.justify-center{justify-content:center}.flex-col{flex-direction:column}.loading-spinner{display:inline-block;width:20px;height:20px;border:3px solid rgba(255,255,255,.3);border-radius:50%;border-top-color:#fff;animation:spin 1s ease-in-out infinite}@keyframes spin{to{transform:rotate(360deg)}}@media (max-width:768px){input,textarea,select{font-size:16px!important}}*{-webkit-tap-highlight-color:transparent}#root{min-height:100vh;width:100%}
+    </style>
+    
+    <!-- Preload main CSS file -->
+    <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/src/index.css"></noscript>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    
+    <!-- Optimize CSS loading to prevent render blocking -->
+    <script>
+      // Ensure CSS is loaded asynchronously if preload fails
+      (function() {
+        var cssLoaded = false;
+        var checkCSS = function() {
+          var links = document.querySelectorAll('link[href*="index"]');
+          for (var i = 0; i < links.length; i++) {
+            if (links[i].sheet || links[i].styleSheet) {
+              cssLoaded = true;
+              break;
+            }
+          }
+          if (!cssLoaded) {
+            var fallbackCSS = document.createElement('link');
+            fallbackCSS.rel = 'stylesheet';
+            fallbackCSS.href = '/src/index.css';
+            document.head.appendChild(fallbackCSS);
+          }
+        };
+        
+        // Check after a small delay to allow preload to work
+        setTimeout(checkCSS, 100);
+      })();
+    </script>
+    
+    <script type="module" src="/src/Main.jsx"></script>
+  </body>
+</html>

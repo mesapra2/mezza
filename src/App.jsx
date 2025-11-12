@@ -11,7 +11,7 @@ import Layout from '@/components/Layout';
 
 // Autenticação
 import AuthCallbackPage from '@/features/shared/pages/AuthCallbackPage';
-import LoginPage from '@/features/shared/pages/LoginPage';
+import LoginPage from '@/features/shared/pages/LoginPageOptimized';
 import RegisterPage from '@/features/shared/pages/RegisterPage';
 import PartnerRegisterPage from '@/features/partner/pages/PartnerRegisterPage';
 import PhoneVerificationPage from '@/features/shared/pages/PhoneVerificationPage';

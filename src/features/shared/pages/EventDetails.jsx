@@ -137,7 +137,7 @@ const EventDetails = () => {
       if (user) {
         const { data: userPartData } = await supabase
           .from('event_participants')
-          .select('*')
+          .select('id, title, description, start_time, end_time, status, creator_id, event_type, location, max_participants, current_participants, entry_locked, event_entry_password')
           .eq('event_id', id)
           .eq('user_id', user.id)
           .eq('status', 'aprovado')
