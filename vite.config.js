@@ -40,6 +40,8 @@ export default defineConfig(({ mode }) => {
       minify: 'esbuild',
       esbuild: {
         drop: isDev ? [] : ['console', 'debugger'],
+        // Remove todos os console.* em produção
+        pure: isDev ? [] : ['console.log', 'console.info', 'console.warn'],
       },
       // ✅ CSS optimization to prevent render blocking
       cssCodeSplit: true, // Split CSS into separate chunks

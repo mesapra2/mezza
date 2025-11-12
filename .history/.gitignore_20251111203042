@@ -1,0 +1,234 @@
+# ===== DEPENDENCIES =====
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnp
+.pnp.js
+
+# ===== BUILD OUTPUT =====
+dist/
+build/
+out/
+*.tgz
+*.tar.gz
+
+# ===== ENVIRONMENT VARIABLES =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.example
+
+# ===== LOGS =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===== RUNTIME DATA =====
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ===== COVERAGE DIRECTORY =====
+lib-cov/
+coverage/
+*.lcov
+.nyc_output
+.coverage/
+*.coverage
+
+# ===== INSTRUMENTATION =====
+.grunt
+
+# ===== DEPENDENCY DIRECTORIES =====
+jspm_packages/
+
+# ===== TYPESCRIPT =====
+*.tsbuildinfo
+
+# ===== OPTIONAL npm CACHE DIRECTORY =====
+.npm
+
+# ===== OPTIONAL eslint CACHE =====
+.eslintcache
+
+# ===== MICROBUNDLE CACHE =====
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# ===== OPTIONAL REPL HISTORY =====
+.node_repl_history
+
+# ===== OUTPUT OF 'npm pack' =====
+*.tgz
+
+# ===== YARN INTEGRITY FILE =====
+.yarn-integrity
+
+# ===== PARCEL-BUNDLER CACHE =====
+.cache
+.parcel-cache
+
+# ===== NEXT.JS BUILD OUTPUT =====
+.next
+
+# ===== NUXT.JS BUILD / GENERATE OUTPUT =====
+.nuxt
+dist
+
+# ===== GATSBY FILES =====
+.cache/
+public
+
+# ===== VUEPRESS BUILD OUTPUT =====
+.vuepress/dist
+
+# ===== SERVERLESS DIRECTORIES =====
+.serverless/
+
+# ===== FUSEBOX CACHE =====
+.fusebox/
+
+# ===== DYNAMODB LOCAL FILES =====
+.dynamodb/
+
+# ===== TERNJS PORT FILE =====
+.tern-port
+
+# ===== IDE / EDITOR FILES =====
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== MACOS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ===== WINDOWS =====
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ===== LINUX =====
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===== DOCUMENTATION / TEMPORARY FILES =====
+docs/
+documentation/
+.history/
+.tmp.drivedownload/
+.tmp.driveupload/
+*.tmp
+*.temp
+tmp_*
+temp_*
+
+# ===== SUPABASE SENSITIVE =====
+supabase/.temp/
+supabase/config.toml
+supabase/.branches/
+supabase/.env
+
+# ===== CERTIFICATES & KEYS =====
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# ===== BACKUPS =====
+*.backup
+*.bak
+*.old
+*.orig
+
+# ===== TEST OUTPUT =====
+.jest/
+jest_*/
+test-results/
+test-output/
+coverage/
+
+# ===== VITE SPECIFIC =====
+.vite/
+
+# ===== VERCEL =====
+.vercel
+
+# ===== FIREBASE =====
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# ===== TURBO =====
+.turbo
+
+# ===== LOCAL DEVELOPMENT =====
+.local
+.cache/
+
+# ===== TEMPORARY DEVELOPMENT FILES =====
+tmp_rovodev_*
+
+# ===== SPECIFIC PROJECT FILES =====
+acli.exe
+*.sql.backup
+fix*.sh
+migrate.js
+debug-*.js
+test-*.js
+
+# ===== CDN / STATIC ASSETS (LARGE FILES) =====
+static/
+public/large-assets/
+
+# ===== GENERATED FILES =====
+*.generated.*
+auto-generated/
+
+# ===== PERSONAL NOTES =====
+NOTES.md
+TODO.md
+PERSONAL.md
+.personal/

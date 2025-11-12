@@ -1,5 +1,5 @@
 import React, { useId } from 'react';
-import { cn } from "@//utils"
+import { cn } from "@/utils"
 
 const Input = React.forwardRef(({ className, type, required, error, ...props }, ref) => {
   const inputId = props.id || useId();
