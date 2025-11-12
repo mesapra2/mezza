@@ -50,11 +50,9 @@ export default defineConfig(({ mode }) => {
       // ✅ Resource hints para performance
       assetsInlineLimit: 4096, // Inline assets menores que 4KB
       
-      // ✅ Preload critical resources
+      // ✅ Rollup options para otimização
       rollupOptions: {
-        ...this.rollupOptions,
         output: {
-          ...this.rollupOptions?.output,
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
             'supabase-vendor': ['@supabase/supabase-js'],
@@ -64,7 +62,6 @@ export default defineConfig(({ mode }) => {
           chunkFileNames: 'assets/js/[name]-[hash].js',
           entryFileNames: 'assets/js/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
-            // CSS crítico vai inline, outros assets separados
             if (assetInfo.name?.endsWith('.css')) {
               return 'assets/css/[name]-[hash].[ext]';
             }
@@ -98,39 +95,28 @@ export default defineConfig(({ mode }) => {
         strict: false,
       },
       
-      // ✅ Configuração de middleware personalizado
-      configureServer(server) {
-        server.middlewares.use((req, res, next) => {
-          // ✅ MIME types corretos para módulos
-          if (req.url?.endsWith('.jsx') || req.url?.endsWith('.tsx')) {
-            res.setHeader('Content-Type', 'application/javascript');
-          }
-          if (req.url?.endsWith('.ts') && !req.url.endsWith('.tsx')) {
-            res.setHeader('Content-Type', 'application/javascript');
-          }
-          
-          // ✅ Headers de segurança e performance
-          res.setHeader('X-Content-Type-Options', 'nosniff');
-          res.setHeader('X-Frame-Options', 'DENY');
-          res.setHeader('X-XSS-Protection', '1; mode=block');
-          res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-          
-          // ✅ CSP otimizado para desenvolvimento
-          if (req.url?.includes('/src/') || req.url?.endsWith('.js') || req.url?.endsWith('.jsx')) {
-            res.setHeader('Content-Security-Policy', 
-              "default-src 'self'; " +
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; " +
-              "style-src 'self' 'unsafe-inline'; " +
-              "img-src 'self' data: https: blob:; " +
-              "connect-src 'self' https://app.mesapra2.com https://*.supabase.co ws: wss:; " +
-              "font-src 'self' data:; " +
-              "media-src 'self' blob:;"
-            );
-          }
-          
-          next();
-        });
-      },
+      // ✅ Configuração de middleware personalizado (apenas para dev)
+      ...(process.env.NODE_ENV !== 'production' && {
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            // ✅ MIME types corretos para módulos
+            if (req.url?.endsWith('.jsx') || req.url?.endsWith('.tsx')) {
+              res.setHeader('Content-Type', 'application/javascript');
+            }
+            if (req.url?.endsWith('.ts') && !req.url.endsWith('.tsx')) {
+              res.setHeader('Content-Type', 'application/javascript');
+            }
+            
+            // ✅ Headers de segurança e performance
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('X-Frame-Options', 'DENY');
+            res.setHeader('X-XSS-Protection', '1; mode=block');
+            res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+            
+            next();
+          });
+        }
+      }),
     },
     
     preview: {
