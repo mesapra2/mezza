@@ -1,0 +1,71 @@
+# ✅ CORREÇÃO MIME TYPES - Apache Configuration
+# Configurar tipos MIME corretos para módulos JavaScript
+
+<IfModule mod_mime.c>
+    # JavaScript modules
+    AddType application/javascript .js
+    AddType application/javascript .jsx
+    AddType application/javascript .ts
+    AddType application/javascript .tsx
+    AddType application/javascript .mjs
+    
+    # CSS
+    AddType text/css .css
+    
+    # JSON
+    AddType application/json .json
+    
+    # Fonts
+    AddType font/woff2 .woff2
+    AddType font/woff .woff
+    AddType font/ttf .ttf
+    AddType font/otf .otf
+</IfModule>
+
+# ✅ CORS Headers
+<IfModule mod_headers.c>
+    # MIME type security
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Module script headers
+    <FilesMatch "\.(js|jsx|ts|tsx|mjs)$">
+        Header set Content-Type "application/javascript"
+        Header set X-Content-Type-Options "nosniff"
+    </FilesMatch>
+    
+    # CSS headers
+    <FilesMatch "\.css$">
+        Header set Content-Type "text/css"
+    </FilesMatch>
+</IfModule>
+
+# ✅ Fallback para SPA routing
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Handle Angular and React Router
+    RewriteRule ^index\.html$ - [L]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule . /index.html [L]
+</IfModule>
+
+# ✅ Cache optimization
+<IfModule mod_expires.c>
+    ExpiresActive on
+    
+    # JavaScript modules - short cache for development
+    ExpiresByType application/javascript "access plus 1 hour"
+    
+    # CSS
+    ExpiresByType text/css "access plus 1 day"
+    
+    # Images
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    
+    # Fonts
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
