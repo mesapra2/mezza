@@ -12,11 +12,12 @@ import { useAccessibleForm } from '@/hooks/useAccessibleForm';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import SocialLoginButtons from '@/features/shared/components/auth/SocialLoginButtons';
 import { supabase } from '@/lib/supabaseClient';
-import vds2 from '@/assets/vds2.mp4';
-import vds4 from '@/assets/vds4.mp4';
-import vds5 from '@/assets/vds5.mp4';
-import vds7 from '@/assets/vds7.mp4';
-import vds9 from '@/assets/vds9.mp4';
+// ✅ VÍDEOS REMOVIDOS - Causavam lentidão de 4+ minutos
+// import vds2 from '@/assets/vds2.mp4';
+// import vds4 from '@/assets/vds4.mp4';
+// import vds5 from '@/assets/vds5.mp4';
+// import vds7 from '@/assets/vds7.mp4';
+// import vds9 from '@/assets/vds9.mp4';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -27,14 +28,8 @@ const LoginPage = () => {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
 
-  // 🎬 Sistema de vídeos aleatórios
-  const videoFiles = [vds2, vds4, vds5, vds7, vds9];
-  const [selectedVideo] = useState(() => {
-    const randomIndex = Math.floor(Math.random() * videoFiles.length);
-    const selectedFile = videoFiles[randomIndex];
-    console.log(`🎬 Vídeo selecionado: vds${[2, 4, 5, 7, 9][randomIndex]}.mp4`);
-    return selectedFile;
-  });
+  // ✅ VÍDEOS REMOVIDOS - Substitídos por background CSS leve
+  const [videoLoaded] = useState(true); // Sempre "carregado" pois não há vídeo
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getFieldProps, getLabelProps, getErrorId } = useAccessibleForm();
@@ -180,39 +175,17 @@ const LoginPage = () => {
       </Helmet>
 
       <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative bg-gradient-to-br from-gray-900 via-black to-purple-900">
-        {/* 📹 Vídeo de Fundo com fallback */}
-        {selectedVideo && (
-          <>
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className={`fixed inset-0 w-full h-full object-cover z-0 transition-opacity duration-1000 ${
-                videoLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              onLoadedData={() => {
-                setVideoLoaded(true);
-                console.log('✅ Vídeo carregado com sucesso');
-              }}
-              onError={(e) => {
-                console.warn('⚠️ Erro ao carregar vídeo, usando background estático');
-                e.target.style.display = 'none';
-                setVideoLoaded(false);
-              }}
-            >
-              <source src={selectedVideo} type="video/mp4" />
-            </video>
-            
-            {/* 🎭 Overlay transparente */}
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-10"></div>
-          </>
-        )}
-        
-        {/* 🌟 Background estático como fallback */}
-        {!videoLoaded && (
-          <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-0"></div>
-        )}
+        {/* ✅ BACKGROUND CSS LEVE - Vídeos removidos para performance */}
+        <div className="fixed inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-black z-0">
+          {/* Animações CSS leves */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-500 rounded-full blur-xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-blue-500 rounded-full blur-lg animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-pink-400 rounded-full blur-md animate-pulse delay-500"></div>
+          </div>
+          {/* Overlay */}
+          <div className="absolute inset-0 bg-black/20 z-10"></div>
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
