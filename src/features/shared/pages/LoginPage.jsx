@@ -25,11 +25,10 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
-  const [videoLoaded, setVideoLoaded] = useState(false);
+  // ✅ VÍDEO REMOVIDO - Estado desnecessário
   const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
 
-  // ✅ VÍDEOS REMOVIDOS - Substitídos por background CSS leve
-  const [videoLoaded] = useState(true); // Sempre "carregado" pois não há vídeo
+  // ✅ VÍDEOS REMOVIDOS - Sem estado necessário
   const navigate = useNavigate();
   const { toast } = useToast();
   const { getFieldProps, getLabelProps, getErrorId } = useAccessibleForm();
