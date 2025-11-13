@@ -18,7 +18,6 @@ import CallToAction from '@/features/shared/components/callToAction';
 import Avatar from '@/features/shared/components/profile/Avatar';
 import MesaPra2Logo from '@/components/MesaPra2Logo';
 import EventPasswordCard from '@/features/partner/components/EventPasswordCard';
-import NotificationBell from '@/components/NotificationBellWrapper';
 
 
 const Dashboard = () => {
@@ -622,12 +621,8 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Controles direita - Notificações, Configurações e Avatar */}
+          {/* Controles direita - Configurações e Avatar */}
           <div className="flex items-center gap-4">
-            {/* Sino de notificações */}
-            <div className="relative">
-              <NotificationBell />
-            </div>
             
             {/* Botão de configurações */}
             <Link

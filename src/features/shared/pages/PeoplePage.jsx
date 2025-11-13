@@ -312,7 +312,7 @@ const PeoplePage = () => {
               <h3 className="font-semibold text-white mb-1">Sobre as Interações</h3>
               <p className="text-white/70 text-sm">
                 <strong>Tok 👇:</strong> Demonstre interesse de forma leve (1x por dia).<br/>
-                <strong>Mesapra2 💘:</strong> Envie um convite especial direto para um evento exclusivo (requer Premium).
+                <strong>Mesapra2 💘:</strong> Crie um evento crusher exclusivo e convide alguém especial (requer Premium).
               </p>
             </div>
           </div>
@@ -698,14 +698,6 @@ const PeoplePage = () => {
                 )}
               </div>
 
-              {/* ✅ Indicador se não aceita Toks */}
-              {!isPartner && selectedProfile.allow_pokes !== true && (
-                <div className="text-center mt-3">
-                  <span className="text-xs text-red-400/80">
-                    🚫 Não aceita Toks
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>

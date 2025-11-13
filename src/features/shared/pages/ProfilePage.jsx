@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Save, Loader, UploadCloud, LogOut, X } from 'lucide-react';
+import { Save, Loader, UploadCloud, LogOut, X, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { Button } from '@/features/shared/components/ui/button.jsx';
 import { Input } from '@/features/shared/components/ui/input.jsx';
@@ -11,7 +11,9 @@ import { Textarea } from '@/features/shared/components/ui/textarea.jsx';
 import HashtagInterestSelector from '@/features/shared/components/profile/HashtagInterestSelector';
 import { supabase } from '@/lib/supabaseClient'; 
 import { useToast } from '@/features/shared/components/ui/use-toast';
-import FavoriteRestaurantsList from '@/features/shared/components/restaurants/FavoriteRestaurantsList'; 
+import FavoriteRestaurantsList from '@/features/shared/components/restaurants/FavoriteRestaurantsList';
+import InstagramIntegration from '@/features/shared/components/profile/InstagramIntegration';
+import { useNavigate } from 'react-router-dom'; 
 
 const customStyles = {
   avatar: 'w-32 h-32 rounded-full object-cover',
@@ -19,7 +21,8 @@ const customStyles = {
 
 const ProfilePage = () => {
   const { user, profile: initialProfile, getProfile, updateProfile, uploadAvatar, createProfileIfNotExists, logout } = useAuth();
-  const { toast } = useToast(); 
+  const { toast } = useToast();
+  const navigate = useNavigate(); 
   
   // const [loading, setLoading] = useState(false); // --- VARIÁVEL REMOVIDA ---
   const [saving, setSaving] = useState(false);
@@ -273,6 +276,14 @@ const ProfilePage = () => {
     setSaving(false);
   };
 
+  // Função para visualizar perfil público
+  const viewPublicProfile = () => {
+    if (user?.id) {
+      // Navega para a página de visualização pública do próprio perfil
+      navigate(`/user/${user.id}`);
+    }
+  };
+
   const handleAvatarClick = () => {
     if (!uploading) {
       fileInputRef.current.click();
@@ -474,6 +485,39 @@ const ProfilePage = () => {
     }
 
     return uploadResult.path;
+  };
+
+  /**
+   * ✅ FUNÇÃO PARA IMPORTAR FOTO DO INSTAGRAM
+   */
+  const handleInstagramPhotoImport = async (photoPath) => {
+    try {
+      const updatedPhotos = [...photos, photoPath];
+      setPhotos(updatedPhotos);
+      
+      // Atualizar cache de URLs para a nova foto
+      const newUrls = { ...photoUrls };
+      const url = getPublicPhotoUrl(photoPath);
+      if (url) {
+        newUrls[photoPath] = url;
+        setPhotoUrls(newUrls);
+      }
+      
+      setSuccess('Foto do Instagram importada! Clique em "Guardar Alterações" para salvar.');
+      toast({ 
+        title: "📸 Foto Importada!", 
+        description: 'Foto do Instagram adicionada com sucesso!' 
+      });
+      
+      console.log('✅ Foto do Instagram importada:', photoPath);
+    } catch (error) {
+      console.error('❌ Erro ao processar foto do Instagram:', error);
+      toast({ 
+        variant: "destructive", 
+        title: "Erro", 
+        description: "Falha ao processar foto do Instagram." 
+      });
+    }
   };
 
   const handlePhotosUpload = async (event) => {
@@ -795,6 +839,14 @@ const ProfilePage = () => {
                   })}
                 </div>
 
+                {/* Integração com Instagram */}
+                <InstagramIntegration
+                  userId={user?.id}
+                  onPhotoImport={handleInstagramPhotoImport}
+                  availableSlots={3 - photos.length}
+                  disabled={uploading || saving}
+                />
+
                 {/* Instruções Elegantes */}
                 <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/20 rounded-xl p-4">
                   <div className="flex items-start space-x-3">
@@ -809,6 +861,7 @@ const ProfilePage = () => {
                         <li>• Use fotos nítidas e bem iluminadas</li>
                         <li>• Mostre seu rosto claramente na primeira foto</li>
                         <li>• Evite filtros excessivos</li>
+                        <li>• Ou importe diretamente do seu Instagram acima ↗️</li>
                       </ul>
                     </div>
                   </div>
@@ -889,42 +942,58 @@ const ProfilePage = () => {
 
               {/* 🎯 Botões de Ação Magistrais */}
               <div className="space-y-4 pt-4">
-                {/* Botão Guardar - Premium Style */}
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-2xl blur-sm opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-                  
-                  <button 
-                    type="submit" 
-                    disabled={saving || uploading}
-                    className="relative w-full px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 rounded-2xl leading-none transition-all duration-300 hover:shadow-[0_0_40px_rgba(168,85,247,0.6)] disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    <div className="flex items-center justify-center space-x-3">
-                      {saving ? (
-                        <>
-                          <div className="p-2 bg-white/20 rounded-lg">
-                            <Loader className="h-6 w-6 animate-spin text-white" />
-                          </div>
-                          <div className="text-left">
-                            <div className="text-white font-bold text-lg">Salvando...</div>
-                            <div className="text-white/80 text-sm">Aguarde um momento</div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-                            <Save className="h-6 w-6 text-white" />
-                          </div>
-                          <div className="text-left">
-                            <div className="text-white font-bold text-lg">Guardar Alterações</div>
-                            <div className="text-white/80 text-sm">Salvar todas as mudanças</div>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                {/* Botões de Ação */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Botão Guardar Alterações */}
+                  <div className="relative">
+                    <button
+                      type="submit"
+                      onClick={handleUpdateProfile}
+                      disabled={saving}
+                      className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 p-[2px] transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="relative rounded-2xl bg-gradient-to-r from-gray-900 via-black to-gray-900 px-6 py-4 transition-all duration-300 group-hover:bg-opacity-80">
+                        <div className="flex items-center justify-center space-x-3">
+                          {saving ? (
+                            <>
+                              <Loader className="h-6 w-6 animate-spin text-blue-400" />
+                              <div className="text-left">
+                                <div className="text-white font-semibold">Salvando...</div>
+                                <div className="text-white/60 text-sm">Aguarde um momento</div>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-6 w-6 text-blue-400" />
+                              <div className="text-left">
+                                <div className="text-white font-semibold">Guardar Alterações</div>
+                                <div className="text-white/60 text-sm">Salvar todas as mudanças</div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  </div>
 
-                    {/* Shine Effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] group-hover:translate-x-[100%] skew-x-12"></div>
-                  </button>
+                  {/* Botão Ver como público */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={viewPublicProfile}
+                      className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-green-600 via-teal-500 to-emerald-600 p-[2px] transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.4)]"
+                    >
+                      <div className="relative rounded-2xl bg-gradient-to-r from-gray-900 via-black to-gray-900 px-6 py-4 transition-all duration-300 group-hover:bg-opacity-80">
+                        <div className="flex items-center justify-center space-x-3">
+                          <Eye className="h-6 w-6 text-green-400" />
+                          <div className="text-left">
+                            <div className="text-white font-semibold">Ver como público</div>
+                            <div className="text-white/60 text-sm">Como outros veem seu perfil</div>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
               </div>
@@ -941,41 +1010,34 @@ const ProfilePage = () => {
               isPremium={isPremium}
             />
 
-            {/* Botão Salvar Preferências - Consistente */}
-            <div className="relative group mt-6">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 rounded-2xl blur-sm opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-              
+            {/* Botão Salvar Preferências */}
+            <div className="relative mt-6">
               <button 
                 onClick={handleUpdateProfile} 
                 disabled={saving || uploading}
-                className="relative w-full px-6 py-4 bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 rounded-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)] disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-[1.02] active:scale-[0.98]"
+                className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-purple-500 to-pink-600 p-[2px] transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="flex items-center justify-center space-x-3">
-                  {saving ? (
-                    <>
-                      <div className="p-2 bg-white/20 rounded-lg">
-                        <Loader className="h-5 w-5 animate-spin text-white" />
-                      </div>
-                      <div className="text-center">
-                        <div className="text-white font-semibold">Salvando...</div>
-                        <div className="text-white/70 text-xs">Atualizando preferências</div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="p-2 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-                        <Save className="h-5 w-5 text-white" />
-                      </div>
-                      <div className="text-center">
-                        <div className="text-white font-semibold">Salvar Preferências</div>
-                        <div className="text-white/70 text-xs">Interesses e configurações</div>
-                      </div>
-                    </>
-                  )}
+                <div className="relative rounded-2xl bg-gradient-to-r from-gray-900 via-black to-gray-900 px-6 py-4 transition-all duration-300 group-hover:bg-opacity-80">
+                  <div className="flex items-center justify-center space-x-3">
+                    {saving ? (
+                      <>
+                        <Loader className="h-5 w-5 animate-spin text-blue-400" />
+                        <div className="text-center">
+                          <div className="text-white font-semibold">Salvando...</div>
+                          <div className="text-white/60 text-xs">Atualizando preferências</div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-5 w-5 text-blue-400" />
+                        <div className="text-center">
+                          <div className="text-white font-semibold">Salvar Preferências</div>
+                          <div className="text-white/60 text-xs">Interesses e configurações</div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-
-                {/* Shine Effect */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 translate-x-[-100%] group-hover:translate-x-[100%] skew-x-12"></div>
               </button>
             </div>
           </div>

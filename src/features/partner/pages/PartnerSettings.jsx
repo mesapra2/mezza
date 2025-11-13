@@ -260,7 +260,8 @@ const PartnerSettings = () => {
           google_profile_url: partnerData.google_profile_url,
           cuisine_type: partnerData.cuisine_type,
           price_range: partnerData.price_range,
-          capacity: partnerData.capacity
+          capacity: partnerData.capacity,
+          menu_complexity: partnerData.menu_complexity
         })
         .eq('id', profile.partner_id);
 
@@ -602,6 +603,24 @@ const PartnerSettings = () => {
                 <option value="$$$">$$$ - Caro</option>
                 <option value="$$$$">$$$$ - Premium</option>
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="menu_complexity">Cardápio</Label>
+              <select
+                id="menu_complexity"
+                value={partnerData.menu_complexity || ''}
+                onChange={(e) => setPartnerData({ ...partnerData, menu_complexity: e.target.value })}
+                className="w-full px-3 py-2 rounded-md bg-white/5 border border-white/10 text-white"
+              >
+                <option value="">Selecione</option>
+                <option value="fácil">Fácil - Cardápio simples e direto</option>
+                <option value="normal">Normal - Cardápio tradicional</option>
+                <option value="elaborado">Elaborado - Cardápio sofisticado</option>
+              </select>
+              <p className="text-xs text-white/60">
+                Indique a complexidade do seu cardápio para ajudar os clientes a entenderem o estilo do restaurante.
+              </p>
             </div>
 
             <div className="space-y-2">

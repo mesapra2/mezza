@@ -12,6 +12,7 @@ import { toast } from '@/features/shared/components/ui/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import EventHashtagSelector from '@/features/shared/components/events/EventHashtagSelector';
 import NotificationService from '@/services/NotificationService';
+import { canReceiveMesapra2Invites } from '@/utils/mesapra2InviteHelper';
 
 const CreateEventCrusher = () => {
   const { user } = useAuth();
@@ -49,23 +50,26 @@ const CreateEventCrusher = () => {
 
     const fetchInvitedUser = async () => {
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url, allow_pokes')
-          .eq('id', invitedUserId)
-          .single();
-
-        if (error) throw error;
-
-        if (data.allow_pokes === true) {
+        // Primeiro, verificar se o usuário pode receber convites Mesapra2
+        const canReceiveInvites = await canReceiveMesapra2Invites(invitedUserId);
+        
+        if (!canReceiveInvites) {
           toast({
             variant: "destructive",
-            title: "Ops!",
-            description: "Esta pessoa aceita cutucadas. Use o botão Cutucar!",
+            title: "Convite não permitido",
+            description: "Esta pessoa não aceita convites Mesapra2. Tente outro tipo de interação.",
           });
           navigate('/people');
           return;
         }
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url')
+          .eq('id', invitedUserId)
+          .single();
+
+        if (error) throw error;
 
         setInvitedUser(data);
       } catch (error) {
@@ -283,7 +287,7 @@ const CreateEventCrusher = () => {
             <div className="mt-4 p-3 bg-white/5 rounded-lg">
               <p className="text-white/70 text-sm">
                 <AlertCircle className="w-4 h-4 inline mr-2" />
-                Esta pessoa não aceita cutucadas, então você está enviando um convite Crusher direto para um evento exclusivo.
+                Você está enviando um convite Crusher para um evento exclusivo. Esta pessoa poderá aceitar ou recusar.
               </p>
             </div>
           </div>

@@ -18,12 +18,27 @@ export const useNotifications = (userId, pollingInterval = 10000) => {
     try {
       const { data, error: fetchError } = await supabase
         .from('notifications')
-        .select('id, user_id, event_id, notification_type, title, message, sent, created_at')
+        .select('id, user_id, event_id, notification_type, title, message, sent, is_read, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        // Se for erro de tabela não encontrada ou RLS, tratar graciosamente
+        if (fetchError.code === 'PGRST106' || fetchError.message?.includes('does not exist')) {
+          console.warn('⚠️ Tabela notifications não existe. Criando estrutura...');
+          setNotifications([]);
+          setUnreadCount(0);
+          return;
+        }
+        if (fetchError.code === 'PGRST116' || fetchError.message?.includes('406')) {
+          console.warn('⚠️ Sem permissão para acessar notificações');
+          setNotifications([]);
+          setUnreadCount(0);
+          return;
+        }
+        throw fetchError;
+      }
 
       setNotifications(data || []);
       
@@ -48,7 +63,14 @@ export const useNotifications = (userId, pollingInterval = 10000) => {
         .update({ is_read: true })
         .eq('id', notificationId);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        // Tratar erros de RLS ou tabela não encontrada graciosamente
+        if (updateError.code === 'PGRST106' || updateError.code === 'PGRST116') {
+          console.warn('⚠️ Erro ao marcar notificação como lida:', updateError.message);
+          return;
+        }
+        throw updateError;
+      }
 
       // Atualiza localmente
       setNotifications(prev => 
@@ -71,7 +93,14 @@ export const useNotifications = (userId, pollingInterval = 10000) => {
         .eq('user_id', userId)
         .eq('is_read', false);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        // Tratar erros de RLS ou tabela não encontrada graciosamente
+        if (updateError.code === 'PGRST106' || updateError.code === 'PGRST116') {
+          console.warn('⚠️ Erro ao marcar todas notificações como lidas:', updateError.message);
+          return;
+        }
+        throw updateError;
+      }
 
       // Atualiza localmente
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
@@ -89,7 +118,14 @@ export const useNotifications = (userId, pollingInterval = 10000) => {
         .delete()
         .eq('id', notificationId);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        // Tratar erros de RLS ou tabela não encontrada graciosamente
+        if (deleteError.code === 'PGRST106' || deleteError.code === 'PGRST116') {
+          console.warn('⚠️ Erro ao deletar notificação:', deleteError.message);
+          return;
+        }
+        throw deleteError;
+      }
 
       // Atualiza localmente
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
@@ -141,13 +177,32 @@ export const useNotifications = (userId, pollingInterval = 10000) => {
             setNotifications(prev =>
               prev.map(n => n.id === payload.new.id ? payload.new : n)
             );
+            // Atualizar contador se mudou status de leitura
+            if (payload.old.is_read !== payload.new.is_read) {
+              if (payload.new.is_read) {
+                setUnreadCount(prev => Math.max(0, prev - 1));
+              } else {
+                setUnreadCount(prev => prev + 1);
+              }
+            }
           } else if (payload.eventType === 'DELETE') {
             // Notificação deletada
             setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
+            if (!payload.old.is_read) {
+              setUnreadCount(prev => Math.max(0, prev - 1));
+            }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Conectado às notificações em tempo real');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('⚠️ Erro na conexão de notificações em tempo real');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('⚠️ Timeout na conexão de notificações');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

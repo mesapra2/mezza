@@ -340,6 +340,41 @@ const MyEventsPage = () => {
   };
 
   // --------------------------------------------------
+  // ✅ FUNÇÃO PARA PEGAR IMAGEM DE FUNDO DO RESTAURANTE
+  // --------------------------------------------------
+  const getPartnerBackground = (partner) => {
+    if (!partner) return null;
+
+    if (partner.photos && Array.isArray(partner.photos) && partner.photos.length > 0) {
+      const firstPhoto = partner.photos[0];
+      
+      if (firstPhoto.startsWith('http')) {
+        return firstPhoto;
+      }
+      
+      const { data } = supabase.storage
+        .from('partner-photos')
+        .getPublicUrl(firstPhoto);
+      
+      return data.publicUrl;
+    }
+    
+    if (partner.logo_url) {
+      if (partner.logo_url.startsWith('http')) {
+        return partner.logo_url;
+      }
+      
+      const { data } = supabase.storage
+        .from('partner-photos')
+        .getPublicUrl(partner.logo_url);
+      
+      return data.publicUrl;
+    }
+    
+    return null;
+  };
+
+  // --------------------------------------------------
   // ✅ DEVE MOSTRAR SENHA DO ANFITRIÃO? (1 min antes de começar até 2 min antes de acabar)
   // --------------------------------------------------
   const shouldShowPassword = (event) => {
@@ -660,13 +695,29 @@ const MyEventsPage = () => {
               const showPasswordInput = shouldShowPasswordInput(event);
               const isCreator = isEventCreator(event);
 
+              const backgroundImage = getPartnerBackground(event.partner) || '/og-default.jpg';
+              
               return (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="glass-effect rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all h-full flex flex-col justify-between"
+                  className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-white/20 transition-all h-full"
+                >
+                  {/* Fundo com imagem do restaurante */}
+                  <div 
+                    className="absolute inset-0 z-0"
+                    style={{
+                      background: `linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.9)), url(${backgroundImage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                  
+                  <div className="absolute inset-0 z-0 bg-black/40 backdrop-blur-sm" />
+
+                  <div className="relative z-10 p-6 h-full flex flex-col justify-between"
                 >
                   {/* Status + Badge de Participante */}
                   <div className="mb-4 flex items-center gap-2">
@@ -873,6 +924,7 @@ const MyEventsPage = () => {
                         )}
                       </div>
                     )}
+                  </div>
                   </div>
                 </motion.div>
               );

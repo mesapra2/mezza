@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { getUserType, PROFILE_TYPES } from '@/config/userTypes';
 import { useCurrentUserPresence } from '@/hooks/usePresence';
+import LocationService from '@/services/LocationService';
 
 const AuthContext = createContext(null);
 
@@ -35,8 +36,78 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState(null);
+  const [locationRequested, setLocationRequested] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  /**
+   * ✅ FUNÇÃO PARA CAPTURAR LOCALIZAÇÃO AUTOMATICAMENTE
+   */
+  const requestLocationOnLogin = useCallback(async (userId) => {
+    if (locationRequested) return;
+    
+    try {
+      setLocationRequested(true);
+      console.log('📍 [Auth] Solicitando localização após login...');
+      
+      // Verificar se já tem localização recente
+      const savedLocation = await LocationService.getUserLocation(userId);
+      
+      if (savedLocation && !LocationService.shouldUpdateLocation(savedLocation.timestamp, 1800000)) {
+        console.log('✅ [Auth] Localização recente encontrada, não solicitando nova');
+        return;
+      }
+      
+      // Verificar permissões primeiro
+      const permissionStatus = await LocationService.checkLocationPermission();
+      
+      if (permissionStatus.granted) {
+        // Se já tem permissão, obter localização silenciosamente
+        try {
+          const location = await LocationService.getCurrentLocation(false);
+          
+          // Obter endereço opcional
+          const addressInfo = await LocationService.getAddressFromCoordinates(
+            location.latitude,
+            location.longitude
+          );
+          
+          const locationWithAddress = {
+            ...location,
+            ...addressInfo
+          };
+          
+          // Salvar no banco
+          await LocationService.saveUserLocation(userId, locationWithAddress);
+          
+          console.log('✅ [Auth] Localização capturada e salva automaticamente');
+          
+          toast({
+            title: "📍 Localização atualizada",
+            description: `Eventos próximos em ${addressInfo.city || 'sua região'} serão priorizados`,
+          });
+          
+        } catch (error) {
+          console.warn('⚠️ [Auth] Erro ao obter localização automaticamente:', error.message);
+          // Não mostrar erro para não interromper o login
+        }
+      } else if (permissionStatus.prompt) {
+        // Se precisa solicitar permissão, fazer isso depois de um delay
+        setTimeout(() => {
+          console.log('🔔 [Auth] Permissão de localização será solicitada');
+          // A solicitação será feita pelo componente LocationPermissionRequest
+        }, 3000);
+      }
+      
+    } catch (error) {
+      console.error('❌ [Auth] Erro no processo de localização:', error);
+    } finally {
+      // Reset flag after some time to allow retry
+      setTimeout(() => {
+        setLocationRequested(false);
+      }, 60000); // 1 minuto
+    }
+  }, [locationRequested, toast]);
 
   // Função para buscar o perfil com controle simplificado
   const getProfile = useCallback(async (currentUser) => {
@@ -118,9 +189,16 @@ export const AuthProvider = ({ children }) => {
       if (!profileData) {
         console.log(`ℹ️ [createProfile] Perfil não existe para ${currentUser.id}. Criando...`);
         const profileType = currentUser.user_metadata?.profile_type || PROFILE_TYPES.USER;
+
+        // ✅ Capturar avatar do OAuth (Google/Facebook)
+        const avatarUrl = currentUser.user_metadata?.avatar_url ||
+                         currentUser.user_metadata?.picture ||
+                         null;
+
         const newProfileData = {
           id: currentUser.id,
           username: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || `user_${currentUser.id.substring(0, 5)}`,
+          avatar_url: avatarUrl,
           updated_at: new Date().toISOString(),
           theme: 'system',
           profile_visibility: 'public',
@@ -128,14 +206,35 @@ export const AuthProvider = ({ children }) => {
           profile_type: profileType,
         };
 
+        console.log(`📸 [createProfile] Avatar do OAuth: ${avatarUrl ? 'Capturado' : 'Não disponível'}`);
         const { error: insertError } = await supabase.from('profiles').insert(newProfileData);
         if (insertError) throw insertError;
-        
+
         console.log(`✅ [createProfile] Perfil criado para ${currentUser.id}`);
         toast({ title: "Perfil criado!", description: "Bem-vindo!" });
         profileData = await getProfile(currentUser);
       } else {
         console.log(`✅ [createProfile] Perfil já existe para ${currentUser.id}`);
+
+        // ✅ Atualizar avatar se não existir mas estiver disponível no OAuth
+        if (!profileData.avatar_url) {
+          const avatarUrl = currentUser.user_metadata?.avatar_url ||
+                           currentUser.user_metadata?.picture ||
+                           null;
+
+          if (avatarUrl) {
+            console.log(`📸 [createProfile] Atualizando avatar do OAuth para perfil existente`);
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ avatar_url: avatarUrl })
+              .eq('id', currentUser.id);
+
+            if (!updateError) {
+              profileData.avatar_url = avatarUrl;
+              console.log(`✅ Avatar atualizado com sucesso`);
+            }
+          }
+        }
       }
       return profileData;
     } catch (error) {
@@ -174,6 +273,9 @@ export const AuthProvider = ({ children }) => {
                 const initialProfile = await createProfileIfNotExists(initialUser);
                 if (mounted && initialProfile) {
                     setProfile(initialProfile);
+                    
+                    // ✅ Capturar localização automaticamente após login
+                    requestLocationOnLogin(initialUser.id);
                     
                     // ✅ Sistema de presença será inicializado pelo hook
                     
@@ -235,6 +337,10 @@ export const AuthProvider = ({ children }) => {
                 createProfileIfNotExists(currentUser).then(async (p) => {
                     if (mounted && p) {
                         setProfile(p);
+                        
+                        // ✅ Capturar localização automaticamente após login/mudança de usuário
+                        requestLocationOnLogin(currentUser.id);
+                        
                         // ✅ Presença será gerenciada pelo hook
                     }
                 }).catch(err => {
@@ -378,6 +484,40 @@ export const AuthProvider = ({ children }) => {
           description: error.message || "Erro desconhecido"
         });
       }
+      setLoading(false);
+      throw error;
+    }
+  }, [toast]);
+
+  const signInWithInstagram = useCallback(async () => {
+    setLoading(true);
+    try {
+      const baseUrl = window.location.origin;
+      const redirectTo = `${baseUrl}/auth/callback`;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: { 
+          redirectTo,
+          scopes: 'email'
+        }
+      });
+      
+      if (error) {
+        console.error('❌ Erro no login Instagram (via Facebook):', error);
+        throw error;
+      }
+      
+      console.log('✅ Redirecionando para Instagram (via Facebook)...', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Erro no login com Instagram:', error.message);
+      
+      toast({ 
+        variant: "destructive", 
+        title: "Erro de Login Instagram", 
+        description: "Erro na autenticação do Instagram. Tente novamente ou use outro método de login."
+      });
       setLoading(false);
       throw error;
     }
@@ -528,9 +668,10 @@ export const AuthProvider = ({ children }) => {
     signInWithGoogle,
     signInWithApple,
     signInWithFacebook,
+    signInWithInstagram,
     updateProfile,
     uploadAvatar,
-  }), [user, loading, profile, login, register, logout, signInWithGoogle, signInWithApple, signInWithFacebook, updateProfile, uploadAvatar]);
+  }), [user, loading, profile, login, register, logout, signInWithGoogle, signInWithApple, signInWithFacebook, signInWithInstagram, updateProfile, uploadAvatar]);
 
   return (
     <AuthContext.Provider value={value}>

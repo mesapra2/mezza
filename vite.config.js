@@ -76,6 +76,15 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       historyApiFallback: true, // ⭐ CRÍTICO para React Router
       
+      // ✅ Proxy para APIs serverless durante desenvolvimento
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+          rewrite: (path) => path
+        },
+      },
+      
       // ✅ CORREÇÃO: MIME types e headers otimizados
       middlewareMode: false,
       fs: {

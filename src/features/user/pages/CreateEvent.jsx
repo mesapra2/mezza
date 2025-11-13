@@ -13,9 +13,11 @@ import { Textarea } from '@/features/shared/components/ui/textarea';
 import { toast } from '@/features/shared/components/ui/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import HashtagSelector from '@/features/shared/components/events/HashtagSelector';
+import SmartMenuSuggestions from '@/features/shared/components/events/SmartMenuSuggestions';
 import RestaurantSelector from '@/features/shared/components/ui/RestaurantSelector';
 import { LimitWarning } from '@/features/shared/components/LimitWarning';
 import { useFavoriteRestaurants } from '@/hooks/useFavoriteRestaurants';
+import { usePremium } from '@/contexts/PremiumContext';
 
 const CreateEvent = () => {
   const { user, profile } = useAuth();
@@ -24,6 +26,12 @@ const CreateEvent = () => {
   const [userEventCount, setUserEventCount] = useState(0);
   const { getFavoritesForSuggestions } = useFavoriteRestaurants();
   const [favoriteSuggestions, setFavoriteSuggestions] = useState([]);
+  const { isPremium } = usePremium();
+  
+  // Estados para Cardápio Inteligente
+  const [selectedSmartMenu, setSelectedSmartMenu] = useState(null);
+  const [selectedSmartRestaurant, setSelectedSmartRestaurant] = useState(null);
+  const [showSmartMenu, setShowSmartMenu] = useState(false);
   const [formData, setFormData] = useState({
     event_type: 'padrao',
     title: '',
@@ -75,6 +83,29 @@ const CreateEvent = () => {
 
     loadFavoriteSuggestions();
   }, [user?.id, getFavoritesForSuggestions]);
+
+  // Mostrar cardápio inteligente quando 3 hashtags forem selecionadas (Premium)
+  useEffect(() => {
+    if (formData.hashtags.length >= 3 && isPremium) {
+      setShowSmartMenu(true);
+    } else {
+      setShowSmartMenu(false);
+      setSelectedSmartMenu(null);
+      setSelectedSmartRestaurant(null);
+    }
+  }, [formData.hashtags, isPremium]);
+
+  // Handlers para Cardápio Inteligente
+  const handleSmartMenuSelected = (menu) => {
+    setSelectedSmartMenu(menu);
+    console.log('🤖 Cardápio selecionado:', menu.name);
+  };
+
+  const handleSmartRestaurantSelected = (restaurant) => {
+    setSelectedSmartRestaurant(restaurant);
+    setFormData(prev => ({ ...prev, partner_id: restaurant.id }));
+    console.log('🏪 Restaurante selecionado via cardápio inteligente:', restaurant.name);
+  };
 
   // ✅ CORREÇÃO: Usar useEffect separado com replace: true
   useEffect(() => {
@@ -325,6 +356,43 @@ const CreateEvent = () => {
                   selectedHashtags={formData.hashtags}
                   onChange={(hashtags) => setFormData({ ...formData, hashtags })}
                 />
+
+                {/* Cardápio Inteligente - Feature Premium */}
+                {showSmartMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="bg-white/5 rounded-xl border border-purple-500/20 p-6"
+                  >
+                    <SmartMenuSuggestions
+                      selectedHashtags={formData.hashtags}
+                      onMenuSelected={handleSmartMenuSelected}
+                      onRestaurantSelected={handleSmartRestaurantSelected}
+                      showRestaurants={true}
+                    />
+                  </motion.div>
+                )}
+
+                {/* Resumo do Cardápio Selecionado */}
+                {selectedSmartMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-lg border border-purple-500/30 p-4"
+                  >
+                    <h4 className="text-white font-semibold flex items-center mb-2">
+                      <span className="mr-2">🍽️</span>
+                      Cardápio Selecionado: {selectedSmartMenu.name}
+                    </h4>
+                    <p className="text-white/70 text-sm">{selectedSmartMenu.description}</p>
+                    {selectedSmartRestaurant && (
+                      <p className="text-purple-300 text-sm mt-2">
+                        📍 Restaurante: {selectedSmartRestaurant.name}
+                      </p>
+                    )}
+                  </motion.div>
+                )}
 
                 {/* Seleção de Restaurante */}
                 <RestaurantSelector

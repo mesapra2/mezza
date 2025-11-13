@@ -11,6 +11,7 @@ import Layout from '@/components/Layout';
 
 // Autenticação
 import AuthCallbackPage from '@/features/shared/pages/AuthCallbackPage';
+import InstagramCallbackPage from '@/features/shared/pages/InstagramCallbackPage';
 import LoginPage from '@/features/shared/pages/LoginPage';
 import RegisterPage from '@/features/shared/pages/RegisterPage';
 import PartnerRegisterPage from '@/features/partner/pages/PartnerRegisterPage';
@@ -138,8 +139,9 @@ function AppContent() {
       </Helmet>
 
       <Routes>
-        {/* ===== 🔐 ROTA DO CALLBACK - DEVE ESTAR FORA DO CONDICIONAL user ===== */}
+        {/* ===== 🔐 ROTAS DE CALLBACK - DEVEM ESTAR FORA DO CONDICIONAL user ===== */}
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/auth/instagram-callback" element={<InstagramCallbackPage />} />
 
         {/* ROTAS PÚBLICAS (sem login) */}
         {!user ? (

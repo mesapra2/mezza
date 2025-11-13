@@ -35,9 +35,14 @@ export class CertifiedUserService {
         .select('status')
         .eq('user_id', userId)
         .eq('status', 'approved')
-        .single();
+        .maybeSingle();
 
       if (error) {
+        // Se for erro de RLS ou tabela não encontrada, assumir não certificado
+        if (error.code === 'PGRST116' || error.message?.includes('406')) {
+          console.log('Tabela user_verifications não acessível ou usuário não autenticado');
+          return false;
+        }
         console.log('Usuário não certificado:', error);
         return false;
       }
@@ -59,9 +64,18 @@ export class CertifiedUserService {
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'approved')
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        if (error.code === 'PGRST116' || error.message?.includes('406')) {
+          console.log('Tabela user_verifications não acessível ou usuário não autenticado');
+          return null;
+        }
+        console.log('Erro ao buscar dados de certificação:', error);
+        return null;
+      }
+
+      if (!data) {
         return null;
       }
 
@@ -154,6 +168,11 @@ export class CertifiedUserService {
         .eq('status', 'approved');
 
       if (error) {
+        if (error.code === 'PGRST116' || error.message?.includes('406')) {
+          console.log('Tabela user_verifications não acessível para verificação de CPF');
+          return false;
+        }
+        console.log('Erro ao verificar CPF duplicado:', error);
         return false;
       }
 

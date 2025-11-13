@@ -83,19 +83,80 @@ const NotificationDropdown = ({ userId }) => {
     }
   };
 
+  // Função para lidar com clique no poke
+  const handlePokeClick = async (poke) => {
+    try {
+      // Marcar como lido
+      await markPokeAsRead(poke.id);
+      
+      // Navegar para perfil do usuário que enviou o poke
+      if (poke.from_user_id) {
+        navigate(`/profile/${poke.from_user_id}`);
+      }
+      
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Erro ao processar clique no poke:', error);
+      setIsOpen(false);
+    }
+  };
+
+  // Marcar todas como lidas (notificações + pokes)
+  const handleMarkAllAsRead = async () => {
+    try {
+      // Marcar todas as notificações como lidas
+      await markAllAsRead();
+      
+      // Marcar todos os pokes como lidos
+      if (pokes.length > 0) {
+        const { error } = await supabase
+          .from('pokes')
+          .update({ read: true })
+          .eq('to_user_id', userId)
+          .eq('read', false);
+
+        if (error) {
+          console.error('Erro ao marcar pokes como lidos:', error);
+        } else {
+          // Atualizar estado local dos pokes
+          setPokes([]);
+        }
+      }
+
+      toast({
+        title: "Todas as notificações foram marcadas como lidas",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('Erro ao marcar todas como lidas:', error);
+      toast({
+        title: "Erro ao marcar notificações como lidas",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Função para navegar para notificação
   const handleNotificationClick = async (notification) => {
-    if (!notification.is_read) {
-      await markAsRead(notification.id);
+    try {
+      if (!notification.is_read) {
+        await markAsRead(notification.id);
+      }
+      
+      // Navegar baseado no tipo de notificação
+      if (notification.event_id) {
+        navigate(`/event/${notification.event_id}`);
+      } else if (notification.type === 'participation_approved') {
+        navigate(`/event/${notification.event_id}`);
+      } else if (notification.type === 'event_reminder') {
+        navigate(`/event/${notification.event_id}`);
+      }
+      
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Erro ao processar clique na notificação:', error);
+      setIsOpen(false);
     }
-    
-    if (notification.type === 'participation_approved') {
-      navigate(`/event/${notification.event_id}`);
-    } else if (notification.type === 'event_reminder') {
-      navigate(`/event/${notification.event_id}`);
-    }
-    
-    setIsOpen(false);
   };
 
   // Renderizar ícone da notificação
@@ -136,7 +197,7 @@ const NotificationDropdown = ({ userId }) => {
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-0 z-40"
+              className="fixed inset-0 z-[1010]"
               onClick={() => setIsOpen(false)}
             />
             
@@ -145,7 +206,7 @@ const NotificationDropdown = ({ userId }) => {
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-gray-900 border border-white/10 rounded-lg shadow-xl z-50 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl z-[1020] overflow-hidden"
             >
               {/* Header */}
               <div className="p-4 border-b border-white/10">
@@ -153,8 +214,8 @@ const NotificationDropdown = ({ userId }) => {
                   <h3 className="font-semibold text-white">Notificações</h3>
                   {totalUnreadCount > 0 && (
                     <button
-                      onClick={markAllAsRead}
-                      className="text-sm text-purple-400 hover:text-purple-300"
+                      onClick={handleMarkAllAsRead}
+                      className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
                     >
                       Marcar todas como lidas
                     </button>
@@ -175,24 +236,49 @@ const NotificationDropdown = ({ userId }) => {
                     {pokes.map(poke => (
                       <div
                         key={`poke-${poke.id}`}
-                        className="p-3 border-b border-white/10 hover:bg-white/5 transition-colors"
+                        onClick={() => handlePokeClick(poke)}
+                        className="p-3 border-b border-white/10 hover:bg-white/5 transition-colors cursor-pointer"
                       >
                         <div className="flex items-start gap-3">
-                          <Hand className="w-4 h-4 text-yellow-500 mt-1 flex-shrink-0" />
+                          <div className="relative flex-shrink-0">
+                            {poke.from_user?.avatar_url ? (
+                              <img
+                                src={poke.from_user.avatar_url}
+                                alt={poke.from_user.username || 'Usuário'}
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    poke.from_user?.username || 'User'
+                                  )}&background=8b5cf6&color=fff&size=32`;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <Hand className="w-4 h-4 text-yellow-500" />
+                              </div>
+                            )}
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center">
+                              <Hand className="w-2 h-2 text-white" />
+                            </div>
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-white">
                               <span className="font-medium">
-                                {poke.from_user?.username || poke.from_user?.full_name || 'Usuário'}
+                                {poke.from_user?.full_name || poke.from_user?.username || 'Usuário'}
                               </span>
-                              {' '}te cutucou
+                              {' '}te enviou um cutucão
                             </p>
                             <p className="text-xs text-white/60 mt-1">
                               {format(new Date(poke.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
                             </p>
                           </div>
                           <button
-                            onClick={() => markPokeAsRead(poke.id)}
-                            className="text-white/40 hover:text-white/80"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markPokeAsRead(poke.id);
+                            }}
+                            className="text-white/40 hover:text-white/80 transition-colors"
+                            aria-label="Marcar como lido"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -232,7 +318,7 @@ const NotificationDropdown = ({ userId }) => {
                     ))}
 
                     {/* Empty State */}
-                    {notifications.length === 0 && pokes.length === 0 && (
+                    {notifications.length === 0 && pokes.length === 0 && !loading && (
                       <div className="p-8 text-center">
                         <Bell className="w-12 h-12 text-white/20 mx-auto mb-3" />
                         <p className="text-white/60 text-sm">Nenhuma notificação</p>
@@ -244,6 +330,21 @@ const NotificationDropdown = ({ userId }) => {
                   </>
                 )}
               </div>
+
+              {/* Footer com link para página de notificações */}
+              {(notifications.length > 0 || pokes.length > 0) && (
+                <div className="p-3 border-t border-white/10 text-center">
+                  <button
+                    onClick={() => {
+                      navigate('/notifications');
+                      setIsOpen(false);
+                    }}
+                    className="text-sm text-purple-400 hover:text-purple-300 transition-colors font-medium"
+                  >
+                    Ver todas as notificações
+                  </button>
+                </div>
+              )}
             </motion.div>
           </>
         )}

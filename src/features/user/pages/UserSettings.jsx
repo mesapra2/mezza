@@ -43,6 +43,7 @@ const UserSettings = () => {
     phone: '',
     public_profile: false,
     allow_pokes: true,
+    allow_mesapra2_invites: true,
     dark_mode: false,
     email_notifications: true,
     is_verified: false,
@@ -143,6 +144,9 @@ const UserSettings = () => {
       // Try to get is_verified field, but handle gracefully if it doesn't exist
       let profileQuery = 'full_name, username, bio, phone, phone_verified, public_profile, allow_pokes, dark_mode, email_notifications';
       
+      // Note: allow_mesapra2_invites will be added when migration is applied
+      // For now, we'll try to include it but handle gracefully if it doesn't exist
+      
       // Check if is_verified column exists
       try {
         const testQuery = await supabase
@@ -200,6 +204,7 @@ const UserSettings = () => {
         phone: typeof data.phone === 'object' ? data.phone?.number || '' : data.phone || '',
         public_profile: data.public_profile || false,
         allow_pokes: data.allow_pokes !== false, // default true
+        allow_mesapra2_invites: data.allow_mesapra2_invites !== undefined ? data.allow_mesapra2_invites !== false : true, // default true, safe fallback
         dark_mode: data.dark_mode !== false, // default true
         email_notifications: data.email_notifications !== false, // default true
         is_verified: data.is_verified || false, // Use database value if available, otherwise false
@@ -235,6 +240,7 @@ const UserSettings = () => {
           phone: profile?.phone || '',
           public_profile: profile?.public_profile || false,
           allow_pokes: profile?.allow_pokes !== false,
+          allow_mesapra2_invites: profile?.allow_mesapra2_invites !== false,
           is_verified: false,
           verification_status: null,
           address: {
@@ -263,18 +269,23 @@ const UserSettings = () => {
   const saveUserData = async () => {
     setSaving(true);
     try {
+      // Preparar dados base
+      let updateData = {
+        full_name: userData.full_name,
+        username: userData.username,
+        bio: userData.bio,
+        public_profile: userData.public_profile,
+        allow_pokes: userData.allow_pokes,
+        dark_mode: userData.dark_mode,
+        email_notifications: userData.email_notifications
+      };
+
+      // Note: allow_mesapra2_invites will be saved when migration is applied
+      // For now, we skip this field to avoid errors
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          full_name: userData.full_name,
-          username: userData.username,
-          bio: userData.bio,
-          public_profile: userData.public_profile,
-          allow_pokes: userData.allow_pokes,
-          dark_mode: userData.dark_mode,
-          email_notifications: userData.email_notifications
-          // Campos removidos: gender, birth_date, address (não existem no banco)
-        })
+        .update(updateData)
         .eq('id', user.id);
 
       if (error) throw error;
@@ -300,21 +311,29 @@ const UserSettings = () => {
     setSendingCode(true);
     try {
       console.log('🚀 Enviando SMS para:', phone, 'User ID:', user.id);
-      const response = await fetch('/api/send-verification-sms', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          phone: phone,
-          userId: user.id 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao enviar SMS');
+      
+      // Gerar código de verificação aleatório
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Armazenar código temporariamente no localStorage com expiração
+      const codeData = {
+        code: verificationCode,
+        timestamp: Date.now(),
+        userId: user.id,
+        phone: phone
+      };
+      
+      localStorage.setItem(`verification_code_${phone}`, JSON.stringify(codeData));
+      
+      console.log(`📱 Enviando SMS para: ${phone} com código: ${verificationCode}`);
+      
+      // Usar o serviço Twilio diretamente
+      const { sendSMS } = await import('../../../services/twilioService.js');
+      
+      const result = await sendSMS(phone, `Seu código para Mesapra2 é: ${verificationCode}`);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Erro ao enviar SMS');
       }
 
       toast({
@@ -351,22 +370,40 @@ const UserSettings = () => {
 
     setSaving(true);
     try {
-      const response = await fetch('/api/verify-phone-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          code: phoneVerificationCode,
-          userId: user.id 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Código inválido');
+      // Verificar código armazenado localmente
+      const storedData = localStorage.getItem(`verification_code_${tempPhone}`);
+      
+      if (!storedData) {
+        throw new Error('Código não encontrado. Solicite um novo código.');
       }
+      
+      const { code, timestamp, userId, phone } = JSON.parse(storedData);
+      
+      // Verificar se o código não expirou (10 minutos)
+      if (Date.now() - timestamp > 10 * 60 * 1000) {
+        localStorage.removeItem(`verification_code_${tempPhone}`);
+        throw new Error('Código expirado. Solicite um novo código.');
+      }
+      
+      // Verificar se o código está correto
+      if (phoneVerificationCode !== code) {
+        throw new Error('Código inválido.');
+      }
+      
+      // Verificar se é o usuário correto
+      if (userId !== user.id) {
+        throw new Error('Código não pertence a este usuário.');
+      }
+      
+      // Verificar se é o telefone correto
+      if (phone !== tempPhone) {
+        throw new Error('Código não corresponde ao telefone.');
+      }
+      
+      // Limpar código usado
+      localStorage.removeItem(`verification_code_${tempPhone}`);
+      
+      console.log('✅ Código verificado com sucesso');
 
       // Atualizar perfil como verificado
       const { error } = await supabase
@@ -855,22 +892,24 @@ const UserSettings = () => {
               </label>
             </div>
 
-            {/* Aceitar Toks */}
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-              <div>
-                <h3 className="text-white font-medium">Aceitar Toks 👇</h3>
-                <p className="text-white/60 text-sm">Permitir que outros usuários enviem Toks para você</p>
+            {/* Receber convites Mesapra2 */}
+            {true && (
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+                <div>
+                  <h3 className="text-white font-medium">Receber convites Mesapra2 💌</h3>
+                  <p className="text-white/60 text-sm">Permitir receber convites para eventos crusher (exclusivos)</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={userData.allow_mesapra2_invites}
+                    onChange={(e) => setUserData(prev => ({ ...prev, allow_mesapra2_invites: e.target.checked }))}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={userData.allow_pokes}
-                  onChange={(e) => setUserData(prev => ({ ...prev, allow_pokes: e.target.checked }))}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
+            )}
           </div>
 
           <Button

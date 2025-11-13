@@ -3,15 +3,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Calendar, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/features/shared/components/ui/button';
-import { Input } from '@/features/shared/components/ui/input';
-import { Label } from '@/features/shared/components/ui/label';
-import { useAccessibleForm } from '@/hooks/useAccessibleForm';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import SocialLoginButtons from '@/features/shared/components/auth/SocialLoginButtons';
-import { supabase } from '@/lib/supabaseClient';
 // ✅ VÍDEOS RESTAURADOS - Com otimização de performance
 import vds2 from '@/assets/vds2.mp4';
 import vds4 from '@/assets/vds4.mp4';
@@ -22,15 +17,11 @@ import vds10 from '@/assets/vds10.mp4';
 import vds11 from '@/assets/vds11.mp4';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [resendingEmail, setResendingEmail] = useState(false);
-  const [showResendButton, setShowResendButton] = useState(false);
   // ✅ VÍDEO RESTAURADO - Com controle otimizado
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [videoLoaded, setVideoLoaded] = useState(false);
-  const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
+  const { signInWithGoogle, signInWithFacebook, signInWithInstagram } = useAuth();
 
   // ✅ VÍDEOS RESTAURADOS - Array otimizado
   const videos = [vds2, vds4, vds5, vds7, vds9, vds10, vds11];
@@ -44,103 +35,7 @@ const LoginPage = () => {
     return () => clearInterval(interval);
   }, [videos.length]);
 
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const { getFieldProps, getLabelProps, getErrorId } = useAccessibleForm();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setShowResendButton(false);
-
-    try {
-      await login(email, password);
-      
-      // Se chegou aqui, login foi bem-sucedido
-      toast({
-        title: '✅ Login realizado!',
-        description: 'Redirecionando...',
-        variant: 'default'
-      });
-      
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Erro no login:', error);
-      
-      // Tratamento específico para email não confirmado
-      if (error.message?.includes('Email not confirmed')) {
-        setShowResendButton(true);
-        toast({
-          title: '📧 Email não confirmado',
-          description: 'Por favor, verifique sua caixa de entrada e confirme seu email antes de fazer login.',
-          variant: 'destructive',
-          duration: 6000
-        });
-      } 
-      // Tratamento para credenciais inválidas
-      else if (error.message?.includes('Invalid login credentials')) {
-        toast({
-          title: '❌ Credenciais inválidas',
-          description: 'Email ou senha incorretos. Tente novamente.',
-          variant: 'destructive'
-        });
-      }
-      // Outros erros
-      else {
-        toast({
-          title: '❌ Erro ao fazer login',
-          description: error.message || 'Ocorreu um erro inesperado. Tente novamente.',
-          variant: 'destructive'
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Função para reenviar email de confirmação
-  const handleResendConfirmation = async () => {
-    if (!email) {
-      toast({
-        title: '⚠️ Email não informado',
-        description: 'Por favor, digite seu email no campo acima.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setResendingEmail(true);
-
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: '✅ Email reenviado!',
-        description: 'Verifique sua caixa de entrada e spam.',
-        variant: 'default',
-        duration: 5000
-      });
-
-      setShowResendButton(false);
-    } catch (error) {
-      console.error('Erro ao reenviar email:', error);
-      toast({
-        title: '❌ Erro ao reenviar',
-        description: error.message || 'Não foi possível reenviar o email. Tente novamente mais tarde.',
-        variant: 'destructive'
-      });
-    } finally {
-      setResendingEmail(false);
-    }
-  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -155,19 +50,6 @@ const LoginPage = () => {
     }
   };
 
-  const handleAppleLogin = async () => {
-    try {
-      await signInWithApple();
-    } catch (error) {
-      console.error('Erro no login Apple:', error);
-      toast({
-        title: '❌ Erro no login',
-        description: 'Não foi possível fazer login com Apple.',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const handleFacebookLogin = async () => {
     try {
       await signInWithFacebook();
@@ -176,6 +58,19 @@ const LoginPage = () => {
       toast({
         title: '❌ Erro no login',
         description: 'Não foi possível fazer login com Facebook.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleInstagramLogin = async () => {
+    try {
+      await signInWithInstagram();
+    } catch (error) {
+      console.error('Erro no login Instagram:', error);
+      toast({
+        title: '❌ Erro no login',
+        description: 'Não foi possível fazer login com Instagram.',
         variant: 'destructive'
       });
     }
@@ -260,92 +155,10 @@ const LoginPage = () => {
             {/* Botões Sociais */}
             <SocialLoginButtons
               onGoogleClick={handleGoogleLogin}
-              onAppleClick={handleAppleLogin}
               onFacebookClick={handleFacebookLogin}
+              onInstagramClick={handleInstagramLogin}
               loading={loading}
             />
-
-            {/* Divisor */}
-            <div className="relative my-4 sm:my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10"></div>
-              </div>
-              <div className="relative flex justify-center text-xs sm:text-sm">
-                <span className="px-3 sm:px-4 bg-background text-white/60">
-                  ou continue com email
-                </span>
-              </div>
-            </div>
-
-            {/* Formulário Email/Senha */}
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-              <div className="space-y-3">
-                <Label {...getLabelProps('email')} className="text-sm sm:text-base">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <Input
-                    {...getFieldProps('email', { required: true })}
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 sm:h-14 pl-10 sm:pl-12 text-base glass-effect border-white/10 touch-manipulation"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="password" className="text-sm sm:text-base">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 sm:h-14 pl-10 sm:pl-12 text-base glass-effect border-white/10 touch-manipulation"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Botão de Reenviar Email (aparece só se email não confirmado) */}
-              {showResendButton && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm text-orange-200 mb-2">
-                        Você ainda não confirmou seu email. Clique no botão abaixo para receber um novo link de confirmação.
-                      </p>
-                      <Button
-                        type="button"
-                        onClick={handleResendConfirmation}
-                        disabled={resendingEmail}
-                        variant="outline"
-                        className="w-full bg-orange-500/20 hover:bg-orange-500/30 border-orange-500/40 text-orange-200"
-                      >
-                        {resendingEmail ? 'Reenviando...' : '📧 Reenviar email de confirmação'}
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-11 sm:h-12 text-sm sm:text-base font-semibold"
-              >
-                {loading ? 'Entrando...' : 'Entrar'}
-              </Button>
-            </form>
 
             {/* Links */}
             <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
@@ -362,6 +175,21 @@ const LoginPage = () => {
                   Cadastre seu estabelecimento
                 </Link>
               </p>
+
+              {/* Política de Exclusão de Dados */}
+              <div className="text-center pt-2 border-t border-white/10">
+                <a 
+                  href="/politica-exclusao-dados.html" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-white/50 hover:text-white/70 text-xs transition-colors duration-200"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Política de Exclusão de Dados
+                </a>
+              </div>
             </div>
           </div>
         </motion.div>

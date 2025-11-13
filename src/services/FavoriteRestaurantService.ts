@@ -156,7 +156,7 @@ export class FavoriteRestaurantService {
     try {
       const { data, error } = await supabase
         .from('user_favorite_restaurants')
-        .select('id, user_id, restaurant_id, created_at')
+        .select('id, user_id, restaurant_id, restaurant_name, restaurant_address, restaurant_photo_url, restaurant_rating, restaurant_place_id, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
