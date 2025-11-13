@@ -2,7 +2,7 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import NotificationDropdown from '@/components/NotificationDropdown';
+import SimpleNotificationDropdown from '@/components/SimpleNotificationDropdown';
 import PropTypes from 'prop-types'; // IMPORTADO
 
 const Navbar = ({ toggleSidebar }) => {
@@ -26,7 +26,7 @@ const Navbar = ({ toggleSidebar }) => {
 
           <div className="flex items-center space-x-4">
             {/* Dropdown de Notificações com z-index MUITO ALTO */}
-            {user && <NotificationDropdown userId={user.id} />}
+            {user && <SimpleNotificationDropdown userId={user.id} />}
           </div>
         </div>
       </div>

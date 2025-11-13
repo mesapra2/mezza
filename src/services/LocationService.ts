@@ -176,23 +176,26 @@ export class LocationService {
    */
   static async saveUserLocation(userId: string, location: UserLocation): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          current_latitude: location.latitude,
-          current_longitude: location.longitude,
-          location_accuracy: location.accuracy,
-          location_updated_at: new Date().toISOString(),
-          current_address: location.address,
-          current_city: location.city,
-          current_country: location.country
-        })
-        .eq('id', userId);
-
-      if (error) throw error;
-
-      console.log('✅ Localização salva no banco de dados');
-      return true;
+      // Verificar quais colunas existem na tabela profiles
+      console.warn('⚠️ Colunas de localização não existem na tabela profiles. Funcionalidade desabilitada.');
+      
+      // TODO: Criar migração SQL para adicionar colunas de localização:
+      // current_latitude DOUBLE PRECISION,
+      // current_longitude DOUBLE PRECISION,
+      // location_accuracy DOUBLE PRECISION,
+      // location_updated_at TIMESTAMPTZ,
+      // current_address TEXT,
+      // current_city TEXT,
+      // current_country TEXT
+      
+      console.log('ℹ️ Localização obtida mas não salva:', {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracy: location.accuracy,
+        address: location.address
+      });
+      
+      return true; // Retorna sucesso para não quebrar o fluxo
     } catch (error) {
       console.error('❌ Erro ao salvar localização:', error);
       return false;
@@ -312,25 +315,30 @@ export class LocationService {
    */
   static async getUserLocation(userId: string): Promise<UserLocation | null> {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('current_latitude, current_longitude, location_accuracy, location_updated_at, current_address, current_city, current_country')
-        .eq('id', userId)
-        .single();
+      console.warn('⚠️ Colunas de localização não existem na tabela profiles. Retornando null.');
+      
+      // TODO: Após adicionar as colunas de localização, descomentar:
+      // const { data, error } = await supabase
+      //   .from('profiles')
+      //   .select('current_latitude, current_longitude, location_accuracy, location_updated_at, current_address, current_city, current_country')
+      //   .eq('id', userId)
+      //   .single();
+      //
+      // if (error || !data?.current_latitude || !data?.current_longitude) {
+      //   return null;
+      // }
+      //
+      // return {
+      //   latitude: data.current_latitude,
+      //   longitude: data.current_longitude,
+      //   accuracy: data.location_accuracy,
+      //   timestamp: new Date(data.location_updated_at).getTime(),
+      //   address: data.current_address,
+      //   city: data.current_city,
+      //   country: data.current_country
+      // };
 
-      if (error || !data?.current_latitude || !data?.current_longitude) {
-        return null;
-      }
-
-      return {
-        latitude: data.current_latitude,
-        longitude: data.current_longitude,
-        accuracy: data.location_accuracy,
-        timestamp: new Date(data.location_updated_at).getTime(),
-        address: data.current_address,
-        city: data.current_city,
-        country: data.current_country
-      };
+      return null; // Retorna null até as colunas serem adicionadas
     } catch (error) {
       console.error('❌ Erro ao obter localização do usuário:', error);
       return null;

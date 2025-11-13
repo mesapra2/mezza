@@ -232,8 +232,45 @@ const ProfilePage = () => {
                    3. Bucket 'avatars' não existe ou não é público
                    4. Caminho incorreto: ${photoPath}`);
                } else {
-                 console.log(`✅ Arquivo EXISTE no storage, problema de permissão de acesso público`);
-                 console.log(`🛠️ Execute os SQLs do arquivo SUPABASE_STORAGE_FIX.md`);
+                 console.log(`✅ Arquivo EXISTE no storage, tentando corrigir URL automaticamente...`);
+                 
+                 // Tentar gerar nova URL pública correta
+                 try {
+                   const { data: publicUrlData } = supabase.storage
+                     .from('avatars')
+                     .getPublicUrl(photoPath);
+                   
+                   const newPublicUrl = publicUrlData?.publicUrl;
+                   
+                   if (newPublicUrl && newPublicUrl !== img.src.split('?')[0]) {
+                     console.log('🔄 Tentando nova URL pública:', newPublicUrl);
+                     
+                     // Testar se a nova URL funciona
+                     const testImg = new Image();
+                     testImg.onload = () => {
+                       console.log('✅ Nova URL funcionou, atualizando cache');
+                       urls[photoPath] = `${newPublicUrl}?t=${Date.now()}`;
+                       setPhotoUrls(prev => ({ ...prev, [photoPath]: `${newPublicUrl}?t=${Date.now()}` }));
+                     };
+                     
+                     testImg.onerror = () => {
+                       console.warn('⚠️ Nova URL também falhou, removendo foto do perfil');
+                       if (!brokenPhotos.includes(photoPath)) {
+                         brokenPhotos.push(photoPath);
+                       }
+                     };
+                     
+                     testImg.src = `${newPublicUrl}?t=${Date.now()}`;
+                     return; // Sair da função para aguardar resultado do teste
+                   }
+                 } catch (urlError) {
+                   console.error('❌ Erro ao gerar nova URL:', urlError);
+                 }
+                 
+                 console.warn('⚠️ Problema de permissões persistente, removendo foto');
+                 if (!brokenPhotos.includes(photoPath)) {
+                   brokenPhotos.push(photoPath);
+                 }
                }
              });
            
