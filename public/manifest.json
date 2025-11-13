@@ -1,0 +1,33 @@
+{
+  "name": "MesaPra2 - Jantares Sociais",
+  "short_name": "MesaPra2",
+  "description": "Conectando pessoas atraves de experiencias gastronomicas unicas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#8b5cf6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["food", "social", "lifestyle"],
+  "lang": "pt-BR",
+  "scope": "/",
+  "prefer_related_applications": false
+}
