@@ -322,11 +322,35 @@ const ProfilePage = () => {
     
     // Formato novo (userId/profile-photos/timestamp.ext) - bucket avatars
     console.log('📄 Formato novo detectado, usando bucket avatars:', path);
-    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
-    const finalUrl = `${data.publicUrl}?t=${new Date().getTime()}`;
-    console.log('✅ URL gerada (formato novo):', finalUrl);
-    
-    return finalUrl;
+    try {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+      let finalUrl = data.publicUrl;
+      
+      // ✅ CORREÇÃO: Adicionar cache busting apenas se a URL for válida
+      if (finalUrl && !finalUrl.includes('?')) {
+        finalUrl = `${finalUrl}?t=${new Date().getTime()}`;
+      }
+      
+      console.log('✅ URL gerada (formato novo):', finalUrl);
+      
+      // ✅ CORREÇÃO: Verificar se URL do Supabase está correta
+      const expectedPattern = /https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/avatars\//;
+      if (!expectedPattern.test(finalUrl)) {
+        console.warn('⚠️ URL não segue padrão esperado do Supabase:', finalUrl);
+        console.log('🔗 Padrão esperado: https://PROJECT.supabase.co/storage/v1/object/public/avatars/...');
+        
+        // Tentar reconstruir URL manualmente
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ksmnfhenhppasfcikefd.supabase.co';
+        const reconstructedUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${path}?t=${new Date().getTime()}`;
+        console.log('🔧 URL reconstruída:', reconstructedUrl);
+        return reconstructedUrl;
+      }
+      
+      return finalUrl;
+    } catch (error) {
+      console.error('❌ Erro ao gerar URL pública:', error);
+      return null;
+    }
   };
 
   // Função para redimensionar imagem para <= 1MB

@@ -18,7 +18,7 @@ import CallToAction from '@/features/shared/components/callToAction';
 import Avatar from '@/features/shared/components/profile/Avatar';
 import MesaPra2Logo from '@/components/MesaPra2Logo';
 import EventPasswordCard from '@/features/partner/components/EventPasswordCard';
-import NotificationBell from '@/components/NotificationBell';
+import NotificationBell from '@/components/NotificationBellWrapper';
 
 
 const Dashboard = () => {

@@ -28,6 +28,7 @@ import { useToast } from '@/features/shared/components/ui/use-toast';
 import EventStatusService from '@/services/EventStatusService';
 import EventPhotosService from '@/services/EventPhotosService';
 import EventEntryForm from '@/features/shared/components/ui/EventEntryForm';
+import orientaVideo from '@/assets/videos/orienta.mp4';
 
 const MyEventsPage = () => {
   const { user } = useAuth();
@@ -50,6 +51,7 @@ const MyEventsPage = () => {
 
   // ✅ Estado para controlar a exibição do vídeo de orientação
   const [showVideoGuide, setShowVideoGuide] = useState(true);
+  const [showOrientationVideo, setShowOrientationVideo] = useState(false);
 
   // --------------------------------------------------
   // ✅ CARREGAR EVENTOS ONDE SOU CRIADOR
@@ -458,29 +460,118 @@ const MyEventsPage = () => {
             {/* Vídeo */}
             <div className="flex-shrink-0 w-full lg:w-96">
               <div className="relative overflow-hidden rounded-xl border-2 border-purple-500/30 shadow-2xl">
-                {/* Placeholder para vídeo de orientação */}
-                <div className="relative bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-xl overflow-hidden min-h-[200px] flex items-center justify-center">
-                  <div className="text-center space-y-3 p-6">
-                    <div className="w-16 h-16 mx-auto bg-purple-500/20 rounded-full flex items-center justify-center">
-                      <svg className="w-8 h-8 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                {/* Vídeo de orientação */}
+                {!showOrientationVideo ? (
+                  <div className="relative bg-gradient-to-br from-purple-900/50 to-blue-900/50 rounded-xl overflow-hidden min-h-[200px] flex items-center justify-center">
+                    <div className="text-center space-y-3 p-6">
+                      <div className="w-16 h-16 mx-auto bg-purple-500/20 rounded-full flex items-center justify-center">
+                        <svg className="w-8 h-8 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-white font-semibold">Vídeo de Orientação</h3>
+                      <p className="text-white/60 text-sm">
+                        Aprenda como usar o MesaPra2 de forma eficiente!
+                      </p>
+                      <button 
+                        onClick={() => setShowOrientationVideo(true)}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                      >
+                        🎬 Assistir Preview
+                      </button>
+                    </div>
+                    
+                    {/* Ícone de play elegante */}
+                    <div className="absolute top-4 right-4">
+                      <div className="w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative bg-black rounded-xl overflow-hidden">
+                    {/* Botão fechar vídeo */}
+                    <button
+                      onClick={() => setShowOrientationVideo(false)}
+                      className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+                      title="Fechar vídeo"
+                    >
+                      ✕
+                    </button>
+                    
+                    {/* Vídeo de orientação */}
+                    <video
+                      controls
+                      autoPlay
+                      className="w-full h-auto max-h-[400px] object-cover"
+                      onEnded={() => {
+                        toast({
+                          title: "Vídeo finalizado!",
+                          description: "Esperamos que as orientações tenham sido úteis.",
+                        });
+                      }}
+                    >
+                      <source src={orientaVideo} type="video/mp4" />
+                      Seu navegador não suporta o elemento de vídeo.
+                    </video>
+                    
+                    {/* Legenda do vídeo */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                      <h4 className="text-white font-medium">Como usar o MesaPra2</h4>
+                      <p className="text-white/70 text-sm">Guia completo de orientação</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Card de conteúdo do vídeo - Sempre visível embaixo */}
+                <div className="mt-6 p-6 bg-gradient-to-br from-purple-600/10 to-blue-600/10 rounded-xl border border-purple-500/20 backdrop-blur-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-6 h-6 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h3 className="text-white font-semibold">Vídeo de Orientação</h3>
-                    <p className="text-white/60 text-sm">
-                      Vídeo em produção - Em breve disponível!
-                    </p>
-                    <button className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors">
-                      🎬 Assistir Preview
-                    </button>
-                  </div>
-                  
-                  {/* Ícone de play elegante */}
-                  <div className="absolute top-4 right-4">
-                    <div className="w-10 h-10 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white/70" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
+                    
+                    <div className="flex-1">
+                      <h4 className="text-white font-semibold text-lg mb-3 flex items-center gap-2">
+                        📚 O que você aprenderá:
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-white/85">
+                            <div className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0"></div>
+                            <span className="text-sm">Escolha de restaurantes parceiros verificados</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-white/85">
+                            <div className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0"></div>
+                            <span className="text-sm">Definição de critérios para participantes</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-white/85">
+                            <div className="w-2 h-2 bg-purple-400 rounded-full flex-shrink-0"></div>
+                            <span className="text-sm">Comunicação efetiva antes e durante o evento</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 text-white/85">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></div>
+                            <span className="text-sm">Gestão de expectativas e segurança</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-white/85">
+                            <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0"></div>
+                            <span className="text-sm">Como lidar com imprevistos</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-white/10">
+                        <p className="text-white/60 text-sm italic">
+                          💡 Dica: Assista ao vídeo completo para dominar todas as funcionalidades da plataforma
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -508,19 +599,6 @@ const MyEventsPage = () => {
               </p>
 
               {/* Tópicos do vídeo */}
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-white/90 flex items-center">
-                  <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                  O que você aprenderá:
-                </h3>
-                <ul className="text-sm text-white/60 space-y-1 ml-4">
-                  <li>• Escolha de restaurantes parceiros verificados</li>
-                  <li>• Definição de critérios para participantes</li>
-                  <li>• Comunicação efetiva antes e durante o evento</li>
-                  <li>• Gestão de expectativas e segurança</li>
-                  <li>• Como lidar com imprevistos</li>
-                </ul>
-              </div>
 
               {/* Badge de duração */}
               <div className="flex items-center gap-3 pt-2">
