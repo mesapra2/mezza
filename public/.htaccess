@@ -1,71 +1,72 @@
-# ✅ CORREÇÃO MIME TYPES + FACEBOOK OAuth - Apache Configuration
-# Configurar tipos MIME corretos para módulos JavaScript
+# ========================================
+# HTACCESS - CONFIGURAÇÕES PARA METATAGS E SEO
+# ========================================
 
-<IfModule mod_mime.c>
-    # JavaScript modules
-    AddType application/javascript .js
-    AddType application/javascript .jsx
-    AddType application/javascript .ts
-    AddType application/javascript .tsx
-    AddType application/javascript .mjs
-    
-    # CSS
-    AddType text/css .css
-    
-    # JSON
-    AddType application/json .json
-    
-    # Fonts
-    AddType font/woff2 .woff2
-    AddType font/woff .woff
-    AddType font/ttf .ttf
-    AddType font/otf .otf
+# Habilitar compressão GZIP
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json image/svg+xml
 </IfModule>
 
-# ✅ CORS Headers
-<IfModule mod_headers.c>
-    # MIME type security
-    Header always set X-Content-Type-Options "nosniff"
-    
-    # Module script headers
-    <FilesMatch "\.(js|jsx|ts|tsx|mjs)$">
-        Header set Content-Type "application/javascript"
-        Header set X-Content-Type-Options "nosniff"
-    </FilesMatch>
-    
-    # CSS headers
-    <FilesMatch "\.css$">
-        Header set Content-Type "text/css"
-    </FilesMatch>
-</IfModule>
+# Cache para imagens OG
+<FilesMatch "\.(jpg|jpeg|png|gif|webp)$">
+    ExpiresActive On
+    ExpiresDefault "access plus 1 day"
+    Header set Cache-Control "public, max-age=86400"
+</FilesMatch>
 
-# ✅ Fallback para SPA routing
+# Cache para arquivos estáticos
+<FilesMatch "\.(css|js|woff|woff2|ttf|svg|ico)$">
+    ExpiresActive On
+    ExpiresDefault "access plus 1 week"
+    Header set Cache-Control "public, max-age=604800"
+</FilesMatch>
+
+# Forçar HTTPS (se aplicável)
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
     
-    # Handle Angular and React Router
-    RewriteRule ^index\.html$ - [L]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . /index.html [L]
+    # Redirecionar HTTP para HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    
+    # Garantir que og-default.jpg seja acessível
+    RewriteCond %{REQUEST_URI} ^/og-default\.(jpg|png)$
+    RewriteRule ^(.*)$ /public/$1 [L]
 </IfModule>
 
-# ✅ Cache optimization
-<IfModule mod_expires.c>
-    ExpiresActive on
+# Headers de segurança
+<IfModule mod_headers.c>
+    # Prevenir clickjacking
+    Header always append X-Frame-Options SAMEORIGIN
     
-    # JavaScript modules - short cache for development
-    ExpiresByType application/javascript "access plus 1 hour"
+    # Prevenir MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
     
-    # CSS
-    ExpiresByType text/css "access plus 1 day"
+    # XSS Protection
+    Header set X-XSS-Protection "1; mode=block"
     
-    # Images
-    ExpiresByType image/png "access plus 1 month"
-    ExpiresByType image/jpeg "access plus 1 month"
-    ExpiresByType image/webp "access plus 1 month"
-    
-    # Fonts
-    ExpiresByType font/woff2 "access plus 1 year"
+    # Referrer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
+
+# MIME types para fontes e imagens
+<IfModule mod_mime.c>
+    AddType image/webp .webp
+    AddType font/woff .woff
+    AddType font/woff2 .woff2
+</IfModule>
+
+# ========================================
+# CONFIGURAÇÕES ESPECÍFICAS PARA OG IMAGES
+# ========================================
+
+# Garantir que imagens OG sempre retornem 200
+<Files "og-default.jpg">
+    Header set Content-Type "image/jpeg"
+    Header set Cache-Control "public, max-age=86400"
+</Files>
+
+<Files "og-default.png">
+    Header set Content-Type "image/png" 
+    Header set Cache-Control "public, max-age=86400"
+</Files>

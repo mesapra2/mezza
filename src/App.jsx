@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet';
 import PropTypes from 'prop-types';
 import { useAuth } from '@/contexts/AuthContext';
 import EventStatusService from '@/services/EventStatusService';
+import MetaTags from '@/components/MetaTags';
 
 // Layout
 import Layout from '@/components/Layout';
@@ -133,9 +134,39 @@ function AppContent() {
 
   return (
     <>
+      {/* MetaTags dinâmicas */}
+      <MetaTags />
+      
       <Helmet>
         <title>Mesapra2</title>
         <meta name="description" content="Conectando pessoas através de eventos de social dining." />
+        
+        {/* Adicionar estrutura básica para garantir que as metatags estão presentes */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="Mesapra2" />
+        <meta property="og:locale" content="pt_BR" />
+        
+        {/* Schema.org para Rich Snippets */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "Mesapra2",
+            "description": "Conecte-se a pessoas incríveis através de jantares sociais. Conheça pessoas novas, faça amizades e viva experiências gastronômicas únicas.",
+            "url": typeof window !== 'undefined' ? window.location.origin : 'https://app.mesapra2.com',
+            "applicationCategory": "SocialNetworkingApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "BRL"
+            },
+            "author": {
+              "@type": "Organization",
+              "name": "Mesapra2"
+            }
+          })}
+        </script>
       </Helmet>
 
       <Routes>

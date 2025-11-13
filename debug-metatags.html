@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug MetaTags - Mesapra2</title>
+    
+    <!-- Teste das MetaTags -->
+    <meta name="description" content="Teste das metatags do Mesapra2">
+    <meta property="og:title" content="Debug MetaTags - Mesapra2">
+    <meta property="og:description" content="Página de teste para verificar se as metatags estão funcionando">
+    <meta property="og:image" content="https://app.mesapra2.com/og-default.jpg">
+    <meta property="og:url" content="https://app.mesapra2.com/debug-metatags.html">
+    <meta property="og:type" content="website">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1f2937;
+            color: white;
+        }
+        .test-section {
+            background: #374151;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #8b5cf6;
+        }
+        .success { border-left-color: #10b981; }
+        .warning { border-left-color: #f59e0b; }
+        .error { border-left-color: #ef4444; }
+        .test-result {
+            font-family: monospace;
+            background: #111827;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        img {
+            max-width: 200px;
+            border: 2px solid #6b7280;
+            border-radius: 4px;
+        }
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #7c3aed;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug MetaTags - Mesapra2</h1>
+    <p>Esta página testa se as metatags Open Graph estão funcionando corretamente.</p>
+
+    <div class="test-section">
+        <h2>📋 Informações da Página</h2>
+        <div class="test-result">
+            <div><strong>URL:</strong> <span id="current-url"></span></div>
+            <div><strong>Title:</strong> <span id="page-title"></span></div>
+            <div><strong>Domain:</strong> <span id="domain"></span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🏷️ MetaTags Detectadas</h2>
+        <div id="metatags-list"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🖼️ Teste de Imagem OG</h2>
+        <p>Testando se as imagens Open Graph são acessíveis:</p>
+        
+        <div>
+            <h3>JPG:</h3>
+            <img id="og-jpg" alt="OG Default JPG" />
+            <div class="test-result" id="jpg-status">Testando...</div>
+        </div>
+        
+        <div>
+            <h3>PNG:</h3>
+            <img id="og-png" alt="OG Default PNG" />
+            <div class="test-result" id="png-status">Testando...</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Ferramentas de Teste</h2>
+        <p>Use estas ferramentas para verificar como suas metatags aparecem:</p>
+        
+        <button onclick="testFacebook()">Teste Facebook Debugger</button>
+        <button onclick="testTwitter()">Teste Twitter Card Validator</button>
+        <button onclick="testLinkedIn()">Teste LinkedIn Inspector</button>
+        <button onclick="testWhatsApp()">Teste WhatsApp</button>
+        
+        <div class="test-result">
+            <strong>URLs de Teste:</strong><br>
+            • Facebook: <span id="facebook-url"></span><br>
+            • Twitter: <span id="twitter-url"></span><br>
+            • LinkedIn: <span id="linkedin-url"></span>
+        </div>
+    </div>
+
+    <script>
+        // Atualizar informações da página
+        document.getElementById('current-url').textContent = window.location.href;
+        document.getElementById('page-title').textContent = document.title;
+        document.getElementById('domain').textContent = window.location.hostname;
+
+        // URLs de teste
+        const currentUrl = encodeURIComponent(window.location.origin);
+        document.getElementById('facebook-url').innerHTML = `<a href="https://developers.facebook.com/tools/debug/?q=${currentUrl}" target="_blank">Facebook Debugger</a>`;
+        document.getElementById('twitter-url').innerHTML = `<a href="https://cards-dev.twitter.com/validator" target="_blank">Twitter Card Validator</a>`;
+        document.getElementById('linkedin-url').innerHTML = `<a href="https://www.linkedin.com/post-inspector/" target="_blank">LinkedIn Post Inspector</a>`;
+
+        // Listar todas as metatags
+        function listMetaTags() {
+            const metaTags = document.querySelectorAll('meta');
+            const container = document.getElementById('metatags-list');
+            
+            let html = '<div class="test-result">';
+            metaTags.forEach(meta => {
+                const name = meta.getAttribute('name') || meta.getAttribute('property') || 'unknown';
+                const content = meta.getAttribute('content') || '';
+                html += `<div><strong>${name}:</strong> ${content}</div>`;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // Testar imagens OG
+        function testOGImages() {
+            const baseUrl = window.location.origin;
+            
+            // Testar JPG
+            const jpgImg = document.getElementById('og-jpg');
+            const jpgStatus = document.getElementById('jpg-status');
+            
+            jpgImg.src = `${baseUrl}/og-default.jpg?t=${Date.now()}`;
+            jpgImg.onload = () => {
+                jpgStatus.innerHTML = '✅ JPG carregado com sucesso';
+                jpgStatus.parentElement.parentElement.className += ' success';
+            };
+            jpgImg.onerror = () => {
+                jpgStatus.innerHTML = '❌ JPG não encontrado ou inacessível';
+                jpgStatus.parentElement.parentElement.className += ' error';
+            };
+
+            // Testar PNG
+            const pngImg = document.getElementById('og-png');
+            const pngStatus = document.getElementById('png-status');
+            
+            pngImg.src = `${baseUrl}/og-default.png?t=${Date.now()}`;
+            pngImg.onload = () => {
+                pngStatus.innerHTML = '✅ PNG carregado com sucesso';
+                pngStatus.parentElement.parentElement.className += ' success';
+            };
+            pngImg.onerror = () => {
+                pngStatus.innerHTML = '❌ PNG não encontrado ou inacessível';
+                pngStatus.parentElement.parentElement.className += ' error';
+            };
+        }
+
+        // Funções para abrir ferramentas de teste
+        function testFacebook() {
+            const url = `https://developers.facebook.com/tools/debug/?q=${encodeURIComponent(window.location.origin)}`;
+            window.open(url, '_blank');
+        }
+
+        function testTwitter() {
+            window.open('https://cards-dev.twitter.com/validator', '_blank');
+        }
+
+        function testLinkedIn() {
+            window.open('https://www.linkedin.com/post-inspector/', '_blank');
+        }
+
+        function testWhatsApp() {
+            alert('Para testar no WhatsApp, envie o link do site em uma conversa e veja a prévia.');
+        }
+
+        // Executar testes quando a página carregar
+        window.onload = function() {
+            listMetaTags();
+            testOGImages();
+        };
+    </script>
+</body>
+</html>

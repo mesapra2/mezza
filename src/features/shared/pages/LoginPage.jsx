@@ -114,8 +114,8 @@ const LoginPage = () => {
             </div>
           )}
           
-          {/* Overlay escuro para melhor legibilidade */}
-          <div className="absolute inset-0 bg-black/40 z-10"></div>
+          {/* Overlay escuro para melhor legibilidade (reduzido para mais visibilidade dos vídeos) */}
+          <div className="absolute inset-0 bg-black/20 z-10"></div>
           
           {/* Indicadores de vídeo */}
           <div className="absolute bottom-4 left-4 flex space-x-2 z-20">
@@ -136,7 +136,7 @@ const LoginPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-sm sm:max-w-md relative z-20"
         >
-          <div className="glass-effect rounded-2xl p-6 sm:p-8 border border-white/10 bg-black/30 backdrop-blur-xl">
+          <div className="glass-effect rounded-2xl p-6 sm:p-8 border border-white/5 bg-black/10 backdrop-blur-sm">
             {/* Logo */}
             <div className="flex justify-center mb-6 sm:mb-8">
               <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
