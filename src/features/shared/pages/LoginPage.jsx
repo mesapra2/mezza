@@ -18,6 +18,8 @@ import vds4 from '@/assets/vds4.mp4';
 import vds5 from '@/assets/vds5.mp4';
 import vds7 from '@/assets/vds7.mp4';
 import vds9 from '@/assets/vds9.mp4';
+import vds10 from '@/assets/vds10.mp4';
+import vds11 from '@/assets/vds11.mp4';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -31,7 +33,7 @@ const LoginPage = () => {
   const { login, signInWithGoogle, signInWithApple, signInWithFacebook } = useAuth();
 
   // ✅ VÍDEOS RESTAURADOS - Array otimizado
-  const videos = [vds2, vds4, vds5, vds7, vds9];
+  const videos = [vds2, vds4, vds5, vds7, vds9, vds10, vds11];
   
   // Effect para rotação de vídeos
   React.useEffect(() => {

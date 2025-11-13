@@ -4,10 +4,13 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
-    "api/send-verification-sms.js": {
+    "api/send-verification-sms.mjs": {
       "maxDuration": 10
     },
-    "api/verify-phone-code.js": {
+    "api/verify-phone-code.mjs": {
+      "maxDuration": 10
+    },
+    "api/*.mjs": {
       "maxDuration": 10
     }
   },

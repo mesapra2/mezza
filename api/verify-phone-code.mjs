@@ -1,5 +1,5 @@
-// api/verify-phone-code.js
-import { verificationCodes } from './send-verification-sms.js';
+// api/verify-phone-code.mjs
+import { verificationCodes } from './send-verification-sms.mjs';
 
 export default async function handler(req, res) {
   // Apenas POST é permitido
