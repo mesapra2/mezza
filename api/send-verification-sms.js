@@ -1,10 +1,10 @@
 // api/send-verification-sms.js
-const twilio = require('twilio');
+import twilio from 'twilio';
 
 // Configurações do Twilio
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+const accountSid = process.env.TWILIO_ACCOUNT_SID || 'AC0b85fd5e429f04fbec403a53d4492684';
+const authToken = process.env.TWILIO_AUTH_TOKEN || '4bec3d5c9ad43210d83d2e1f1b076089';
+const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER || '+12293047662';
 
 const client = twilio(accountSid, authToken);
 

@@ -67,10 +67,17 @@ const EventChatPage = () => {
       url = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=40`;
     } else {
       try {
-        const { data } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_url);
-        url = data.publicUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
+        // Se já é URL completa (http/https), retorna direto
+        if (profile.avatar_url.startsWith('http')) {
+          url = profile.avatar_url;
+        } else {
+          // Constrói a URL pública do Supabase
+          const { data } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_url);
+          url = `${data.publicUrl}?t=${new Date().getTime()}`;
+        }
       } catch {
-        url = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username || 'U')}&background=8b5cf6&color=fff&size=40`;
+        const name = profile.username || profile.full_name || 'U';
+        url = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8b5cf6&color=fff&size=40`;
       }
     }
 
@@ -104,20 +111,20 @@ const EventChatPage = () => {
             .eq('id', eventId)
             .single(),
 
-          // Query 2: Contar participantes aprovados
+          // Query 2: Contar participantes aprovados/confirmados
           supabase
             .from('event_participants')
             .select('*', { count: 'exact', head: true })
             .eq('event_id', eventId)
-            .eq('status', 'aprovado'),
+            .in('status', ['aprovado', 'confirmado']),
 
           // Query 3: Verificar participação do usuário
           supabase
             .from('event_participants')
-            .select('status')
+            .select('status, created_at')
             .eq('event_id', eventId)
             .eq('user_id', user.id)
-            .maybeSingle(), // ✅ maybeSingle() não dá erro se não encontrar
+            .single(), // Usar single() para forçar erro se não encontrar
         ]);
 
         if (eventResult.error) throw eventResult.error;
@@ -126,12 +133,25 @@ const EventChatPage = () => {
         const eventData = eventResult.data;
         const approvedCount = approvedCountResult.count || 0;
         const userIsCreator = eventData.creator_id === user.id;
-        const userIsApproved = participationResult.data?.status === 'aprovado';
-
+        
+        // ✅ FIX: Tratar caso onde usuário não está participando
+        let userIsApproved = false;
+        
+        if (!participationResult.error && participationResult.data) {
+          // ✅ FIX CRÍTICO: Aceitar tanto 'aprovado' quanto 'confirmado' como status válidos
+          const validStatuses = ['aprovado', 'confirmado'];
+          userIsApproved = validStatuses.includes(participationResult.data.status);
+        } else if (participationResult.error && participationResult.error.code !== 'PGRST116') {
+          // PGRST116 = No rows found (esperado se não está participando)
+          // Outros erros devem ser propagados
+          throw participationResult.error;
+        }
+        
         const eventWithCount = { ...eventData, approvedCount };
 
         // Verificar disponibilidade do chat
         const availability = isChatAvailable(eventWithCount, userIsCreator, userIsApproved);
+        
         if (!availability.available) {
           setError(availability.reason);
 
@@ -163,12 +183,12 @@ const EventChatPage = () => {
             .order('created_at', { ascending: false })
             .limit(INITIAL_MESSAGE_LIMIT),
 
-          // Query 5: Buscar participantes aprovados com perfis
+          // Query 5: Buscar participantes aprovados/confirmados com perfis
           supabase
             .from('event_participants')
             .select('profile:profiles(id, username, avatar_url, full_name)')
             .eq('event_id', eventId)
-            .eq('status', 'aprovado'),
+            .in('status', ['aprovado', 'confirmado']),
 
           // Query 6: Buscar perfil do criador (sempre, para simplificar)
           userIsCreator

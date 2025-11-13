@@ -232,23 +232,25 @@ class EventStatusService {
         return;
       }
 
-      // 2. Está dentro da janela de 1 minuto
+      // 2. ✅ FIX CRÍTICO: Expandir janela para não "pular" devido ao intervalo de auto-update
       const oneMinuteBeforeStart = new Date(startTime.getTime() - 60 * 1000);
+      const threeMinutesBeforeStart = new Date(startTime.getTime() - 3 * 60 * 1000);
 
-      // 3. Senha ainda não foi gerada
-      const shouldGeneratePassword = now >= oneMinuteBeforeStart && now < startTime;
+      // 3. ✅ CORRIGIDO: Gerar senha se falta ATÉ 2 minutos (janela menor, mas mais precisa)
+      // Com auto-update a cada 1min, não devemos perder a janela
+      const shouldGeneratePassword = now >= threeMinutesBeforeStart && now < startTime && minutesUntilEvent <= 2;
 
       if (!shouldGeneratePassword) {
         // Log apenas se estiver próximo (nos últimos 5 minutos)
-        if (minutesUntilEvent <= 5 && minutesUntilEvent > 0) {
+        if (minutesUntilEvent <= 5 && minutesUntilEvent > 3) {
           console.log(
-            `⏳ Evento ${event.id}: faltam ${minutesUntilEvent} minutos (senha será gerada em 1 min)`
+            `⏳ Evento ${event.id}: faltam ${minutesUntilEvent} minutos (senha será gerada em até 3 min)`
           );
         }
         return;
       }
 
-      console.log(`🎲 Gerando senha para evento ${event.id} (faltam ${minutesUntilEvent} minutos)...`);
+      console.log(`🎲 Gerando senha para evento ${event.id} (faltam ${minutesUntilEvent} minutos - janela de 3min ativa)...`);
 
       // 1️⃣ Gerar e salvar senha
       const passwordResult = await EventSecurityService.generateAndSavePassword(event.id);
@@ -510,8 +512,8 @@ class EventStatusService {
       this.stopAutoUpdate();
     }
 
-    // ✅ FIX: Intervals MUITO mais espaçados para evitar sobrecarga
-    const defaultInterval = this.isMobile() ? 300 : 120; // 5min mobile, 2min desktop
+    // ✅ FIX: Intervals ajustados para não perder geração de senha (1min antes)
+    const defaultInterval = this.isMobile() ? 90 : 60; // 1.5min mobile, 1min desktop
     const actualInterval = intervalSeconds || defaultInterval;
 
     console.log(`🔄 Iniciando auto-update OTIMIZADO a cada ${actualInterval}s (${this.isMobile() ? 'mobile' : 'desktop'})`);
@@ -526,13 +528,11 @@ class EventStatusService {
     this.updateInterval = setInterval(() => {
       cycleCount++;
       
-      // Só executar update a cada 3 ciclos (reduzir ainda mais)
-      if (cycleCount % 3 === 0) {
-        this.updateAllEventStatuses();
-      }
+      // ✅ CORREÇÃO CRÍTICA: Executar sempre para não perder geração de senha
+      this.updateAllEventStatuses();
       
-      // Verificar notificações perdidas apenas a cada 20 ciclos
-      if (cycleCount % 20 === 0) {
+      // Verificar notificações perdidas apenas a cada 10 ciclos
+      if (cycleCount % 10 === 0) {
         this.checkAndSendMissingNotifications();
       }
     }, actualInterval * 1000);

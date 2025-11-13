@@ -299,6 +299,7 @@ const UserSettings = () => {
   const sendVerificationCode = async (phone) => {
     setSendingCode(true);
     try {
+      console.log('🚀 Enviando SMS para:', phone, 'User ID:', user.id);
       const response = await fetch('/api/send-verification-sms', {
         method: 'POST',
         headers: {
@@ -432,9 +433,25 @@ const UserSettings = () => {
     }
 
     // Validar formato do telefone brasileiro
-    const phoneRegex = /^\+55\d{11}$/;
-    const formattedPhone = tempPhone.startsWith('+55') ? tempPhone : `+55${tempPhone.replace(/\D/g, '')}`;
+    const phoneDigits = tempPhone.replace(/\D/g, '');
+    let formattedPhone;
+    
+    if (phoneDigits.length === 11) {
+      // Apenas 11 dígitos (sem código do país)
+      formattedPhone = `+55${phoneDigits}`;
+    } else if (phoneDigits.length === 13 && phoneDigits.startsWith('55')) {
+      // 13 dígitos com código do país
+      formattedPhone = `+${phoneDigits}`;
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Formato inválido",
+        description: "Digite um telefone brasileiro válido (11 dígitos).",
+      });
+      return;
+    }
 
+    const phoneRegex = /^\+55\d{11}$/;
     if (!phoneRegex.test(formattedPhone)) {
       toast({
         variant: "destructive",

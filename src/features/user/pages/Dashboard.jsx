@@ -17,6 +17,7 @@ import BannerCarousel from '@/features/shared/components/BannerCarousel';
 import CallToAction from '@/features/shared/components/callToAction';
 import Avatar from '@/features/shared/components/profile/Avatar';
 import MesaPra2Logo from '@/components/MesaPra2Logo';
+import EventPasswordCard from '@/features/partner/components/EventPasswordCard';
 
 
 const Dashboard = () => {
@@ -517,7 +518,7 @@ const Dashboard = () => {
     const participation = userParticipations[eventId];
     if (!participation) return null;
 
-    const status = participation.status;
+    const status = participation;
     
     const badges = {
       aprovado: {
@@ -855,6 +856,13 @@ const Dashboard = () => {
                         
                         {event.creator_id === user.id ? (
                           <div className="space-y-3">
+                            {/* 🔐 Senha do Evento (só para anfitrião) */}
+                            {(event.status === 'Confirmado' || event.status === 'Em Andamento') && (
+                              <div className="mb-4">
+                                <EventPasswordCard eventId={event.id} />
+                              </div>
+                            )}
+                            
                             <div className="flex items-center justify-between">
                               <span className="text-white/60 text-sm font-medium">
                                 Participantes

@@ -138,10 +138,9 @@ export async function sendVerificationCode({
   userId,
   phone
 }: SendVerificationPayload): Promise<{ success: boolean; message?: string }> {
-  const API_URL = getApiUrl();
   try {
     const { data } = await axios.post<{ success: boolean; message?: string }>(
-      `${API_URL}/sms/send-code`,
+      '/api/send-verification-sms',
       { userId, phone }
     );
     return data;
@@ -154,10 +153,9 @@ export async function verifyPhone({
   userId,
   code
 }: VerifyPhonePayload): Promise<{ success: boolean; message?: string }> {
-  const API_URL = getApiUrl();
   try {
     const { data } = await axios.post<{ success: boolean; message?: string }>(
-      `${API_URL}/sms/verify-code`,
+      '/api/verify-phone-code',
       { userId, code }
     );
     return data;
@@ -170,10 +168,9 @@ export async function resendVerificationCode({
   userId,
   phone
 }: ResendVerificationPayload): Promise<{ success: boolean; message?: string }> {
-  const API_URL = getApiUrl();
   try {
     const { data } = await axios.post<{ success: boolean; message?: string }>(
-      `${API_URL}/sms/resend-code`,
+      '/api/send-verification-sms',
       { userId, phone }
     );
     return data;

@@ -30,28 +30,18 @@ export const isChatAvailable = (event, isCreator, isApprovedParticipant) => {
     };
   }
 
-  // Para eventos normais (não institucionais)
-  if (!isApprovedParticipant) {
+  // ✅ FIX CRÍTICO: Para eventos normais, se é participante aprovado/confirmado, SEMPRE libera
+  // Isso garante que mesmo com 1 só pessoa, o chat funciona
+  if (isApprovedParticipant) {
     return {
-      available: false,
-      reason: 'Você precisa ser um participante aprovado para acessar o chat.'
+      available: true,
+      reason: null
     };
   }
 
-  // ✅ NOVA LÓGICA: Chat liberado se houver pelo menos 1 participante aprovado
-  // Isso permite que criador e participantes comecem a conversar mais cedo
-  const temParticipantes = event.approvedCount >= 1;
-  const eventConfirmado = event.status === 'Confirmado' || event.status === 'Em andamento';
-
-  if (!temParticipantes && !eventConfirmado) {
-    return {
-      available: false,
-      reason: 'Chat será liberado após o primeiro participante ser aprovado.'
-    };
-  }
-
+  // Se não é participante aprovado/confirmado, bloqueia
   return {
-    available: true,
-    reason: null
+    available: false,
+    reason: 'Você precisa ser um participante aprovado/confirmado para acessar o chat.'
   };
 };

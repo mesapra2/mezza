@@ -25,10 +25,11 @@ const MobileVerificationPageSimple = () => {
   const navigate = useNavigate();
   const userId = searchParams.get('userId');
   const sessionId = searchParams.get('sessionId');
+  const cpfFromUrl = searchParams.get('cpf');
   
   // Estados principais
-  const [currentStep, setCurrentStep] = useState('cpf');
-  const [cpf, setCpf] = useState('');
+  const [currentStep, setCurrentStep] = useState(cpfFromUrl ? 'document-front' : 'cpf');
+  const [cpf, setCpf] = useState(cpfFromUrl || '');
   const [photos, setPhotos] = useState({
     documentFront: null,
     documentBack: null,
@@ -50,6 +51,14 @@ const MobileVerificationPageSimple = () => {
       }, 3000);
     }
   }, [userId, sessionId]);
+
+  // Iniciar câmera automaticamente quando CPF vem da URL
+  useEffect(() => {
+    if (cpfFromUrl && currentStep === 'document-front') {
+      console.log('📱 CPF recebido da URL, iniciando câmera automaticamente');
+      setTimeout(() => startCamera(), 1000); // Delay para garantir que o componente foi montado
+    }
+  }, [cpfFromUrl, currentStep]);
 
   // Formatar CPF
   const formatCPF = (value) => {

@@ -11,6 +11,7 @@ import Avatar from '@/features/shared/components/profile/Avatar';
 import ParticipantsManagement from '@/features/shared/components/events/ParticipantsManager';
 import EventEvaluationSection from '@/features/shared/components/events/EventEvaluationSection';
 import EventEntryForm from '@/features/shared/components/ui/EventEntryForm';
+import EventPasswordCard from '@/features/partner/components/EventPasswordCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, differenceInMinutes, differenceInHours, differenceInMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -137,7 +138,7 @@ const EventDetails = () => {
       if (user) {
         const { data: userPartData } = await supabase
           .from('event_participants')
-          .select('id, status, approved_at')
+          .select('id, status, created_at')
           .eq('event_id', id)
           .eq('user_id', user.id)
           .eq('status', 'aprovado')
@@ -608,6 +609,19 @@ const EventDetails = () => {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 🔐 Senha do Evento - Para Anfitrião */}
+        {isCreator && (event.status === 'Confirmado' || event.status === 'Em Andamento') && (
+          <div className="glass-effect rounded-2xl p-6 border border-blue-500/30 bg-blue-500/5">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              🔐 Senha do Evento
+            </h3>
+            <p className="text-white/70 text-sm mb-4">
+              Compartilhe esta senha com os participantes para que possam entrar no evento.
+            </p>
+            <EventPasswordCard eventId={event.id} />
           </div>
         )}
 

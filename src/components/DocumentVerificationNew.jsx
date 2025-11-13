@@ -177,19 +177,10 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
 
   // Redirecionar para mobile
   const redirectToMobile = () => {
-    // ✅ FIX: Usar mesma lógica de URL do QR Code
-    const getBaseUrl = () => {
-      if (import.meta.env.VITE_SITE_URL) {
-        return import.meta.env.VITE_SITE_URL;
-      }
-      return window.location.origin;
-    };
-
-    const baseUrl = getBaseUrl();
-    const mobileUrl = `${baseUrl}/verify-mobile?userId=${userId}&sessionId=${sessionId}`;
-    
-    console.log('📱 Redirecionando para mobile:', mobileUrl);
-    window.location.href = mobileUrl;
+    // Para mobile, ir direto para a verificação sem redirecionamento
+    // Fechar o modal atual e iniciar processo mobile inline
+    console.log('📱 Iniciando verificação mobile inline');
+    setCurrentStep('cpf-mobile');
   };
 
   return (
@@ -263,6 +254,95 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
                   >
                     Cancelar
                   </Button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Mobile: Solicitar CPF */}
+            {currentStep === 'cpf-mobile' && (
+              <motion.div
+                key="cpf-mobile"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-6"
+              >
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Smartphone className="w-10 h-10 text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    Verificação Mobile
+                  </h3>
+                  <p className="text-gray-600">
+                    Insira seu CPF para começar a verificação. Você irá fotografar seus documentos usando a câmera do celular.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="cpf-mobile" className="text-sm font-medium text-gray-700">
+                      CPF
+                    </Label>
+                    <Input
+                      id="cpf-mobile"
+                      type="text"
+                      value={cpf}
+                      onChange={(e) => setCpf(formatCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      className="mt-1"
+                      maxLength={14}
+                    />
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Camera className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-blue-800">
+                          Próximos passos:
+                        </p>
+                        <ol className="text-xs text-blue-700 mt-1 space-y-1">
+                          <li>1. Fotografar frente do documento</li>
+                          <li>2. Fotografar verso do documento</li>
+                          <li>3. Tirar selfie para confirmação</li>
+                          <li>4. Verificação automática</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button 
+                      onClick={onCancel}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (validateCPF(cpf)) {
+                          // Redirecionar para página mobile com CPF
+                          const getBaseUrl = () => {
+                            if (import.meta.env.VITE_SITE_URL) {
+                              return import.meta.env.VITE_SITE_URL;
+                            }
+                            return window.location.origin;
+                          };
+                          const baseUrl = getBaseUrl();
+                          const mobileUrl = `${baseUrl}/verify-mobile?userId=${userId}&sessionId=${sessionId}&cpf=${encodeURIComponent(cpf)}`;
+                          console.log('📱 Redirecionando para mobile com CPF:', mobileUrl);
+                          window.location.href = mobileUrl;
+                        }
+                      }}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      disabled={cpf.replace(/\D/g, '').length !== 11}
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Iniciar Fotos
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             )}

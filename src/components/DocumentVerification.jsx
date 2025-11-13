@@ -40,6 +40,16 @@ const DocumentVerification = ({ userId, onComplete, onCancel }) => {
   const [sessionId, setSessionId] = useState('');
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [documents, setDocuments] = useState({
+    front: null,
+    back: null,
+    selfie: null
+  });
+  const [previews, setPreviews] = useState({
+    front: null,
+    back: null,
+    selfie: null
+  });
   
   // Refs
   const fileInputRefs = {
@@ -59,11 +69,11 @@ const DocumentVerification = ({ userId, onComplete, onCancel }) => {
       
       // Definir fluxo baseado no dispositivo
       if (isMobileDevice) {
-        // Mobile: vai direto para o fluxo de fotos
-        setCurrentStep('mobile-flow');
+        // Mobile: começa com CPF, depois documentos
+        setCurrentStep('cpf');
       } else {
-        // Desktop: mostra opção de inserir CPF e gerar QR Code
-        setCurrentStep('cpf-desktop');
+        // Desktop: começa com CPF, depois gera QR Code
+        setCurrentStep('cpf');
       }
     };
 
@@ -330,7 +340,7 @@ const DocumentVerification = ({ userId, onComplete, onCancel }) => {
           ref={fileInputRefs[type]}
           type="file"
           accept="image/*"
-          capture={!isDesktop ? "environment" : undefined}
+          capture={isMobile && type === 'selfie' ? "user" : isMobile ? "environment" : undefined}
           className="hidden"
           onChange={(e) => handleFileSelect(type, e.target.files[0])}
         />
