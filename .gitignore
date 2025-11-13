@@ -111,3 +111,129 @@ Desktop.ini
 # =====================================
 
 /vendor # Comum em projetos PHP ou outros que geram dependências em 'vendor'
+ Arquivos de ambiente (NUNCA commitar!)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
+!.env.example
+
+# Arquivos com credenciais (adicione específicos do seu projeto)
+*credentials*
+*secrets*
+*password*
+config/secrets.json
+config/credentials.json
+
+# =====================================
+# Node / JavaScript
+# =====================================
+
+node_modules/
+/backend/node_modules/
+.history
+.jest-cache
+.claude
+.tmp**
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+package-lock.json
+yarn.lock
+
+/build
+/dist
+/.cache
+/.next/
+/.svelte-kit/
+/.vite/
+/out/
+/coverage
+
+# =====================================
+# PHP
+# =====================================
+
+/vendor/
+composer.lock
+*.log
+
+# =====================================
+# Arquivos de Teste com Credenciais
+# =====================================
+
+testSMS.php
+test*.php
+*test-credentials*
+CORREÇÃO_SMS_CONCLUÍDA.md
+
+# =====================================
+# Google Cloud / Firebase
+# =====================================
+
+*.json
+!package.json
+!tsconfig.json
+!.env.example
+google-credentials.json
+service-account*.json
+firebase-service-account*.json
+gcloud-service-key.json
+google-cloud-keyfile.json
+
+/keys
+/KEYS
+/credentials
+
+# =====================================
+# Arquivos de Log
+# =====================================
+
+*.log
+/logs/
+npm-debug.log*
+yarn-debug.log*
+
+# =====================================
+# Temporários e Sistema
+# =====================================
+
+.tmp.driveupload/
+.tmp.drivedownload/
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# =====================================
+# IDE e Editores
+# =====================================
+
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.vs/
+
+# =====================================
+# Documentação Interna (se sensível)
+# =====================================
+
+/docs/internal/
+/docs/credentials/
+
+# =====================================
+# Backups
+# =====================================
+
+*.backup
+*.bak
+*.old
+backup/
