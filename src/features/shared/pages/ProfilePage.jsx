@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import FavoriteRestaurantsList from '@/features/shared/components/restaurants/FavoriteRestaurantsList';
 import InstagramIntegration from '@/features/shared/components/profile/InstagramIntegration';
+import { autoFixStoragePermissions, diagnoseStorageIssue } from '@/utils/storagePermissionsFix';
 import { useNavigate } from 'react-router-dom'; 
 
 const customStyles = {
@@ -366,51 +367,90 @@ const ProfilePage = () => {
 
   // Função para redimensionar imagem para <= 1MB
   const resizeImage = async (file, targetSizeKB = 1024) => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
 
       img.onload = () => {
-        // Calcular dimensões mantendo proporção
-        let { width, height } = img;
-        const maxDimension = 1200; // Máximo 1200px na maior dimensão
+        try {
+          // Calcular dimensões mantendo proporção
+          let { width, height } = img;
+          const maxDimension = 1200; // Máximo 1200px na maior dimensão
 
-        if (width > height && width > maxDimension) {
-          height = (height * maxDimension) / width;
-          width = maxDimension;
-        } else if (height > maxDimension) {
-          width = (width * maxDimension) / height;
-          height = maxDimension;
+          if (width > height && width > maxDimension) {
+            height = (height * maxDimension) / width;
+            width = maxDimension;
+          } else if (height > maxDimension) {
+            width = (width * maxDimension) / height;
+            height = maxDimension;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // ✅ CORREÇÃO: Configurar contexto para melhor qualidade
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // ✅ CORREÇÃO: Limpar canvas antes de desenhar
+          ctx.clearRect(0, 0, width, height);
+          
+          // Desenhar imagem redimensionada
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Função para tentar diferentes qualidades
+          const tryCompress = (quality) => {
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                console.error('❌ Falha ao gerar blob da imagem');
+                reject(new Error('Falha na compressão da imagem'));
+                return;
+              }
+
+              const sizeKB = blob.size / 1024;
+              console.log(`🔧 Tentativa com qualidade ${quality}: ${sizeKB.toFixed(1)}KB`);
+
+              if (sizeKB <= targetSizeKB || quality <= 0.1) {
+                console.log(`✅ Imagem otimizada: ${sizeKB.toFixed(1)}KB (${((blob.size / file.size) * 100).toFixed(1)}% do original)`);
+                
+                // ✅ CORREÇÃO: Manter nome original mas com extensão jpeg
+                const originalName = file.name.split('.')[0];
+                const newFile = new File([blob], `${originalName}.jpeg`, { 
+                  type: 'image/jpeg',
+                  lastModified: Date.now()
+                });
+                
+                resolve(newFile);
+              } else {
+                // Tentar com qualidade menor
+                tryCompress(Math.max(0.1, quality - 0.1));
+              }
+            }, 'image/jpeg', quality);
+          };
+
+          // Iniciar com qualidade 0.9 (melhor qualidade inicial)
+          tryCompress(0.9);
+          
+        } catch (error) {
+          console.error('❌ Erro no processamento da imagem:', error);
+          reject(error);
         }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        // Desenhar imagem redimensionada
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Função para tentar diferentes qualidades
-        const tryCompress = (quality) => {
-          canvas.toBlob((blob) => {
-            const sizeKB = blob.size / 1024;
-            console.log(`🔧 Tentativa com qualidade ${quality}: ${sizeKB.toFixed(1)}KB`);
-
-            if (sizeKB <= targetSizeKB || quality <= 0.1) {
-              console.log(`✅ Imagem otimizada: ${sizeKB.toFixed(1)}KB (${((blob.size / file.size) * 100).toFixed(1)}% do original)`);
-              resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-            } else {
-              // Tentar com qualidade menor
-              tryCompress(quality - 0.1);
-            }
-          }, 'image/jpeg', quality);
-        };
-
-        // Iniciar com qualidade 0.8
-        tryCompress(0.8);
       };
 
+      img.onerror = (error) => {
+        console.error('❌ Erro ao carregar imagem para processamento:', error);
+        reject(new Error('Falha ao carregar imagem'));
+      };
+
+      // ✅ CORREÇÃO: Adicionar crossOrigin se necessário
+      img.crossOrigin = 'anonymous';
       img.src = URL.createObjectURL(file);
+      
+      // ✅ CORREÇÃO: Limpar URL object após uso para evitar vazamentos de memória
+      setTimeout(() => {
+        URL.revokeObjectURL(img.src);
+      }, 5000);
     });
   };
 
@@ -428,11 +468,18 @@ const ProfilePage = () => {
 
     console.log(`📷 Processando imagem: ${file.name} (${(file.size / 1024).toFixed(1)}KB)`);
 
-    // Redimensionar se maior que 2MB
+    // ✅ CORREÇÃO: Redimensionar se maior que 1MB para evitar problemas
     let processedFile = file;
-    if (file.size > 2 * 1024 * 1024) { // 2MB
-      console.log('🔄 Imagem > 2MB, redimensionando para ~1MB...');
-      processedFile = await resizeImage(file, 1024); // Target: 1MB
+    if (file.size > 1 * 1024 * 1024) { // 1MB
+      console.log('🔄 Imagem > 1MB, redimensionando e otimizando...');
+      try {
+        processedFile = await resizeImage(file, 800); // Target: 800KB (mais conservador)
+        console.log(`✅ Imagem processada: ${(processedFile.size / 1024).toFixed(1)}KB`);
+      } catch (error) {
+        console.error('❌ Erro no redimensionamento, usando arquivo original:', error);
+        // Se falhar o redimensionamento, usar arquivo original
+        processedFile = file;
+      }
     } else {
       console.log('✅ Imagem já está no tamanho adequado');
     }
@@ -484,7 +531,20 @@ const ProfilePage = () => {
       throw new Error(`Falha no upload: ${lastError?.message || 'Erro desconhecido'}`);
     }
 
-    return uploadResult.path;
+    // ✅ NOVO: Verificar e corrigir permissões automaticamente após upload bem-sucedido
+    const photoPath = uploadResult.path;
+    console.log('🔧 Verificando permissões para foto recém-enviada:', photoPath);
+    
+    try {
+      const permissionsFixed = await autoFixStoragePermissions(photoPath);
+      if (!permissionsFixed) {
+        console.warn('⚠️ Permissões podem precisar de correção manual');
+      }
+    } catch (error) {
+      console.warn('⚠️ Erro ao verificar permissões (não crítico):', error);
+    }
+
+    return photoPath;
   };
 
   /**
