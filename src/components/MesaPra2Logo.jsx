@@ -1,4 +1,6 @@
 import React from 'react';
+import logoPrime from '../assets/logoprime.png';
+import logoPrimeDark from '../assets/logoprimedark.png';
 
 /**
  * Componente de Logo MesaPra2 - Sistema inteligente que escolhe automaticamente
@@ -25,11 +27,11 @@ const MesaPra2Logo = ({
 
   // Escolher logo baseada no variant
   const getLogoSrc = () => {
-    if (variant === 'light') return '/src/assets/logoprime.png';
-    if (variant === 'dark') return '/src/assets/logoprimedark.png';
+    if (variant === 'light') return logoPrime;
+    if (variant === 'dark') return logoPrimeDark;
     
     // Auto: detectar se está em contexto escuro
-    return '/src/assets/logoprimedark.png'; // Default para dark que funciona melhor
+    return logoPrimeDark; // Default para dark que funciona melhor
   };
 
   // Classes base

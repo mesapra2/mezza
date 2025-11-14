@@ -47,17 +47,39 @@ const MetaTags = ({
 
     // Atualizar metatags básicas
     updateMetaTag('meta[name="description"]', 'content', description);
+    updateMetaTag('meta[name="keywords"]', 'content', 'jantar social, eventos gastronômicos, conhecer pessoas, restaurantes, networking social');
+    updateMetaTag('meta[name="author"]', 'content', 'MesaPra2');
+    updateMetaTag('meta[name="robots"]', 'content', 'index, follow');
+    updateMetaTag('meta[name="viewport"]', 'content', 'width=device-width, initial-scale=1.0');
+    updateMetaTag('meta[name="theme-color"]', 'content', '#8B5CF6');
+    updateMetaTag('meta[name="application-name"]', 'content', 'MesaPra2');
 
     // Atualizar Open Graph
+    updateMetaTag('meta[property="og:type"]', 'content', 'website');
+    updateMetaTag('meta[property="og:site_name"]', 'content', 'MesaPra2');
     updateMetaTag('meta[property="og:title"]', 'content', title);
     updateMetaTag('meta[property="og:description"]', 'content', description);
     updateMetaTag('meta[property="og:url"]', 'content', currentUrl);
     updateMetaTag('meta[property="og:image"]', 'content', ogImage);
+    updateMetaTag('meta[property="og:image:alt"]', 'content', 'Logo MesaPra2 - Jantares sociais');
+    updateMetaTag('meta[property="og:image:width"]', 'content', '1200');
+    updateMetaTag('meta[property="og:image:height"]', 'content', '630');
+    updateMetaTag('meta[property="og:locale"]', 'content', 'pt_BR');
 
     // Atualizar Twitter Cards
+    updateMetaTag('meta[name="twitter:card"]', 'content', 'summary_large_image');
+    updateMetaTag('meta[name="twitter:site"]', 'content', '@mesapra2');
+    updateMetaTag('meta[name="twitter:creator"]', 'content', '@mesapra2');
     updateMetaTag('meta[name="twitter:title"]', 'content', title);
     updateMetaTag('meta[name="twitter:description"]', 'content', description);
     updateMetaTag('meta[name="twitter:image"]', 'content', ogImage);
+    updateMetaTag('meta[name="twitter:image:alt"]', 'content', 'Logo MesaPra2 - Jantares sociais');
+
+    // Adicionar tags específicas para PWA
+    updateMetaTag('meta[name="mobile-web-app-capable"]', 'content', 'yes');
+    updateMetaTag('meta[name="apple-mobile-web-app-capable"]', 'content', 'yes');
+    updateMetaTag('meta[name="apple-mobile-web-app-status-bar-style"]', 'content', 'black-translucent');
+    updateMetaTag('meta[name="apple-mobile-web-app-title"]', 'content', 'MesaPra2');
 
     // Atualizar canonical
     let canonical = document.querySelector('link[rel="canonical"]');

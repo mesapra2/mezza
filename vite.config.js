@@ -20,7 +20,13 @@ export default defineConfig(({ mode }) => {
         // ✅ Habilitar JSX em todos os arquivos relevantes
         include: "**/*.{jsx,js,tsx,ts}",
         // ✅ Configuração para JSX automático
-        jsxRuntime: 'automatic'
+        jsxRuntime: 'automatic',
+        // ✅ Babel config para JSX
+        babel: {
+          plugins: [
+            ['@babel/plugin-transform-react-jsx', { runtime: 'automatic' }]
+          ]
+        }
       })
     ],
     
@@ -33,7 +39,29 @@ export default defineConfig(({ mode }) => {
     
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve(__dirname, 'src'),
+      },
+      extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
+    },
+
+    esbuild: {
+      // ✅ Configurar JSX para desenvolvimento
+      jsx: 'automatic',
+      loader: {
+        '.js': 'jsx',
+        '.jsx': 'jsx',
+      },
+    },
+
+    optimizeDeps: {
+      include: ['react', 'react-dom'],
+      exclude: [],
+      // ✅ Force JSX processing
+      esbuildOptions: {
+        loader: {
+          '.js': 'jsx',
+          '.jsx': 'jsx',
+        },
       },
     },
     
