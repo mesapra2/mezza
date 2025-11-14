@@ -4,6 +4,68 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safari Mobile Video Fixes */
+video {
+  /* Force hardware acceleration */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  
+  /* Ensure proper display on Safari mobile */
+  -webkit-playsinline: true;
+  
+  /* Fix for Safari video rendering issues */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  
+  /* Ensure proper aspect ratio */
+  object-fit: cover;
+  
+  /* Fix for Safari mobile fullscreen issues */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Specific fixes for video containers on mobile */
+@media screen and (max-width: 768px) {
+  .video-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.75rem;
+  }
+  
+  .video-container video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    border-radius: inherit;
+    
+    /* Safari mobile specific fixes */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    mask-image: radial-gradient(white, black);
+  }
+}
+
+/* Fix for aspect ratio on mobile Safari */
+@supports (-webkit-touch-callout: none) {
+  /* Safari-specific styles */
+  video {
+    /* Ensure video plays inline on Safari iOS */
+    -webkit-playsinline: true;
+    
+    /* Fix for black bars on Safari mobile */
+    object-position: center;
+  }
+  
+  /* Fix video background on Safari iOS */
+  .fixed video {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+}
+
 @layer base {
   body {
     @apply bg-gray-900 text-white;

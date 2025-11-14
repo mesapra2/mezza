@@ -42,10 +42,15 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * ✅ FUNÇÃO PARA CAPTURAR LOCALIZAÇÃO AUTOMATICAMENTE
+   * ⚠️ TEMPORARIAMENTE DESABILITADA - Colunas de localização não existem na tabela profiles
    */
   const requestLocationOnLogin = useCallback(async (userId) => {
     if (locationRequested) return;
     
+    console.log('📍 [Auth] Localização desabilitada - colunas não existem na tabela profiles');
+    
+    // TODO: Descomentar quando executar a migração add_location_fields_to_profiles.sql
+    /*
     try {
       setLocationRequested(true);
       console.log('📍 [Auth] Solicitando localização após login...');
@@ -107,7 +112,8 @@ export const AuthProvider = ({ children }) => {
         setLocationRequested(false);
       }, 60000); // 1 minuto
     }
-  }, [locationRequested, toast]);
+    */
+  }, [locationRequested]);
 
   // Função para buscar o perfil com controle simplificado
   const getProfile = useCallback(async (currentUser) => {
@@ -275,7 +281,7 @@ export const AuthProvider = ({ children }) => {
                     setProfile(initialProfile);
                     
                     // ✅ Capturar localização automaticamente após login
-                    requestLocationOnLogin(initialUser.id);
+                    // requestLocationOnLogin(initialUser.id); // Desabilitado - colunas não existem
                     
                     // ✅ Sistema de presença será inicializado pelo hook
                     
@@ -339,7 +345,7 @@ export const AuthProvider = ({ children }) => {
                         setProfile(p);
                         
                         // ✅ Capturar localização automaticamente após login/mudança de usuário
-                        requestLocationOnLogin(currentUser.id);
+                        // requestLocationOnLogin(currentUser.id); // Desabilitado - colunas não existem
                         
                         // ✅ Presença será gerenciada pelo hook
                     }

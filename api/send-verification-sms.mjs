@@ -12,15 +12,24 @@ const authToken = process.env.TWILIO_AUTH_TOKEN || '4bec3d5c9ad43210d83d2e1f1b07
 const twilioNumber = process.env.TWILIO_PHONE_NUMBER || '+12293047662';
 
 console.log('🔧 Credenciais carregadas:', {
-    accountSid: accountSid ? '✅ OK' : '❌ Missing',
-    authToken: authToken ? '✅ OK' : '❌ Missing',
-    twilioNumber: twilioNumber ? '✅ OK' : '❌ Missing'
+    accountSid: accountSid ? `✅ ${accountSid.substring(0, 8)}...` : '❌ Missing',
+    authToken: authToken ? `✅ ${authToken.substring(0, 8)}...` : '❌ Missing',
+    twilioNumber: twilioNumber ? `✅ ${twilioNumber}` : '❌ Missing',
+    nodeEnv: process.env.NODE_ENV || 'development'
 });
 
-// Validar credenciais
+// Validar credenciais básicas
 if (!accountSid || !authToken || !twilioNumber) {
-    console.error('❌ Credenciais da Twilio não configuradas');
-    throw new Error('❌ Credenciais da Twilio não configuradas no .env');
+    const errorMsg = '❌ Credenciais da Twilio não configuradas completamente';
+    console.error(errorMsg, {
+        hasAccountSid: !!accountSid,
+        hasAuthToken: !!authToken,
+        hasTwilioNumber: !!twilioNumber
+    });
+    // Don't throw in development, just log the error
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error(errorMsg);
+    }
 }
 
 const client = twilio(accountSid, authToken);
@@ -60,6 +69,7 @@ export default async function handler(req, res) {
         
         // Log para debug - verificar se o código é realmente aleatório
         console.log(`🔢 Código gerado: ${code} para usuário ${userId}`);
+        console.log(`📱 Telefone formatado: ${phone}`);
         
         // Armazenar código temporariamente (expira em 10 minutos)
         const timestamp = Date.now();

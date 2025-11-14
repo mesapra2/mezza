@@ -540,12 +540,21 @@ const MyEventsPage = () => {
                     <video
                       controls
                       autoPlay
+                      playsInline
+                      webkit-playsinline="true"
                       className="w-full h-auto max-h-[400px] object-cover"
                       onEnded={() => {
                         toast({
                           title: "Vídeo finalizado!",
                           description: "Esperamos que as orientações tenham sido úteis.",
                         });
+                      }}
+                      style={{
+                        WebkitTransform: 'translateZ(0)',
+                        transform: 'translateZ(0)',
+                        WebkitBackfaceVisibility: 'hidden',
+                        backfaceVisibility: 'hidden',
+                        objectPosition: 'center'
                       }}
                     >
                       <source src={orientaVideo} type="video/mp4" />

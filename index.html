@@ -20,19 +20,6 @@
       name="description"
       content="Conecte-se a pessoas incríveis com Mesapra2. Social Dinner Experience."
     />
-    <!-- Canonical URL (dinâmico) -->
-    <script>
-      // Definir canonical URL baseado no domínio atual
-      const currentDomain = window.location.hostname;
-      const canonicalUrl = currentDomain.includes('mesapra2.com') 
-        ? `https://${currentDomain}` 
-        : 'https://app.mesapra2.com';
-      document.write('<link rel="canonical" href="' + canonicalUrl + '" />');
-    </script>
-    <noscript>
-      <link rel="canonical" href="https://app.mesapra2.com" />
-    </noscript>
-
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Mesapra2" />
@@ -55,30 +42,40 @@
       content="Conecte-se a pessoas incríveis através de jantares sociais. Conheça pessoas novas, faça amizades e viva experiências gastronômicas únicas."
     />
     
-    <!-- URLs dinâmicas para OG tags -->
+    <!-- URLs dinâmicas para canonical e OG tags (script consolidado) -->
     <script>
-      // Definir URLs baseado no domínio atual  
-      const currentDomain = window.location.hostname;
-      const baseUrl = currentDomain.includes('mesapra2.com') 
-        ? `https://${currentDomain}` 
-        : 'https://app.mesapra2.com';
-      
-      // Definir og:url
-      document.write('<meta property="og:url" content="' + baseUrl + '" />');
-      
-      // Definir og:image com fallback
-      const imageUrl = baseUrl + '/og-default.jpg';
-      document.write('<meta property="og:image" content="' + imageUrl + '" />');
-      document.write('<meta name="twitter:image" content="' + imageUrl + '" />');
-      
-      // Tentar carregar imagem, se falhar usar PNG
-      const img = new Image();
-      img.onerror = function() {
-        const fallbackUrl = baseUrl + '/og-default.png';
-        document.querySelector('meta[property="og:image"]').setAttribute('content', fallbackUrl);
-        document.querySelector('meta[name="twitter:image"]').setAttribute('content', fallbackUrl);
-      };
-      img.src = imageUrl;
+      (function() {
+        // Definir URLs baseado no domínio atual (única declaração)
+        const currentDomain = window.location.hostname;
+        const baseUrl = currentDomain.includes('mesapra2.com') 
+          ? `https://${currentDomain}` 
+          : 'https://app.mesapra2.com';
+        
+        // Definir canonical URL
+        document.write('<link rel="canonical" href="' + baseUrl + '" />');
+        
+        // Definir og:url
+        document.write('<meta property="og:url" content="' + baseUrl + '" />');
+        
+        // Definir og:image com fallback
+        const imageUrl = baseUrl + '/og-default.jpg';
+        document.write('<meta property="og:image" content="' + imageUrl + '" />');
+        document.write('<meta name="twitter:image" content="' + imageUrl + '" />');
+        
+        // Tentar carregar imagem, se falhar usar PNG
+        setTimeout(function() {
+          const img = new Image();
+          img.onerror = function() {
+            const fallbackUrl = baseUrl + '/og-default.png';
+            const ogImageMeta = document.querySelector('meta[property="og:image"]');
+            const twitterImageMeta = document.querySelector('meta[name="twitter:image"]');
+            
+            if (ogImageMeta) ogImageMeta.setAttribute('content', fallbackUrl);
+            if (twitterImageMeta) twitterImageMeta.setAttribute('content', fallbackUrl);
+          };
+          img.src = imageUrl;
+        }, 100);
+      })();
     </script>
     
     <!-- Fallback estático para navegadores sem JS -->

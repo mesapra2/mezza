@@ -105,9 +105,11 @@ const PhoneVerification = ({ userId, phone, onVerified, onBack = () => window.hi
 
     setIsLoading(true);
     try {
-      // O teste que você enviou mostra que seu serviço usa "resendVerificationCode"
-      // Se essa função não existir, mude para "authService.resendCode"
-      await authService.resendVerificationCode({ userId, phone });
+      console.log('🔄 Reenviando código SMS para:', { userId, phone });
+      
+      // Use sendVerificationCode for resending
+      await authService.sendVerificationCode({ userId, phone });
+      
       toast({
         title: "Código reenviado",
         description: "Um novo código foi enviado para seu telefone.",
@@ -117,6 +119,7 @@ const PhoneVerification = ({ userId, phone, onVerified, onBack = () => window.hi
       setCode(['', '', '', '', '', '']);
       document.getElementById('code-0')?.focus();
     } catch (error) {
+      console.error('❌ Erro ao reenviar código:', error);
       toast({
         variant: "destructive",
         title: "Erro ao reenviar",

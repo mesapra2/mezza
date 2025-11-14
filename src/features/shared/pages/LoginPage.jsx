@@ -7,14 +7,19 @@ import { Calendar } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/features/shared/components/ui/use-toast';
 import SocialLoginButtons from '@/features/shared/components/auth/SocialLoginButtons';
-// ✅ VÍDEOS RESTAURADOS - Com otimização de performance
-import vds2 from '@/assets/vds2.mp4';
-import vds4 from '@/assets/vds4.mp4';
-import vds5 from '@/assets/vds5.mp4';
-import vds7 from '@/assets/vds7.mp4';
-import vds9 from '@/assets/vds9.mp4';
-import vds10 from '@/assets/vds10.mp4';
-import vds11 from '@/assets/vds11.mp4';
+// ✅ VÍDEOS COMPLETOS - Todos os 12 vídeos da pasta /assets/vds/
+import vds1 from '@/assets/vds/vds1.mp4';
+import vds2 from '@/assets/vds/vds2.mp4';
+import vds3 from '@/assets/vds/vds3.mp4';
+import vds4 from '@/assets/vds/vds4.mp4';
+import vds5 from '@/assets/vds/vds5.mp4';
+import vds6 from '@/assets/vds/vds6.mp4';
+import vds7 from '@/assets/vds/vds7.mp4';
+import vds8 from '@/assets/vds/vds8.mp4';
+import vds9 from '@/assets/vds/vds9.mp4';
+import vds10 from '@/assets/vds/vds10.mp4';
+import vds11 from '@/assets/vds/vds11.mp4';
+import vds12 from '@/assets/vds/vds12.mp4';
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
@@ -23,8 +28,8 @@ const LoginPage = () => {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const { signInWithGoogle, signInWithFacebook, signInWithInstagram } = useAuth();
 
-  // ✅ VÍDEOS RESTAURADOS - Array otimizado
-  const videos = [vds2, vds4, vds5, vds7, vds9, vds10, vds11];
+  // ✅ VÍDEOS COMPLETOS - Array com todos os 12 vídeos (vds1 a vds12)
+  const videos = [vds1, vds2, vds3, vds4, vds5, vds6, vds7, vds8, vds9, vds10, vds11, vds12];
   
   // Effect para rotação de vídeos
   React.useEffect(() => {
@@ -84,7 +89,7 @@ const LoginPage = () => {
       </Helmet>
 
       <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 relative bg-gradient-to-br from-gray-900 via-black to-purple-900">
-        {/* ✅ VÍDEO BACKGROUND RESTAURADO - Com otimização */}
+        {/* ✅ VÍDEO BACKGROUND RESTAURADO - Com otimização para Safari mobile */}
         <div className="fixed inset-0 z-0">
           {videos.map((video, index) => (
             <video
@@ -96,10 +101,19 @@ const LoginPage = () => {
               muted
               loop
               playsInline
-              preload={index === 0 ? 'auto' : 'none'} // Carrega apenas o primeiro vídeo imediatamente
+              webkit-playsinline="true"
+              preload={index === 0 ? 'auto' : 'none'}
               onLoadedData={() => index === 0 && setVideoLoaded(true)}
+              style={{
+                WebkitTransform: 'translateZ(0)',
+                transform: 'translateZ(0)',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                objectPosition: 'center'
+              }}
             >
               <source src={video} type="video/mp4" />
+              Seu navegador não suporta vídeos HTML5.
             </video>
           ))}
           
