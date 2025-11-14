@@ -1,6 +1,7 @@
 import React from 'react';
-import logoPrime from '../assets/logoprime.png';
-import logoPrimeDark from '../assets/logoprimedark.png';
+// Usar imagens da pasta public para produção
+import logoPrime from '/logo-light.png';
+import logoPrimeDark from '/logo.png';
 
 /**
  * Componente de Logo MesaPra2 - Sistema inteligente que escolhe automaticamente
