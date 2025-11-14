@@ -327,13 +327,14 @@ const UserSettings = () => {
       
       console.log(`📱 Enviando SMS para: ${phone} com código: ${verificationCode}`);
       
-      // Usar a API de SMS via fetch
-      const response = await fetch('/api/send-verification-sms', {
+      // Usar a API de SMS consolidada
+      const response = await fetch('/api/sms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'send',
           userId: user.id,
           phone: phone
         })
