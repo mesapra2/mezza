@@ -263,7 +263,10 @@ export class AddressService {
   /**
    * Validar CEP brasileiro
    */
-  static validateZipCode(zipCode: string): boolean {
+  static validateZipCode(zipCode: string | undefined | null): boolean {
+    if (!zipCode || typeof zipCode !== 'string') {
+      return false;
+    }
     const cleanZipCode = zipCode.replace(/\D/g, '');
     return cleanZipCode.length === 8;
   }
@@ -271,7 +274,10 @@ export class AddressService {
   /**
    * Formatar CEP (00000-000)
    */
-  static formatZipCode(zipCode: string): string {
+  static formatZipCode(zipCode: string | undefined | null): string {
+    if (!zipCode || typeof zipCode !== 'string') {
+      return '';
+    }
     const clean = zipCode.replace(/\D/g, '');
     if (clean.length === 8) {
       return clean.replace(/(\d{5})(\d{3})/, '$1-$2');

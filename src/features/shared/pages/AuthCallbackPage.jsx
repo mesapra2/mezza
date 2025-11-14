@@ -123,8 +123,10 @@ const AuthCallbackPage = () => {
           throw new Error(error_description || `Erro OAuth: ${error}`);
         }
 
-        // Nenhum parâmetro válido encontrado
-        throw new Error('Callback inválido - parâmetros não reconhecidos');
+        // Se não há parâmetros válidos, provavelmente é refresh da página
+        console.log('⚠️ Nenhum parâmetro de callback encontrado - redirecionando para login');
+        navigate('/login', { replace: true });
+        return;
 
       } catch (error) {
         console.error('Erro no callback de autenticação:', error);

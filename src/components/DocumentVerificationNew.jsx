@@ -184,12 +184,12 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
+        className="bg-gradient-to-br from-gray-900 via-black to-purple-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden"
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
@@ -226,15 +226,15 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
                 exit={{ opacity: 0, y: -20 }}
                 className="text-center space-y-6"
               >
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-                  <Smartphone className="w-10 h-10 text-blue-600" />
+                <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto">
+                  <Smartphone className="w-10 h-10 text-blue-400" />
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-xl font-bold text-white mb-2">
                     Acesso via Mobile Detectado
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-white/60">
                     Você será redirecionado para a página de verificação otimizada para celular.
                   </p>
                 </div>
@@ -268,20 +268,20 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
                 className="space-y-6"
               >
                 <div className="text-center">
-                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Smartphone className="w-10 h-10 text-blue-600" />
+                  <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Smartphone className="w-10 h-10 text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-xl font-bold text-white mb-2">
                     Verificação Mobile
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-white/60">
                     Insira seu CPF para começar a verificação. Você irá fotografar seus documentos usando a câmera do celular.
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="cpf-mobile" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="cpf-mobile" className="text-sm font-medium text-white">
                       CPF
                     </Label>
                     <Input
@@ -384,7 +384,7 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
 
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="cpf" className="text-sm font-medium text-gray-700">
+                    <Label htmlFor="cpf" className="text-sm font-medium text-white">
                       CPF
                     </Label>
                     <Input
@@ -492,7 +492,7 @@ const DocumentVerificationNew = ({ userId, onComplete, onCancel }) => {
                   </Button>
                 </div>
 
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-white/40">
                   Mantenha esta página aberta até completar a verificação no celular
                 </p>
               </motion.div>

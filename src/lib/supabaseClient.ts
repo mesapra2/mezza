@@ -33,13 +33,26 @@ if (!globalThis[SUPABASE_SINGLETON_KEY]) {
     global: {
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Prefer': 'return=representation',
       },
       fetch: (url, options = {}) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout para deploy
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        // Ensure proper headers for Supabase API
+        const headers = {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation',
+          'apikey': supabaseAnonKey,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          ...options.headers
+        };
         
         return fetch(url, {
           ...options,
+          headers,
           signal: controller.signal,
         }).finally(() => clearTimeout(timeoutId));
       },

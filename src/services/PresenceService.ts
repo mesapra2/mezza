@@ -81,18 +81,29 @@ class PresenceService {
    */
   async updatePresence(userId: string, status: PresenceStatus): Promise<void> {
     try {
-      const { error } = await supabase.from('user_presence').upsert(
-        {
-          user_id: userId,
-          status,
-          last_seen: new Date().toISOString(),
-        },
-        {
-          onConflict: 'user_id',
-        }
-      );
+      // Usar insert com ON CONFLICT manual ao invés de upsert
+      const { error } = await supabase.rpc('upsert_user_presence', {
+        p_user_id: userId,
+        p_status: status,
+        p_last_seen: new Date().toISOString(),
+      });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback: tentar com upsert normal se a função não existir
+        console.log('RPC não encontrado, usando upsert direto...');
+        const { error: upsertError } = await supabase.from('user_presence').upsert(
+          {
+            user_id: userId,
+            status,
+            last_seen: new Date().toISOString(),
+          },
+          {
+            ignoreDuplicates: false,
+          }
+        );
+        
+        if (upsertError) throw upsertError;
+      }
     } catch (error) {
       console.error('❌ Erro ao atualizar presença:', error);
     }

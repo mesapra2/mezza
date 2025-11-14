@@ -9,6 +9,9 @@ import path from 'path';
 
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
+  
+  // Force development mode for React
+  process.env.NODE_ENV = isDev ? 'development' : 'production';
   const __dirname = path.dirname(fileURLToPath(import.meta.url)); // Substitui __dirname
 
   return {
@@ -20,6 +23,13 @@ export default defineConfig(({ mode }) => {
         jsxRuntime: 'automatic'
       })
     ],
+    
+    define: {
+      // Force React development mode
+      'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
+      // Fix React DevTools
+      __DEV__: isDev,
+    },
     
     resolve: {
       alias: {

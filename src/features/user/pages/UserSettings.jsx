@@ -327,10 +327,24 @@ const UserSettings = () => {
       
       console.log(`📱 Enviando SMS para: ${phone} com código: ${verificationCode}`);
       
-      // Usar o serviço Twilio diretamente
-      const { sendSMS } = await import('../../../services/twilioService.js');
+      // Usar a API de SMS via fetch
+      const response = await fetch('/api/send-verification-sms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          phone: phone
+        })
+      });
       
-      const result = await sendSMS(phone, `Seu código para Mesapra2 é: ${verificationCode}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Erro ao enviar SMS');
+      }
+      
+      const result = await response.json();
       
       if (!result.success) {
         throw new Error(result.error || 'Erro ao enviar SMS');

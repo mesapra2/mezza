@@ -43,6 +43,15 @@ function generateVerificationCode() {
 }
 
 export default async function handler(req, res) {
+    // Adicionar headers CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    
     // Permitir apenas POST
     if (req.method !== 'POST') {
         return res.status(405).json({ 
@@ -83,13 +92,47 @@ export default async function handler(req, res) {
         
         console.log(`📱 Enviando SMS para: ${phone} com código: ${code}`);
         
+        // Validar e formatar número brasileiro
+        let formattedPhone = phone.replace(/\D/g, '');
+        
+        // Se não tem código do país, adiciona 55
+        if (!formattedPhone.startsWith('55') && formattedPhone.length === 11) {
+            formattedPhone = '55' + formattedPhone;
+        }
+        
+        // Adiciona + se não tiver
+        if (!formattedPhone.startsWith('+')) {
+            formattedPhone = '+' + formattedPhone;
+        }
+        
+        // Validar formato final
+        const phoneRegex = /^\+55\d{11}$/;
+        if (!phoneRegex.test(formattedPhone)) {
+            console.log(`❌ Formato de telefone inválido: ${phone} → ${formattedPhone}`);
+            return res.status(400).json({
+                success: false,
+                error: 'Formato de telefone inválido. Use 61984656910 ou +5561984656910'
+            });
+        }
+        
+        phone = formattedPhone; // Usa o número formatado
+        console.log(`📱 Número formatado: ${phone}`);
+
+        console.log(`📤 Enviando de: ${twilioNumber} para: ${phone}`);
+        console.log(`📝 Mensagem: Seu código para Mesapra2 é: ${code}`);
+
         const message = await client.messages.create({
-            body: `Seu código para Mesapra2 é: ${code}`,
+            body: `🎉 Mesapra2: Seu código de verificação é ${code}. Válido por 10 minutos.`,
             from: twilioNumber,
-            to: phone
+            to: phone,
+            // Adicionar configurações extras para produção
+            statusCallback: `${process.env.VERCEL_URL || 'http://localhost:3001'}/api/sms-webhook`,
+            provideFeedback: true
         });
 
         console.log(`✅ SMS enviado! SID: ${message.sid}`);
+        console.log(`📊 Status inicial: ${message.status}`);
+        console.log(`💰 Preço: ${message.price} ${message.priceUnit}`);
 
         res.status(200).json({
             success: true,
@@ -107,5 +150,4 @@ export default async function handler(req, res) {
             code: error.code
         });
     }
-}
 }
