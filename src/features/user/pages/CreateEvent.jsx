@@ -1,6 +1,6 @@
 // src/features/user/pages/CreateEvent.jsx - ✅ CORRIGIDO
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -18,6 +18,7 @@ import RestaurantSelector from '@/features/shared/components/ui/RestaurantSelect
 import { LimitWarning } from '@/features/shared/components/LimitWarning';
 import { useFavoriteRestaurants } from '@/hooks/useFavoriteRestaurants';
 import { usePremium } from '@/contexts/PremiumContext';
+import { debounce } from '@/utils/debounce';
 
 const CreateEvent = () => {
   const { user, profile } = useAuth();
@@ -209,10 +210,27 @@ const CreateEvent = () => {
     }
   };
 
-  const handleChange = (e) => {
+  // ✅ OTIMIZAÇÃO: Debounced handler para campos de data/hora
+  const debouncedDateTimeUpdate = useMemo(
+    () => debounce((name, value) => {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }, 150),
+    []
+  );
+
+  // ✅ OTIMIZAÇÃO: Debounced handler para event_type
+  const debouncedEventTypeUpdate = useMemo(
+    () => debounce((value) => {
+      setFormData(prev => ({ ...prev, event_type: value }));
+    }, 200),
+    []
+  );
+
+  // ✅ OTIMIZAÇÃO: Handler otimizado com useCallback
+  const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     
-    // ✅ Validação adicional para event_type
+    // ✅ OTIMIZAÇÃO: Validação e debounce para event_type
     if (name === 'event_type') {
       if ((value === 'particular' || value === 'crusher') && !profile?.is_premium) {
         toast({
@@ -222,13 +240,23 @@ const CreateEvent = () => {
         });
         return;
       }
+      // ✅ Usar debounce para event_type para evitar múltiplos redirecionamentos
+      debouncedEventTypeUpdate(value);
+      return;
+    }
+
+    // ✅ OTIMIZAÇÃO: Usar debounce para campos datetime-local
+    if (name === 'start_time' || name === 'end_time') {
+      debouncedDateTimeUpdate(name, value);
+      return;
     }
     
-    setFormData({
-      ...formData,
+    // ✅ Update imediato para outros campos
+    setFormData(prev => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value,
-    });
-  };
+    }));
+  }, [profile?.is_premium, debouncedDateTimeUpdate, debouncedEventTypeUpdate]);
 
   const eventTypes = [
     { 

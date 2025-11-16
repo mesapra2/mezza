@@ -18,6 +18,7 @@ import {
   Star,
   Key,
   Lock,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
@@ -28,6 +29,7 @@ import { useToast } from '@/features/shared/components/ui/use-toast';
 import EventStatusService from '@/services/EventStatusService';
 import EventPhotosService from '@/services/EventPhotosService';
 import EventEntryForm from '@/features/shared/components/ui/EventEntryForm';
+import EventDeletionService from '@/services/EventDeletionService';
 import orientaVideo from '@/assets/videos/orienta.mp4';
 
 const MyEventsPage = () => {
@@ -53,11 +55,24 @@ const MyEventsPage = () => {
   const [showVideoGuide, setShowVideoGuide] = useState(true);
   const [showOrientationVideo, setShowOrientationVideo] = useState(false);
 
+  // ✅ NOVO: Estados para funcionalidade de deletar eventos
+  const [deletionStatus, setDeletionStatus] = useState({});
+  const [deletingEventId, setDeletingEventId] = useState(null);
+
+  // ✅ DEBUG: Monitorar mudanças no deletionStatus
+  useEffect(() => {
+    console.log('🗑️ deletionStatus atualizado:', deletionStatus);
+  }, [deletionStatus]);
+
   // --------------------------------------------------
   // ✅ CARREGAR EVENTOS ONDE SOU CRIADOR
   // --------------------------------------------------
   const loadCreatedEvents = useCallback(async () => {
     if (!user?.id) return [];
+    
+    // ✅ CORREÇÃO: AbortController para evitar AbortError
+    const abortController = new AbortController();
+    
     try {
       const { data, error: fetchError } = await supabase
         .from('events')
@@ -77,6 +92,11 @@ const MyEventsPage = () => {
       if (fetchError) throw fetchError;
       return data || [];
     } catch (err) {
+      // ✅ CORREÇÃO: Verificar se é AbortError antes de logar
+      if (err.name === 'AbortError' || err.message?.includes('AbortError')) {
+        console.log('🔄 Request eventos criados cancelada');
+        return [];
+      }
       console.error('Erro ao carregar eventos criados:', err);
       return [];
     }
@@ -87,6 +107,10 @@ const MyEventsPage = () => {
   // --------------------------------------------------
   const loadParticipatingEvents = useCallback(async () => {
     if (!user?.id) return [];
+    
+    // ✅ CORREÇÃO: AbortController para evitar AbortError
+    const abortController = new AbortController();
+    
     try {
       // 1. Buscar minhas participações aprovadas
       const { data: participations, error: partError } = await supabase
@@ -129,6 +153,11 @@ const MyEventsPage = () => {
 
       return eventsWithParticipation;
     } catch (err) {
+      // ✅ CORREÇÃO: Verificar se é AbortError antes de logar
+      if (err.name === 'AbortError' || err.message?.includes('AbortError')) {
+        console.log('🔄 Request eventos participando cancelada');
+        return [];
+      }
       console.error('Erro ao carregar eventos participando:', err);
       return [];
     }
@@ -154,6 +183,110 @@ const MyEventsPage = () => {
       
       const allEvents = [...createdEvents, ...uniqueParticipating];
       
+      // ✅ CORREÇÃO: Carregar status de deleção para eventos criados  
+      if (createdEvents.length > 0 && user?.id) {
+        console.log('🔍 Carregando status de deleção para', createdEvents.length, 'eventos do usuário', user.id);
+        
+        const deletionStatusData = {};
+        
+        for (const event of createdEvents) {
+          console.log(`🔍 Verificando evento ${event.id} (criador: ${event.creator_id})`);
+          
+          // ✅ NOVA LÓGICA: Verificação completa de status do evento
+          try {
+            // Buscar todos os participantes do evento
+            const { data: allParticipants, error: allError } = await supabase
+              .from('event_participants')
+              .select('id, status, com_acesso')
+              .eq('event_id', event.id);
+
+            if (allError) {
+              console.error('Erro ao buscar participantes:', allError);
+              deletionStatusData[event.id] = {
+                canDelete: false,
+                reason: 'Erro ao verificar participantes',
+                hasParticipants: false,
+                hasAccessedUsers: false
+              };
+              continue;
+            }
+
+            // Verificar diferentes categorias
+            const confirmedParticipants = allParticipants?.filter(p => p.status === 'aprovado') || [];
+            const accessedParticipants = confirmedParticipants.filter(p => p.com_acesso === true);
+            
+            // ✅ CORREÇÃO: Por enquanto, considerar que NÃO há sistema de qualificação
+            // Isso significa que eventos com acesso podem ser deletados (aguardando qualificação)
+            const qualifiedParticipants = []; // Vazio = permite deleção
+
+            // Verificar se evento passou há 7+ dias
+            const now = new Date();
+            const eventEnd = new Date(event.end_time);
+            const sevenDaysAfterEnd = new Date(eventEnd.getTime() + (7 * 24 * 60 * 60 * 1000));
+            const passedSevenDays = now > sevenDaysAfterEnd;
+
+            let canDelete = false;
+            let reason = '';
+
+            // ✅ REGRA 1: Sem participantes confirmados
+            if (confirmedParticipants.length === 0) {
+              canDelete = true;
+              reason = 'Sem participantes confirmados - pode deletar';
+            }
+            // ✅ REGRA 2: Participantes confirmados mas sem acesso (sem senha)
+            else if (accessedParticipants.length === 0) {
+              canDelete = true;
+              reason = `${confirmedParticipants.length} confirmado(s) mas nenhum digitou senha - pode deletar`;
+            }
+            // ✅ REGRA 3: Aguardando qualificação (digitaram senha mas não qualificados)
+            else if (qualifiedParticipants.length === 0) {
+              canDelete = true;
+              reason = `${accessedParticipants.length} aguardando qualificação - pode deletar`;
+            }
+            // ✅ REGRA 4: Passou 7+ dias sem qualificação completa
+            else if (passedSevenDays && qualifiedParticipants.length === 0) {
+              canDelete = true;
+              reason = `Passou 7+ dias sem qualificação - pode deletar`;
+            }
+            // ✅ REGRA 5: Tem participantes qualificados - NÃO pode deletar
+            else {
+              canDelete = false;
+              reason = `${qualifiedParticipants.length} participante(s) qualificado(s) - não pode deletar`;
+            }
+            
+            deletionStatusData[event.id] = {
+              canDelete,
+              reason,
+              hasParticipants: confirmedParticipants.length > 0,
+              hasAccessedUsers: accessedParticipants.length > 0,
+              hasQualifiedUsers: qualifiedParticipants.length > 0,
+              passedSevenDays
+            };
+            
+            console.log(`✅ Evento ${event.id}:`, {
+              confirmados: confirmedParticipants.length,
+              comAcesso: accessedParticipants.length,
+              qualificados: qualifiedParticipants.length,
+              passou7dias: passedSevenDays,
+              podeDeletear: canDelete,
+              motivo: reason
+            });
+            
+          } catch (error) {
+            console.error('Erro na verificação:', error);
+            deletionStatusData[event.id] = {
+              canDelete: false,
+              reason: 'Erro na verificação',
+              hasParticipants: false,
+              hasAccessedUsers: false
+            };
+          }
+        }
+        
+        console.log('🗑️ Status de deleção final:', deletionStatusData);
+        setDeletionStatus(deletionStatusData);
+      }
+
       setEvents(createdEvents);
       setParticipatingEvents(uniqueParticipating);
       
@@ -337,6 +470,164 @@ const MyEventsPage = () => {
   // --------------------------------------------------
   const isEventCreator = (event) => {
     return event.creator_id === user?.id;
+  };
+
+  // ✅ FUNÇÃO: Verificar se pode editar completamente
+  const canEditCompletely = async (event) => {
+    if (!user?.id || event.creator_id !== user.id) return false;
+    try {
+      const canEdit = await EventDeletionService.canEditEventCompletely(event.id, user.id);
+      console.log(`🔧 Evento ${event.id} - Edição completa permitida:`, canEdit);
+      return canEdit;
+    } catch (error) {
+      console.error('Erro ao verificar edição completa:', error);
+      return false;
+    }
+  };
+
+  // ✅ FUNÇÃO: Deletar evento sem participação efetiva (CORRIGIDA)
+  const handleDeleteEvent = async (event) => {
+    if (!user?.id || event.creator_id !== user.id) return;
+
+    setDeletingEventId(event.id);
+
+    try {
+      // ✅ NOVA VERIFICAÇÃO: Usar a mesma lógica do status de deleção
+      const { data: allParticipants, error } = await supabase
+        .from('event_participants')
+        .select('id, status, com_acesso')
+        .eq('event_id', event.id);
+
+      if (error) {
+        throw new Error('Erro ao verificar participantes');
+      }
+
+      // Aplicar as mesmas regras do status de deleção
+      const confirmedParticipants = allParticipants?.filter(p => p.status === 'aprovado') || [];
+      const accessedParticipants = confirmedParticipants.filter(p => p.com_acesso === true);
+      
+      // ✅ CORREÇÃO: Sem sistema de qualificação, eventos com acesso podem ser deletados
+      const qualifiedParticipants = []; // Vazio = permite deleção
+
+      // Verificar se evento passou há 7+ dias
+      const now = new Date();
+      const eventEnd = new Date(event.end_time);
+      const sevenDaysAfterEnd = new Date(eventEnd.getTime() + (7 * 24 * 60 * 60 * 1000));
+      const passedSevenDays = now > sevenDaysAfterEnd;
+
+      // Determinar se pode deletar baseado nas mesmas regras
+      let canDelete = false;
+      let blockReason = '';
+
+      if (confirmedParticipants.length === 0) {
+        canDelete = true; // Sem confirmados
+      } else if (accessedParticipants.length === 0) {
+        canDelete = true; // Confirmados mas sem acesso
+      } else if (qualifiedParticipants.length === 0) {
+        canDelete = true; // Aguardando qualificação
+      } else if (passedSevenDays && qualifiedParticipants.length === 0) {
+        canDelete = true; // 7+ dias sem qualificação
+      } else {
+        canDelete = false;
+        blockReason = `${qualifiedParticipants.length} participante(s) qualificado(s)`;
+      }
+
+      if (!canDelete) {
+        toast({
+          title: "Não é possível deletar",
+          description: blockReason,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // ✅ Deletar manualmente com tratamento de erro
+      
+      console.log(`🗑️ Iniciando deleção do evento ${event.id}...`);
+      
+      // 1. Deletar participações
+      try {
+        const { error: participantsError } = await supabase
+          .from('event_participants')
+          .delete()
+          .eq('event_id', event.id);
+        if (participantsError) console.warn('Erro ao deletar participações:', participantsError);
+        else console.log('✅ Participações deletadas');
+      } catch (e) {
+        console.warn('Tabela event_participants pode não existir:', e);
+      }
+
+      // 2. Deletar notificações
+      try {
+        const { error: notificationsError } = await supabase
+          .from('notifications')
+          .delete()
+          .eq('event_id', event.id);
+        if (notificationsError) console.warn('Erro ao deletar notificações:', notificationsError);
+        else console.log('✅ Notificações deletadas');
+      } catch (e) {
+        console.warn('Tabela notifications pode não existir:', e);
+      }
+
+      // 3. Deletar fotos (se tabela existir)
+      try {
+        const { error: photosError } = await supabase
+          .from('event_photos')
+          .delete()
+          .eq('event_id', event.id);
+        if (photosError) console.warn('Erro ao deletar fotos:', photosError);
+        else console.log('✅ Fotos deletadas');
+      } catch (e) {
+        console.warn('Tabela event_photos pode não existir:', e);
+      }
+
+      // 4. REMOVIDO: Deletar avaliações (tabela não existe)
+      // Comentado para evitar erro 404
+      /*
+      try {
+        await supabase
+          .from('event_ratings')
+          .delete()
+          .eq('event_id', event.id);
+        console.log('✅ Avaliações deletadas');
+      } catch (e) {
+        console.warn('Tabela event_ratings não existe:', e);
+      }
+      */
+
+      // 5. Deletar evento principal (OBRIGATÓRIO)
+      const { error: deleteError } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', event.id)
+        .eq('creator_id', user.id);
+
+      if (deleteError) {
+        console.error('❌ Erro ao deletar evento principal:', deleteError);
+        throw deleteError;
+      }
+      
+      console.log('✅ Evento principal deletado com sucesso');
+
+      toast({
+        title: "Evento deletado com sucesso",
+        description: "O evento foi removido permanentemente",
+        variant: "default",
+      });
+      
+      // Recarregar eventos
+      await loadEvents();
+      
+    } catch (error) {
+      console.error('Erro ao deletar evento:', error);
+      toast({
+        title: "Erro ao deletar evento",
+        description: error.message || "Ocorreu um erro inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingEventId(null);
+    }
   };
 
   // --------------------------------------------------
@@ -856,16 +1147,77 @@ const MyEventsPage = () => {
 
                   {/* Ações */}
                   <div className="space-y-2 pt-4 border-t border-white/10">
+                    {/* ✅ DEBUG: Investigar por que Ver Detalhes não aparece */}
+                    {(() => {
+                      console.log('🔍 Debug Ver Detalhes - Evento:', {
+                        id: event.id,
+                        title: event.title,
+                        status: event.status,
+                        isConcluded,
+                        isFinalized,
+                        isCreator,
+                        shouldShowFirstLine: !isConcluded
+                      });
+                      return null;
+                    })()}
+
                     {/* Primeira linha: Editar + Ver Detalhes (não concluído) */}
                     {!isConcluded && (
                       <div className="flex gap-2">
                         {isCreator && (
-                          <Link to={`/editar-evento/${event.id}`} className="flex-1">
-                            <Button variant="outline" className="w-full border-white/20">
-                              <Edit className="w-4 h-4 mr-2" /> Editar
-                            </Button>
-                          </Link>
+                          <>
+                            <Link to={`/editar-evento/${event.id}`} className="flex-1">
+                              <Button 
+                                variant="outline" 
+                                className={`w-full ${
+                                  deletionStatus[event.id]?.canDelete 
+                                    ? 'border-green-500/50 text-green-400 hover:bg-green-500/10' 
+                                    : 'border-white/20'
+                                }`}
+                                title={
+                                  deletionStatus[event.id]?.canDelete 
+                                    ? 'Edição completa permitida (sem confirmados)' 
+                                    : 'Edição limitada (tem participantes confirmados)'
+                                }
+                              >
+                                <Edit className="w-4 h-4 mr-2" /> 
+                                {deletionStatus[event.id]?.canDelete ? 'Editar Tudo' : 'Editar'}
+                              </Button>
+                            </Link>
+
+                            {/* ✅ BOTÃO: Deletar evento sem participação efetiva */}
+                            {(() => {
+                              console.log('🔍 Debug botão deletar - Evento:', event.id, 'Status:', deletionStatus[event.id]);
+                              return deletionStatus[event.id]?.canDelete;
+                            })() && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteEvent(event)}
+                                disabled={deletingEventId === event.id}
+                                className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                                title={deletionStatus[event.id]?.reason}
+                              >
+                                {deletingEventId === event.id ? (
+                                  <Loader className="w-4 h-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                )}
+                                {deletingEventId === event.id ? 'Deletando...' : 'Deletar'}
+                              </Button>
+                            )}
+
+                            {/* ✅ DEBUG: Log no console apenas (removido da interface) */}
+                            {(() => {
+                              if (process.env.NODE_ENV === 'development') {
+                                console.log('🗑️ Debug deletion status:', event.id, deletionStatus[event.id]);
+                              }
+                              return null;
+                            })()}
+                          </>
                         )}
+                        
+                        {/* ✅ CORREÇÃO: Botão Ver Detalhes sempre visível */}
                         <Link to={`/event/${event.id}`} className="flex-1">
                           <Button variant="outline" className="w-full border-white/20">
                             Ver Detalhes

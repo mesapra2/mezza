@@ -37,8 +37,17 @@ if (!globalThis[SUPABASE_SINGLETON_KEY]) {
         'Prefer': 'return=representation',
       },
       fetch: (url, options = {}) => {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        // ✅ CORREÇÃO: Verificar se já existe um signal antes de criar novo
+        let controller;
+        let timeoutId;
+        
+        if (!options.signal) {
+          controller = new AbortController();
+          timeoutId = setTimeout(() => {
+            console.warn('Request timeout após 45s:', url);
+            controller.abort();
+          }, 45000); // ✅ Aumentado para 45s
+        }
         
         // Ensure proper headers for Supabase API
         const headers = {
@@ -53,8 +62,10 @@ if (!globalThis[SUPABASE_SINGLETON_KEY]) {
         return fetch(url, {
           ...options,
           headers,
-          signal: controller.signal,
-        }).finally(() => clearTimeout(timeoutId));
+          signal: options.signal || controller?.signal,
+        }).finally(() => {
+          if (timeoutId) clearTimeout(timeoutId);
+        });
       },
     },
     db: {

@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabaseClient';
 // import Settings from '@/features/user/components/common/Settings'; // Removido - migrado para UserSettings
 import EventApply from '@/features/shared/components/events/EventApply';
 import ParticipationService from '@/services/ParticipationService';
+import EventCancellationService from '@/services/EventCancellationService';
 import { toast } from '@/features/shared/components/ui/use-toast';
 import { Dialog,  DialogContent,  DialogHeader,  DialogTitle,  DialogDescription,} from '@/features/shared/components/ui/dialog';
 import BannerCarousel from '@/features/shared/components/BannerCarousel';
@@ -167,6 +168,10 @@ const Dashboard = () => {
   const loadDashboardData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    
+    // ✅ CORREÇÃO: AbortController com cleanup
+    const abortController = new AbortController();
+    
     try {
       const { data: profileData } = await supabase
         .from('profiles')
@@ -177,7 +182,8 @@ const Dashboard = () => {
       const { data: participations, error: participationsError } = await supabase
         .from('event_participants')
         .select('id, event_id, user_id, status, created_at')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .abortSignal(abortController.signal);
 
       if (participationsError) throw participationsError;
 
@@ -187,7 +193,8 @@ const Dashboard = () => {
       const { data: userEvents, error: eventsError } = await supabase
         .from('events')
         .select('id, title, start_time, end_time, status, event_type, location')
-        .in('id', eventIds);
+        .in('id', eventIds)
+        .abortSignal(abortController.signal);
 
       if (eventsError) throw eventsError;
 
@@ -204,7 +211,8 @@ const Dashboard = () => {
         `)
         .in('status', ['Aberto', 'Confirmado'])
         .order('start_time', { ascending: true })
-        .limit(6);
+        .limit(6)
+        .abortSignal(abortController.signal);
 
       if (allEventsError) throw allEventsError;
 
@@ -222,7 +230,13 @@ const Dashboard = () => {
       const invites = await checkCrusherInvites(allEvents);
       setCrusherInvites(invites || {});
     } catch (error) {
+      // ✅ CORREÇÃO: Verificar se é AbortError antes de logar
+      if (error.name === 'AbortError' || error.message?.includes('AbortError')) {
+        console.log('🔄 Request dashboard cancelada (componente desmontado)');
+        return;
+      }
       console.error('Erro ao carregar dados do dashboard:', error.message);
+      setError('Erro ao carregar dados. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -407,6 +421,42 @@ const Dashboard = () => {
         variant: "destructive", 
         title: "Erro", 
         description: "Não foi possível recusar o convite." 
+      });
+    }
+  };
+
+  // ✅ FUNÇÃO: Iniciar cancelamento de evento (com NOVAS REGRAS de participantes)
+  const handleCancelEvent = async (event) => {
+    try {
+      console.log('🔍 Verificando regras de cancelamento para evento:', event.id);
+      
+      // ✅ USAR NOVO SERVIÇO: Verificar se pode cancelar baseado nas novas regras
+      const cancellationCheck = await EventCancellationService.canCancelEvent(event.id, user.id);
+      
+      console.log('📋 Resultado da verificação:', cancellationCheck);
+      
+      if (!cancellationCheck.canCancel) {
+        toast({
+          variant: "destructive",
+          title: "Não é possível cancelar",
+          description: cancellationCheck.reason,
+        });
+        return;
+      }
+
+      // ✅ Se pode cancelar, mostrar informações e confirmar
+      setEventToCancel({
+        ...event,
+        cancellationInfo: cancellationCheck
+      });
+      setCancelModalOpen(true);
+      
+    } catch (error) {
+      console.error('Erro ao verificar cancelamento:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro na verificação",
+        description: "Não foi possível verificar as regras de cancelamento.",
       });
     }
   };

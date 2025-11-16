@@ -1,7 +1,7 @@
 // src/features/shared/components/events/ParticipantsManager.jsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Users, CheckCircle, XCircle, Clock, UserCheck } from 'lucide-react'; // Removido Star
+import { Users, CheckCircle, XCircle, Clock, UserCheck, UserX } from 'lucide-react';
 import { Button } from '@/features/shared/components/ui/button';
 import ParticipationService from '@/services/ParticipationService';
 import { format } from 'date-fns';
@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabaseClient';
 /**
  * Componente para gerenciar participantes de um evento (Anfitrião)
  */
-const ParticipantsManagement = ({ eventId, eventType, onUpdate }) => {
+const ParticipantsManagement = ({ eventId, eventType, onUpdate, onDisapprove }) => {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('todos'); // todos, pendente, aprovado, rejeitado
@@ -218,6 +218,7 @@ const ParticipantsManagement = ({ eventId, eventType, onUpdate }) => {
                   )}
 
                   {/* Ações */}
+                  {/* ✅ Botões para status PENDENTE */}
                   {participant.status === 'pendente' && eventType !== 'institucional' && (
                     <div className="space-y-2 mt-2">
                       {/* 🔒 Alerta se evento está muito próximo */}
@@ -250,6 +251,24 @@ const ParticipantsManagement = ({ eventId, eventType, onUpdate }) => {
                       </div>
                     </div>
                   )}
+
+                  {/* ✅ NOVO: Botão DESAPROVAR para status APROVADO */}
+                  {participant.status === 'aprovado' && onDisapprove && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <Button
+                        onClick={() => onDisapprove(participant.user_id, participant.profile?.full_name || participant.profile?.username || 'Usuário')}
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                      >
+                        <UserX className="w-4 h-4 mr-1" />
+                        Desaprovar
+                      </Button>
+                      <p className="text-white/50 text-xs mt-1">
+                        Desaprovar participante aprovado
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -276,6 +295,7 @@ ParticipantsManagement.propTypes = {
   eventId: PropTypes.string.isRequired,
   eventType: PropTypes.string.isRequired,
   onUpdate: PropTypes.func,
+  onDisapprove: PropTypes.func, // ✅ NOVO: Callback para desaprovação
 };
 
 export default ParticipantsManagement;

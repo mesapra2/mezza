@@ -13,9 +13,17 @@ Allow: /
 # -----------------------------
 Disallow: /api/
 Disallow: /auth/
-Disallow: /login
-Disallow: /logout
-Disallow: /signup
+# Permitir páginas públicas importantes
+Allow: /login
+Allow: /register
+Allow: /events
+Allow: /restaurants
+Allow: /about
+Allow: /faq
+Allow: /privacy
+Allow: /terms
+
+# Bloquear apenas áreas realmente privadas
 Disallow: /settings
 Disallow: /profile
 Disallow: /admin/

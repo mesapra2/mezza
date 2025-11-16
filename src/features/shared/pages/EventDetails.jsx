@@ -4,13 +4,14 @@ import PropTypes from 'prop-types';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Calendar, Users, MapPin, Clock, CheckCircle, X, AlertTriangle, Loader, Camera, Star, StopCircle } from 'lucide-react';
+import { Calendar, Users, MapPin, Clock, CheckCircle, X, AlertTriangle, Loader, Camera, Star, StopCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import EventApply from '@/features/shared/components/events/EventApply';
 import Avatar from '@/features/shared/components/profile/Avatar';
 import ParticipantsManagement from '@/features/shared/components/events/ParticipantsManager';
 import EventEvaluationSection from '@/features/shared/components/events/EventEvaluationSection';
 import EventEntryForm from '@/features/shared/components/ui/EventEntryForm';
+import DisapproveUserModal from '@/components/DisapproveUserModal';
 import EventPasswordCard from '@/features/partner/components/EventPasswordCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, differenceInMinutes, differenceInHours, differenceInMonths } from 'date-fns';
@@ -106,6 +107,11 @@ const EventDetails = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showEarlyEndModal, setShowEarlyEndModal] = useState(false);
+  const [disapprovalModal, setDisapprovalModal] = useState({ 
+    isOpen: false, 
+    userId: null, 
+    userName: null 
+  });
 
   // Função básica para carregar dados do evento
   const fetchEventData = useCallback(async () => {
@@ -122,14 +128,24 @@ const EventDetails = () => {
       if (eventError) throw eventError;
       if (!eventData) throw new Error('Evento não encontrado');
 
-      setEvent(eventData);
+      // ✅ CORREÇÃO: Se eventData for um array, pegar o primeiro elemento
+      const event = Array.isArray(eventData) ? eventData[0] : eventData;
+      
+      console.log('🔍 Debug fetchEventData:', {
+        rawData: eventData,
+        isArray: Array.isArray(eventData),
+        processedEvent: event,
+        eventTitle: event?.title
+      });
+
+      setEvent(event);
 
       // Buscar creator
-      if (eventData.creator_id) {
+      if (event.creator_id) {
         const { data: creatorData } = await supabase
           .from('profiles')
           .select('id, username, full_name, avatar_url, public_profile')
-          .eq('id', eventData.creator_id)
+          .eq('id', event.creator_id)
           .maybeSingle();
         setCreator(creatorData);
       }
@@ -196,7 +212,7 @@ const EventDetails = () => {
 
   // Monitorar timing de entrada
   useEffect(() => {
-    if (!event || !user || !userParticipation) return;
+    if (!event || !user || !userParticipation || !event.id) return;
 
     const checkEntryTiming = async () => {
       try {
@@ -206,7 +222,14 @@ const EventDetails = () => {
         const oneMinBeforeStart = new Date(startTime.getTime() - 60 * 1000);
         const twoMinBeforeEnd = new Date(endTime.getTime() - 2 * 60 * 1000);
 
-        const hasAccess = await EventSecurityService.hasUserAccess(event.id, user.id);
+        // ✅ CORREÇÃO: Verificar se event.id existe antes de chamar a função
+        if (!event.id) {
+          console.error('❌ event.id está undefined');
+          setUserHasAccess(false);
+          return;
+        }
+
+        const hasAccess = await EventSecurityService.hasUserAccess(parseInt(event.id), user.id);
         setUserHasAccess(hasAccess);
 
         if (hasAccess) {
@@ -374,7 +397,10 @@ const EventDetails = () => {
     creatorId: event.creator_id,
     eventStatus: event.status,
     showEvaluationSection: isEventFinalized && (isCreator || (isParticipant && hasAttended)),
-    userParticipation
+    userParticipation,
+    event: event, // Debug do objeto event
+    eventType: typeof event,
+    isArray: Array.isArray(event)
   });
 
   // ✅ LÓGICA DE EXIBIÇÃO DE FOTO SIMPLIFICADA
@@ -398,8 +424,8 @@ const EventDetails = () => {
   return (
     <>
       <Helmet>
-        <title>{event.title} - Mesapra2</title>
-        <meta name="description" content={event.description} />
+        <title>{event?.title || 'Evento'} - Mesapra2</title>
+        <meta name="description" content={event?.description || 'Detalhes do evento no Mesapra2'} />
       </Helmet>
       
       <motion.div
@@ -428,11 +454,32 @@ const EventDetails = () => {
           <div className="space-y-4">
             <div className="flex items-center text-white/60">
               <Calendar className="w-5 h-5 mr-3" />
-              {format(new Date(event.start_time), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              {(() => {
+                try {
+                  if (!event.start_time) return 'Data não informada';
+                  const startDate = new Date(event.start_time);
+                  if (isNaN(startDate.getTime())) return 'Data inválida';
+                  return format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+                } catch (error) {
+                  console.error('Erro ao formatar data:', error, 'start_time:', event.start_time);
+                  return 'Data inválida';
+                }
+              })()}
             </div>
             <div className="flex items-center text-white/60">
               <Clock className="w-5 h-5 mr-3" />
-              De {format(new Date(event.start_time), 'HH:mm', { locale: ptBR })} até {format(new Date(event.end_time), 'HH:mm', { locale: ptBR })}
+              {(() => {
+                try {
+                  if (!event.start_time || !event.end_time) return 'Horário não informado';
+                  const startDate = new Date(event.start_time);
+                  const endDate = new Date(event.end_time);
+                  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 'Horário inválido';
+                  return `De ${format(startDate, 'HH:mm', { locale: ptBR })} até ${format(endDate, 'HH:mm', { locale: ptBR })}`;
+                } catch (error) {
+                  console.error('Erro ao formatar horário:', error, 'start_time:', event.start_time, 'end_time:', event.end_time);
+                  return 'Horário inválido';
+                }
+              })()}
             </div>
             <div className="flex items-center text-white/60">
               <MapPin className="w-5 h-5 mr-3" />
@@ -447,7 +494,24 @@ const EventDetails = () => {
 
         {participants.length > 0 && (
           <div className="glass-effect rounded-2xl p-6 border border-white/10">
-            <h2 className="text-xl font-semibold text-white mb-4">Participantes Aprovados ({participants.length})</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Participantes Aprovados ({participants.length})</h2>
+              
+              {/* ✅ NOVO: Botão para entrar no chat quando há aprovados */}
+              {(isCreator || isParticipant) && (
+                <Link to={`/event/${event.id}/chat`}>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="glass-effect border-blue-500/50 text-blue-400 hover:bg-blue-500/10"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Chat do Evento
+                  </Button>
+                </Link>
+              )}
+            </div>
+            
             <div className="flex flex-wrap gap-4">
               {participants.map(participant => (
                 <div key={participant.id} className="flex flex-col items-center gap-2">
@@ -460,10 +524,31 @@ const EventDetails = () => {
         )}
 
         {isCreator && !isEventFinalized && !isEventConcluded && (
-          <ParticipantsManagement eventId={String(event.id)} eventType={event.event_type} onUpdate={fetchEventData} />
+          <ParticipantsManagement 
+            eventId={String(event.id)} 
+            eventType={event.event_type} 
+            onUpdate={fetchEventData}
+            onDisapprove={(userId, userName) => {
+              setDisapprovalModal({
+                isOpen: true,
+                userId,
+                userName
+              });
+            }}
+          />
         )}
 
         {/* Inscrição */}
+        {(() => {
+          console.log('🔍 Debug Inscrição:', {
+            isCreator,
+            isParticipant,
+            eventType: event?.event_type,
+            shouldShowApply: !isCreator && !isParticipant,
+            eventStatus: event?.status
+          });
+          return null;
+        })()}
         {!isCreator && !isParticipant && (
           <>
             {event.event_type === 'institucional' ? (
@@ -478,7 +563,22 @@ const EventDetails = () => {
                 </Button>
               </div>
             ) : (
-              <EventApply event={event} onSuccess={fetchEventData} />
+              event && typeof event === 'object' && !Array.isArray(event) ? (
+                <EventApply event={event} onSuccess={fetchEventData} />
+              ) : (
+                <div className="glass-effect rounded-2xl p-6 border border-red-500/30 bg-red-500/5">
+                  <p className="text-red-400">Erro: Dados do evento inválidos. Tente recarregar a página.</p>
+                  {/* ✅ DEBUG: Mostrar detalhes do erro */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-4 text-xs text-red-300">
+                      Debug: event = {JSON.stringify(event)}<br/>
+                      Tipo: {typeof event}<br/>
+                      É array: {Array.isArray(event).toString()}<br/>
+                      É null: {(event === null).toString()}
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </>
         )}
@@ -531,7 +631,17 @@ const EventDetails = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center text-white/60 text-sm">
                     <Calendar className="w-4 h-4 mr-2" />
-                    <span>{format(new Date(event.start_time), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                    <span>{(() => {
+                      try {
+                        if (!event.start_time) return 'Data não informada';
+                        const startDate = new Date(event.start_time);
+                        if (isNaN(startDate.getTime())) return 'Data inválida';
+                        return format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+                      } catch (error) {
+                        console.error('Erro ao formatar data (linha 554):', error, 'start_time:', event.start_time);
+                        return 'Data inválida';
+                      }
+                    })()}</span>
                   </div>
                   {partnerName && (
                     <div className="flex items-center text-white/60 text-sm">
@@ -834,6 +944,23 @@ const EventDetails = () => {
           toast({
             title: "Evento encerrado com sucesso",
             description: "O fluxo de avaliação foi aberto para todos os participantes."
+          });
+        }}
+      />
+
+      {/* Modal de Desaprovação de Usuário */}
+      <DisapproveUserModal
+        isOpen={disapprovalModal.isOpen}
+        onClose={() => setDisapprovalModal({ isOpen: false, userId: null, userName: null })}
+        eventId={event?.id}
+        userId={disapprovalModal.userId}
+        userName={disapprovalModal.userName}
+        hostId={user?.id}
+        onSuccess={() => {
+          fetchEventData();
+          toast({
+            title: "Usuário desaprovado",
+            description: "O caso foi enviado para análise administrativa."
           });
         }}
       />

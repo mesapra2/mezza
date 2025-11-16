@@ -132,7 +132,17 @@ const EventChatPage = () => {
 
         const eventData = eventResult.data;
         const approvedCount = approvedCountResult.count || 0;
-        const userIsCreator = eventData.creator_id === user.id;
+        
+        // ✅ CORREÇÃO: Comparação robusta de IDs como fizemos em outros locais
+        const userIsCreator = String(eventData.creator_id) === String(user.id);
+        
+        console.log('🔍 Debug Chat Access:', {
+          eventCreatorId: eventData.creator_id,
+          userId: user.id,
+          userIsCreator,
+          eventTitle: eventData.title,
+          eventType: eventData.event_type
+        });
         
         // ✅ FIX: Tratar caso onde usuário não está participando
         let userIsApproved = false;

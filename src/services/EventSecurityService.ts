@@ -280,6 +280,14 @@ class EventSecurityService {
     userId: string
   ): Promise<boolean> {
     try {
+      // ✅ CORREÇÃO: Validar parâmetros
+      if (!eventId || !userId) {
+        console.error('❌ hasUserAccess: parâmetros inválidos', { eventId, userId });
+        return false;
+      }
+
+      console.log(`🔍 hasUserAccess: verificando acesso para event ${eventId}, user ${userId}`);
+
       const { data, error } = await supabase
         .from('event_participants')
         .select('com_acesso')

@@ -213,8 +213,27 @@ export const AuthProvider = ({ children }) => {
         };
 
         console.log(`📸 [createProfile] Avatar do OAuth: ${avatarUrl ? 'Capturado' : 'Não disponível'}`);
-        const { error: insertError } = await supabase.from('profiles').insert(newProfileData);
-        if (insertError) throw insertError;
+        
+        // ✅ CORREÇÃO: Usar upsert para evitar erro de duplicate key
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .upsert(newProfileData, { 
+            onConflict: 'id',
+            ignoreDuplicates: false 
+          });
+          
+        if (insertError) {
+          // ✅ Se for erro de chave duplicada, tentar buscar o perfil existente
+          if (insertError.code === '23505') {
+            console.log(`⚠️ [createProfile] Perfil já existe para ${currentUser.id}, buscando...`);
+            profileData = await getProfile(currentUser);
+            if (profileData) {
+              console.log(`✅ [createProfile] Perfil existente encontrado para ${currentUser.id}`);
+              return profileData;
+            }
+          }
+          throw insertError;
+        }
 
         console.log(`✅ [createProfile] Perfil criado para ${currentUser.id}`);
         toast({ title: "Perfil criado!", description: "Bem-vindo!" });

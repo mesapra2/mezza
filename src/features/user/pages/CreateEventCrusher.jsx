@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabaseClient';
 import EventHashtagSelector from '@/features/shared/components/events/EventHashtagSelector';
 import NotificationService from '@/services/NotificationService';
 import { canReceiveMesapra2Invites } from '@/utils/mesapra2InviteHelper';
+import { debounce } from '@/utils/debounce';
 
 const CreateEventCrusher = () => {
   const { user } = useAuth();
@@ -88,13 +89,30 @@ const CreateEventCrusher = () => {
     fetchInvitedUser();
   }, [invitedUserId, navigate]);
 
-  const handleChange = (e) => {
+  // ✅ OTIMIZAÇÃO: Debounced handler para campos de data/hora
+  const debouncedDateTimeUpdate = useMemo(
+    () => debounce((name, value) => {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }, 150),
+    []
+  );
+
+  // ✅ OTIMIZAÇÃO: Handler otimizado com useCallback
+  const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    
+    // ✅ OTIMIZAÇÃO: Usar debounce para campos datetime-local
+    if (name === 'start_time' || name === 'end_time') {
+      debouncedDateTimeUpdate(name, value);
+      return;
+    }
+    
+    // ✅ Update imediato para outros campos
+    setFormData(prev => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value,
-    });
-  };
+    }));
+  }, [debouncedDateTimeUpdate]);
 
   const handleHashtagsChange = (newHashtags) => {
     setFormData({ ...formData, hashtags: newHashtags });

@@ -5,7 +5,6 @@ import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
-import LatestAnnouncements from '@/features/partner/components/LatestAnnouncements';
 import EventSuggestions from '@/features/partner/components/EventSuggestions';
 import {
   CheckCircle,
@@ -171,11 +170,7 @@ const PartnerDashboard = () => {
         </div>
 
         {/* Grid de componentes */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <LatestAnnouncements />
-          </div>
-
+        <div className="grid grid-cols-1 gap-6">
           <div className="space-y-6">
             <EventSuggestions />
           </div>

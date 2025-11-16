@@ -1,7 +1,7 @@
 import React from 'react';
-// Usar imagens da pasta public para produção
-import logoPrime from '/logo-light.png';
-import logoPrimeDark from '/logo.png';
+// Usar imagens da pasta public para produção - caminhos corrigidos
+const logoPrime = '/logo-light.png';
+const logoPrimeDark = '/logo.png';
 
 /**
  * Componente de Logo MesaPra2 - Sistema inteligente que escolhe automaticamente
@@ -26,13 +26,18 @@ const MesaPra2Logo = ({
     hero: 'h-32 w-auto'
   };
 
-  // Escolher logo baseada no variant
+  // Escolher logo baseada no variant - com fallback para produção
   const getLogoSrc = () => {
-    if (variant === 'light') return logoPrime;
-    if (variant === 'dark') return logoPrimeDark;
-    
-    // Auto: detectar se está em contexto escuro
-    return logoPrimeDark; // Default para dark que funciona melhor
+    try {
+      if (variant === 'light') return logoPrime;
+      if (variant === 'dark') return logoPrimeDark;
+      
+      // Auto: detectar se está em contexto escuro
+      return logoPrimeDark; // Default para dark que funciona melhor
+    } catch (error) {
+      console.warn('Erro ao carregar logo, usando fallback');
+      return '/logo.png'; // Fallback absoluto
+    }
   };
 
   // Classes base
@@ -59,6 +64,10 @@ const MesaPra2Logo = ({
         className={baseClasses}
         onClick={onClick}
         draggable={false}
+        onError={(e) => {
+          console.warn('Erro ao carregar logo, tentando fallback');
+          e.target.src = '/logo.png';
+        }}
       />
     </div>
   );

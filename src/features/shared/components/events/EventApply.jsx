@@ -15,6 +15,15 @@ const EventApply = ({ event, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
 
+  // Debug do componente EventApply
+  console.log('🎯 EventApply renderizado:', {
+    eventType: event?.event_type,
+    eventId: event?.id,
+    eventStatus: event?.status,
+    userId: user?.id,
+    event: event
+  });
+
   const isInstitucional = event.event_type === 'institucional';
   const requiresMessage = ['padrao', 'particular', 'crusher'].includes(event.event_type);
 
@@ -127,6 +136,13 @@ const EventApply = ({ event, onSuccess }) => {
 
   // ✅ Verificações de estado do evento
   const isOpen = ['Aberto', 'Confirmado'].includes(event.status);
+  
+  console.log('🔍 EventApply - Verificações:', {
+    eventStatus: event.status,
+    isOpen,
+    vagas: event.vagas,
+    vagasCheck: event.vagas <= 0
+  });
 
   if (!isOpen) {
     return (

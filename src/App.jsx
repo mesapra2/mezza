@@ -5,6 +5,8 @@ import { Helmet } from 'react-helmet';
 import PropTypes from 'prop-types';
 import { useAuth } from '@/contexts/AuthContext';
 import EventStatusService from '@/services/EventStatusService';
+import EventDeletionService from '@/services/EventDeletionService';
+import EventFinalizationService from '@/services/EventFinalizationService';
 import MetaTags from '@/components/MetaTags';
 
 // Layout
@@ -48,13 +50,11 @@ import MyEventsPage from '@/features/shared/pages/MyEventsPage';
 import UserProfilePage from '@/features/shared/pages/UserProfilePage';
 import MyParticipation from '@/features/shared/pages/MyParticipation';
 import ParticipantHistoryPage from '@/features/shared/pages/ParticipantHistoryPage';
-import Signup from '@/features/shared/pages/signup';
+import Signup from '@/features/shared/pages/RegisterPage';
 import Premium from '@/features/user/pages/premium';
 import FavoritesPage from '@/features/shared/pages/FavoritesPage';
 import MobileVerificationPageSimple from '@/features/shared/pages/MobileVerificationPageSimple';
 import FAQPage from '@/features/shared/pages/FAQPage';
-import TestCertifiedUser from '@/pages/test-certified-user';
-import TestVerificationFlow from '@/components/TestVerificationFlow';
 
 // 🛡️ Componente para verificar telefone verificado
 const RequirePhoneVerification = ({ children }) => {
@@ -113,6 +113,14 @@ function AppContent() {
       hasStartedAutoUpdate.current = true;
       console.log('✅ Iniciando monitoramento automático de status de eventos');
       EventStatusService.startAutoUpdate(); // ✅ FIX: Sem parâmetro = usa default adaptativo
+
+      // ✅ NOVO: Iniciar monitoramento de deleção automática
+      console.log('✅ Iniciando monitoramento automático de deleção de eventos');
+      EventDeletionService.startAutoDeleteMonitoring();
+
+      // ✅ NOVO: Iniciar monitoramento de finalização automática
+      console.log('✅ Iniciando monitoramento automático de finalização de eventos');
+      EventFinalizationService.startAutoFinalizationMonitoring();
 
       return () => {
         console.log('ℹ️ Parando monitoramento de status de eventos');
@@ -179,8 +187,6 @@ function AppContent() {
           <>
             <Route path="/verify-mobile" element={<MobileVerificationPageSimple />} />
             <Route path="/mobile-verification" element={<MobileVerificationPageSimple />} />
-            <Route path="/test-certified-user" element={<TestCertifiedUser />} />
-            <Route path="/test-verification" element={<TestVerificationFlow />} />
             <Route path="/" element={<Layout isPublic={true} />}>
               <Route index element={<Navigate to="/login" replace />} />
               <Route path="login" element={<LoginPage />} />

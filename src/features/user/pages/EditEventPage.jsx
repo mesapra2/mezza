@@ -23,19 +23,59 @@ const EditEventPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const { data, error: fetchError } = await supabase
+        const { data: rawData, error: fetchError } = await supabase
           .from('events')
           .select('*')
           .eq('id', id)
           .single();
 
         if (fetchError) throw fetchError;
-        if (!data) throw new Error('Evento não encontrado');
+        if (!rawData) throw new Error('Evento não encontrado');
 
-        // Verificar se o usuário logado é o criador do evento
-        if (data.creator_id !== user.id) {
-            throw new Error('Você não tem permissão para editar este evento.');
+        // ✅ CORREÇÃO: Se rawData for um array, pegar o primeiro elemento
+        const data = Array.isArray(rawData) ? rawData[0] : rawData;
+        
+        console.log('🔍 Debug rawData vs processedData:', {
+          rawData,
+          isRawArray: Array.isArray(rawData),
+          processedData: data,
+          hasCreatorIdNow: !!data?.creator_id
+        });
+
+        // ✅ CORREÇÃO: Verificação robusta de permissão com diagnóstico de undefined
+        console.log('🔍 Debug EditEvent - Dados completos:', {
+          eventId: data.id,
+          eventTitle: data.title,
+          eventData: data, // ✅ Ver dados completos do evento
+          eventCreatorId: data.creator_id,
+          eventCreatorIdType: typeof data.creator_id,
+          hasCreatorId: data.hasOwnProperty('creator_id'),
+          userObject: user,
+          userLoggedId: user?.id,
+          userLoggedIdType: typeof user?.id,
+          userExists: !!user,
+          userIdExists: !!user?.id,
+          isEqual: data.creator_id === user?.id,
+          isEqualString: String(data.creator_id) === String(user?.id)
+        });
+
+        // ✅ Verificar se user está totalmente carregado
+        if (!user || !user.id) {
+          throw new Error('Sessão de usuário não carregada. Tente recarregar a página.');
         }
+
+        // ✅ CORREÇÃO: Verificar se creator_id existe no evento
+        if (!data.creator_id) {
+          console.error('❌ creator_id está undefined no evento:', data);
+          throw new Error('Erro nos dados do evento: creator_id não encontrado. Tente recarregar a página.');
+        }
+
+        // ✅ Verificar permissão com conversão de string
+        if (String(data.creator_id) !== String(user.id)) {
+          throw new Error(`Acesso negado. Este evento foi criado por outro usuário. (Criador: ${data.creator_id}, Você: ${user.id})`);
+        }
+
+        console.log('✅ Permissão confirmada - usuário pode editar este evento');
 
         setEventData(data);
       } catch (err) {
@@ -45,8 +85,16 @@ const EditEventPage = () => {
         setLoading(false);
       }
     };
-    if (user) { // Só busca se o usuário estiver carregado
+    if (user?.id) { // ✅ CORREÇÃO: Verificar se user.id existe
+        console.log('🚀 Iniciando fetchEvent - user carregado:', user.id);
         fetchEvent();
+    } else {
+        console.log('⏳ Aguardando user carregar...', { 
+          user, 
+          hasUser: !!user, 
+          hasUserId: !!user?.id 
+        });
+        setLoading(false); // Para não ficar eternamente carregando
     }
   }, [id, user]); // Depende do ID do evento e do usuário
 
@@ -75,7 +123,7 @@ const EditEventPage = () => {
             updated_at: new Date().toISOString() // Atualiza timestamp
         })
         .eq('id', eventId)
-        .eq('creator_id', user.id); // Segurança extra: só atualiza se for o criador
+        .eq('creator_id', String(user.id)); // ✅ CORREÇÃO: Usar String para compatibilidade
 
       if (updateError) throw updateError;
 
